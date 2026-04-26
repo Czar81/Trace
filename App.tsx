@@ -1,20 +1,33 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { StatusBar } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { AppProvider } from './src/context/ExpenseContext';
+
+import { MainScreen } from './src/screens/MainScreen';
+import { EnvelopeDetailScreen } from './src/screens/EnvelopeDetailScreen';
+import { CreateEnvelopeScreen } from './src/screens/CreateEnvelopeScreen';
+import { CreateTransactionScreen } from './src/screens/CreateTransactionScreen';
+import { SettingsScreen } from './src/screens/SettingsScreen';
+
+const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaProvider>
+      <StatusBar barStyle="light-content" backgroundColor="#092230" />
+      <AppProvider>
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#092230' } }}>
+            <Stack.Screen name="Main" component={MainScreen} />
+            <Stack.Screen name="EnvelopeDetail" component={EnvelopeDetailScreen} />
+            <Stack.Screen name="CreateEnvelope" component={CreateEnvelopeScreen} />
+            <Stack.Screen name="CreateTransaction" component={CreateTransactionScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </AppProvider>
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
