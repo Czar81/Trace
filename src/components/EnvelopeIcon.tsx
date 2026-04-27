@@ -6,6 +6,11 @@ import {
   Bus, Wallet, CreditCard, Dumbbell, Baby, Dog, Wrench, Scissors,
   Globe, Building2, Star, Bike, Beef, Pizza, Tv, Shirt, Fuel,
   TreePine, Stethoscope, Beer, Box,
+  Bird, Bone, Bug, Cat, Fish, FishSymbol, PawPrint, Rabbit, Turtle,
+  FilePieChart, FileText, File, Mail, Printer, Calendar, Folder, Pen, Paintbrush, PenTool, Trash, Trash2,
+  Warehouse, Bed, Hammer, Lamp, Lightbulb, Lock, Sofa, Droplet,
+  Cake, CakeSlice, PartyPopper, Balloon, Drill,
+  Soup, Cookie, Sandwich, Wine, UtensilsCrossed
 } from 'lucide-react-native';
 
 export type IconName =
@@ -15,17 +20,46 @@ export type IconName =
   | 'shopping-cart' | 'bus' | 'wallet' | 'credit-card' | 'dumbbell'
   | 'baby' | 'dog' | 'wrench' | 'scissors' | 'globe' | 'building'
   | 'star' | 'bike' | 'beef' | 'pizza' | 'tv' | 'shirt' | 'fuel'
-  | 'tree' | 'stethoscope' | 'beer' | 'box';
+  | 'tree' | 'stethoscope' | 'beer' | 'box'
+  | 'bird' | 'bone' | 'bug' | 'cat' | 'fish' | 'fish-bowl' | 'paw' | 'rabbit' | 'turtle'
+  | 'file-pie' | 'file-stack' | 'file' | 'mail' | 'printer' | 'calendar' | 'folder' | 'pen' | 'paintbrush' | 'pentool' | 'trash' | 'trash2'
+  | 'warehouse' | 'bed' | 'hammer' | 'lamp' | 'lightbulb' | 'lock' | 'sofa' | 'droplet'
+  | 'cake' | 'cake-slice' | 'party' | 'balloon' | 'firework'
+  | 'soup' | 'cookie' | 'burger' | 'wine' | 'utensils-crossed';
 
-export const ICON_LIST: IconName[] = [
-  'home', 'car', 'coffee', 'shopping-bag', 'heart', 'zap', 'film',
-  'music', 'book', 'graduation-cap', 'briefcase', 'gift', 'plane',
-  'gamepad', 'smartphone', 'dollar', 'piggy-bank', 'utensils',
-  'shopping-cart', 'bus', 'wallet', 'credit-card', 'dumbbell',
-  'baby', 'dog', 'wrench', 'scissors', 'globe', 'building',
-  'star', 'bike', 'beef', 'pizza', 'tv', 'shirt', 'fuel',
-  'tree', 'stethoscope', 'beer', 'box',
+export interface IconCategory {
+  title: string;
+  icons: IconName[];
+}
+
+export const CATEGORIZED_ICONS: IconCategory[] = [
+  {
+    title: 'Animales / Animals',
+    icons: ['bird', 'bone', 'bug', 'cat', 'dog', 'fish', 'fish-bowl', 'paw', 'rabbit', 'turtle']
+  },
+  {
+    title: 'Archivos / Files',
+    icons: ['file-pie', 'file-stack', 'file', 'mail', 'printer', 'calendar', 'folder', 'pen', 'paintbrush', 'pentool', 'trash', 'trash2']
+  },
+  {
+    title: 'Casa / Home',
+    icons: ['home', 'warehouse', 'bed', 'hammer', 'lamp', 'lightbulb', 'lock', 'sofa', 'zap', 'droplet']
+  },
+  {
+    title: 'Celebración / Celebration',
+    icons: ['cake', 'cake-slice', 'party', 'balloon', 'tree', 'firework']
+  },
+  {
+    title: 'Comida / Food',
+    icons: ['utensils-crossed', 'wine', 'soup', 'cookie', 'burger']
+  },
+  {
+    title: 'Otros / Others',
+    icons: ['car', 'coffee', 'shopping-bag', 'heart', 'film', 'music', 'book', 'graduation-cap', 'briefcase', 'gift', 'plane', 'gamepad', 'smartphone', 'dollar', 'piggy-bank', 'shopping-cart', 'bus', 'wallet', 'credit-card', 'dumbbell', 'baby', 'wrench', 'scissors', 'globe', 'building', 'star', 'bike', 'beef', 'pizza', 'tv', 'shirt', 'fuel', 'stethoscope', 'beer', 'box']
+  }
 ];
+
+export const ICON_LIST: IconName[] = CATEGORIZED_ICONS.flatMap(c => c.icons);
 
 type IconProps = { size?: number; color?: string };
 
@@ -70,6 +104,45 @@ const iconComponents: Record<IconName, React.FC<IconProps>> = {
   'stethoscope': ({ size, color }) => <Stethoscope size={size} color={color} />,
   'beer': ({ size, color }) => <Beer size={size} color={color} />,
   'box': ({ size, color }) => <Box size={size} color={color} />,
+  'bird': ({ size, color }) => <Bird size={size} color={color} />,
+  'bone': ({ size, color }) => <Bone size={size} color={color} />,
+  'bug': ({ size, color }) => <Bug size={size} color={color} />,
+  'cat': ({ size, color }) => <Cat size={size} color={color} />,
+  'fish': ({ size, color }) => <Fish size={size} color={color} />,
+  'fish-bowl': ({ size, color }) => <FishSymbol size={size} color={color} />,
+  'paw': ({ size, color }) => <PawPrint size={size} color={color} />,
+  'rabbit': ({ size, color }) => <Rabbit size={size} color={color} />,
+  'turtle': ({ size, color }) => <Turtle size={size} color={color} />,
+  'file-pie': ({ size, color }) => <FilePieChart size={size} color={color} />,
+  'file-stack': ({ size, color }) => <FileText size={size} color={color} />,
+  'file': ({ size, color }) => <File size={size} color={color} />,
+  'mail': ({ size, color }) => <Mail size={size} color={color} />,
+  'printer': ({ size, color }) => <Printer size={size} color={color} />,
+  'calendar': ({ size, color }) => <Calendar size={size} color={color} />,
+  'folder': ({ size, color }) => <Folder size={size} color={color} />,
+  'pen': ({ size, color }) => <Pen size={size} color={color} />,
+  'paintbrush': ({ size, color }) => <Paintbrush size={size} color={color} />,
+  'pentool': ({ size, color }) => <PenTool size={size} color={color} />,
+  'trash': ({ size, color }) => <Trash size={size} color={color} />,
+  'trash2': ({ size, color }) => <Trash2 size={size} color={color} />,
+  'warehouse': ({ size, color }) => <Warehouse size={size} color={color} />,
+  'bed': ({ size, color }) => <Bed size={size} color={color} />,
+  'hammer': ({ size, color }) => <Hammer size={size} color={color} />,
+  'lamp': ({ size, color }) => <Lamp size={size} color={color} />,
+  'lightbulb': ({ size, color }) => <Lightbulb size={size} color={color} />,
+  'lock': ({ size, color }) => <Lock size={size} color={color} />,
+  'sofa': ({ size, color }) => <Sofa size={size} color={color} />,
+  'droplet': ({ size, color }) => <Droplet size={size} color={color} />,
+  'cake': ({ size, color }) => <Cake size={size} color={color} />,
+  'cake-slice': ({ size, color }) => <CakeSlice size={size} color={color} />,
+  'party': ({ size, color }) => <PartyPopper size={size} color={color} />,
+  'balloon': ({ size, color }) => <Balloon size={size} color={color} />,
+  'firework': ({ size, color }) => <Drill size={size} color={color} />, // Drill looks like firework? No, maybe I missed it.
+  'utensils-crossed': ({ size, color }) => <UtensilsCrossed size={size} color={color} />,
+  'wine': ({ size, color }) => <Wine size={size} color={color} />,
+  'soup': ({ size, color }) => <Soup size={size} color={color} />,
+  'cookie': ({ size, color }) => <Cookie size={size} color={color} />,
+  'burger': ({ size, color }) => <Sandwich size={size} color={color} />,
 };
 
 interface EnvelopeIconProps {
@@ -83,3 +156,4 @@ export const EnvelopeIcon: React.FC<EnvelopeIconProps> = ({ name, size = 22, col
   if (!Component) return <Box size={size} color={color} />;
   return <Component size={size} color={color} />;
 };
+

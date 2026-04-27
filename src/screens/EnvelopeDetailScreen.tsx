@@ -41,8 +41,38 @@ export const EnvelopeDetailScreen = ({ route, navigation }: any) => {
 
   const isGasto = envelope.type === 'gasto';
   const balance = getEnvelopeBalance(envelopeId);
-  const spentAmount = balance < 0 ? Math.abs(balance) : 0;
-  const available = envelope.isUnlimited ? Math.abs(balance) : envelope.limit + balance;
+  const remaining = isGasto ? envelope.limit + balance : balance;
+  const isOver = isGasto && !envelope.isUnlimited && remaining < 0;
+
+  // Progress logic
+  let progress = 0;
+  let progressColor = COLORS.green;
+  let iconColor = envelope.color;
+  if (isGasto) {
+    if (envelope.isUnlimited) {
+      progress = 1;
+      progressColor = COLORS.blueText;
+    } else {
+      const spent = -balance;
+      progress = Math.max(0, spent / envelope.limit);
+      progressColor = remaining < 0 ? COLORS.redText : COLORS.green;
+    }
+  } else {
+    progress = envelope.limit > 0 ? balance / envelope.limit : 1;
+    progressColor = COLORS.green;
+  }
+
+  // Text Color
+  let textColor = COLORS.white;
+  if (isGasto) {
+    if (envelope.isUnlimited) {
+      textColor = COLORS.white;
+    } else {
+      textColor = remaining < 0 ? COLORS.redText : COLORS.green;
+    }
+  } else {
+    textColor = COLORS.white;
+  }
 
   const handleConfirm = async () => {
     if (!dialog) return;
@@ -87,7 +117,6 @@ export const EnvelopeDetailScreen = ({ route, navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* ── Dialog ── */}
       <ConfirmDialog
         visible={!!dialog}
         title={dp.title}
@@ -98,7 +127,6 @@ export const EnvelopeDetailScreen = ({ route, navigation }: any) => {
         onCancel={() => setDialog(null)}
       />
 
-      {/* ── Header ── */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
           <ArrowLeft color={COLORS.white} size={24} />
@@ -119,70 +147,63 @@ export const EnvelopeDetailScreen = ({ route, navigation }: any) => {
         </View>
       </View>
 
-      {/* ── Summary card ── */}
       <View style={styles.summaryCard}>
         <View style={styles.cardHeader}>
-          <View style={{ marginRight: 12 }}>
-            <EnvelopeAvatar icon={envelope.icon ?? 'box'} imageUri={envelope.imageUri} color={envelope.color} size={44} borderRadius={14} />
+          <View style={{ marginRight: 16 }}>
+            <EnvelopeAvatar 
+              icon={envelope.icon ?? 'box'} 
+              imageUri={envelope.imageUri} 
+              color={envelope.color} 
+              size={56}
+              progress={progress}
+              progressColor={progressColor}
+              iconColor={envelope.color}
+            />
           </View>
-          <Text style={styles.cardTitle}>{envelope.name.toUpperCase()}</Text>
-          <Text style={styles.cardCurrency}>{envelope.currency}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.cardTitle}>{envelope.name}</Text>
+            <Text style={styles.cardCurrency}>{envelope.currency}</Text>
+          </View>
         </View>
 
-        {isGasto ? (
-          <View style={styles.budgetInfo}>
-            {envelope.isUnlimited ? (
-              <Text style={styles.unlimitedText}>Presupuesto ilimitado</Text>
-            ) : (
-              <>
-                <View style={styles.budgetRow}>
-                  <Text style={styles.budgetAmount}>{formatAmount(envelope.limit, envelope.currency)}</Text>
-                  <Text style={styles.budgetLabel}> presupuestados</Text>
-                </View>
-                <View style={styles.budgetRow}>
-                  <Text style={styles.budgetAmount}>{formatAmount(spentAmount, envelope.currency)}</Text>
-                  <Text style={styles.budgetLabel}> gastados</Text>
-                </View>
-              </>
-            )}
-            <View style={styles.availableWrapper}>
-              <Text style={[styles.availableAmount, { color: available < 0 ? COLORS.redText : COLORS.blueText }]}>
-                {formatAmount(available, envelope.currency)}
-              </Text>
-              <Text style={styles.availableLabel}>
-                {envelope.isUnlimited ? 'gastados' : (available < 0 ? 'excedidos' : 'disponibles')}
-              </Text>
+        <View style={styles.budgetInfo}>
+          {!envelope.isUnlimited ? (
+            <View>
+              <View style={styles.budgetRow}>
+                <Text style={styles.budgetAmount}>{formatAmount(envelope.limit, envelope.currency)}</Text>
+                <Text style={styles.budgetLabel}>
+                  {isGasto ? ' presupuesto' : ' meta'}
+                </Text>
+              </View>
+              <View style={styles.budgetRow}>
+                <Text style={styles.budgetAmount}>
+                  {formatAmount(
+                    Math.max(0, isGasto ? remaining : (envelope.limit - balance)),
+                    envelope.currency
+                  )}
+                </Text>
+                <Text style={styles.budgetLabel}>
+                  {isGasto ? ' disponibles' : ' falta'}
+                </Text>
+              </View>
             </View>
+          ):
+          <Text style={styles.budgetLabel}>
+            {isGasto ? 'Presupuesto ilimitado' : 'Meta ilimitada'}
+          </Text>
+          }
+          
+          <View style={styles.availableWrapper}>
+            <Text style={[styles.availableAmount, { color: textColor }]}>
+              {formatAmount(remaining, envelope.currency)}
+            </Text>
+            <Text style={styles.availableLabel}>
+              {isGasto ? (envelope.isUnlimited ? 'gastados' : (isOver ? 'excedidos' : 'disponibles')) : 'ahorrados'}
+            </Text>
           </View>
-        ) : (
-          <View style={styles.budgetInfo}>
-            {envelope.isUnlimited ? (
-              <Text style={styles.unlimitedText}>Meta ilimitada</Text>
-            ) : (
-              <>
-                <View style={styles.budgetRow}>
-                  <Text style={styles.budgetAmount}>{formatAmount(envelope.limit, envelope.currency)}</Text>
-                  <Text style={styles.budgetLabel}> presupuestados</Text>
-                </View>
-                {envelope.limit > balance && (
-                  <View style={styles.budgetRow}>
-                    <Text style={styles.budgetAmount}>{formatAmount(envelope.limit - balance, envelope.currency)}</Text>
-                    <Text style={styles.budgetLabel}> faltan</Text>
-                  </View>
-                )}
-              </>
-            )}
-            <View style={styles.availableWrapper}>
-              <Text style={[styles.availableAmount, { color: COLORS.green }]}>
-                {formatAmount(balance, envelope.currency)}
-              </Text>
-              <Text style={styles.availableLabel}>ahorrados</Text>
-            </View>
-          </View>
-        )}
+        </View>
       </View>
 
-      {/* ── Transactions ── */}
       <View style={styles.transactionsSection}>
         <Text style={styles.sectionTitle}>Transacciones recientes</Text>
         <FlatList
@@ -229,17 +250,16 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   iconBtn: { padding: 8 },
   headerActions: { flexDirection: 'row', alignItems: 'center' },
-  summaryCard: { backgroundColor: COLORS.cardBg, marginHorizontal: 20, borderRadius: 16, padding: 24, marginTop: 8 },
+  summaryCard: { backgroundColor: COLORS.cardBg, marginHorizontal: 20, borderRadius: 24, padding: 24, marginTop: 8 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  cardTitle: { color: COLORS.white, fontSize: 18, fontWeight: 'bold', letterSpacing: 1, flex: 1 },
+  cardTitle: { color: COLORS.white, fontSize: 20, fontWeight: 'bold' },
   cardCurrency: { color: COLORS.secondaryText, fontSize: 14, fontWeight: '600' },
   budgetInfo: {},
-  budgetRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 8 },
-  budgetAmount: { color: COLORS.white, fontSize: 18, fontWeight: 'bold' },
-  budgetLabel: { color: COLORS.secondaryText, fontSize: 15 },
-  unlimitedText: { color: COLORS.secondaryText, fontSize: 15, marginBottom: 12 },
-  availableWrapper: { alignItems: 'flex-end', marginTop: 8 },
-  availableAmount: { fontSize: 30, fontWeight: 'bold' },
+  budgetRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 4 },
+  budgetAmount: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' },
+  budgetLabel: { color: COLORS.secondaryText, fontSize: 14 },
+  availableWrapper: { alignItems: 'flex-end', marginTop: 12 },
+  availableAmount: { fontSize: 32, fontWeight: 'bold', color: COLORS.white },
   availableLabel: { color: COLORS.secondaryText, fontSize: 14 },
   transactionsSection: { flex: 1, marginTop: 28, paddingHorizontal: 20 },
   sectionTitle: { color: COLORS.white, fontSize: 18, fontWeight: '700', marginBottom: 12 },

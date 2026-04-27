@@ -101,9 +101,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return envelopes
       .filter(e => e.type === type)
       .reduce((total, env) => {
+        // Exclude unlimited expenses from the 'Total Disponible' general
+        if (type === 'gasto' && env.isUnlimited) return total;
+
         const balance = getEnvelopeBalance(env.id);
         const displayValue = type === 'gasto'
-          ? env.isUnlimited ? balance : env.limit + balance
+          ? env.limit + balance
           : balance;
         return total + convertToCRC(displayValue, env.currency);
       }, 0);
