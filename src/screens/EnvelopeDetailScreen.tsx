@@ -64,12 +64,10 @@ export const EnvelopeDetailScreen = ({ route, navigation }: any) => {
 
   // Text Color
   let textColor = COLORS.white;
-  if (isGasto) {
-    if (envelope.isUnlimited) {
-      textColor = COLORS.white;
-    } else {
-      textColor = remaining < 0 ? COLORS.redText : COLORS.green;
-    }
+  if (remaining < 0) {
+    textColor = COLORS.redText;
+  } else if (isGasto && remaining > 0) {
+    textColor = COLORS.green;
   } else {
     textColor = COLORS.white;
   }
@@ -178,7 +176,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: any) => {
               <View style={styles.budgetRow}>
                 <Text style={styles.budgetAmount}>
                   {formatAmount(
-                    Math.max(0, isGasto ? remaining : (envelope.limit - balance)),
+                    Math.abs(isGasto ? remaining : (envelope.limit - balance)),
                     envelope.currency
                   )}
                 </Text>
@@ -195,7 +193,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: any) => {
           
           <View style={styles.availableWrapper}>
             <Text style={[styles.availableAmount, { color: textColor }]}>
-              {formatAmount(remaining, envelope.currency)}
+              {formatAmount(Math.abs(remaining), envelope.currency)}
             </Text>
             <Text style={styles.availableLabel}>
               {isGasto ? (envelope.isUnlimited ? 'gastados' : (isOver ? 'excedidos' : 'disponibles')) : 'ahorrados'}
@@ -228,8 +226,8 @@ export const EnvelopeDetailScreen = ({ route, navigation }: any) => {
                     {pm ? ` · ${pm.name}` : ''}
                   </Text>
                 </View>
-                <Text style={[styles.transactionAmount, { color: COLORS.white }]}>
-                  {item.type === 'expense' ? '-' : '+'}{formatAmount(item.amount, envelope.currency)}
+                <Text style={[styles.transactionAmount, { color: item.type === 'expense' ? COLORS.redText : (isGasto ? COLORS.green : COLORS.white) }]}>
+                  {formatAmount(item.amount, envelope.currency)}
                 </Text>
               </TouchableOpacity>
             );

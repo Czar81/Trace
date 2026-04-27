@@ -25,7 +25,7 @@ export const exportDataToCSV = async (
       csv += `${t.id},${date},${desc},${t.amount},${type},"${envelope}","${category}","${pm}",${archived}\n`;
     }
 
-    const filename = `spent_export_${Date.now()}.csv`;
+    const filename = `trace_export_${Date.now()}.csv`;
     const uri = documentDirectory + filename;
 
     await writeAsStringAsync(uri, csv, { encoding: EncodingType.UTF8 });

@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Animated, Dimensions } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Animated, Dimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppData } from '../context/ExpenseContext';
 import { EnvelopeType, Currency, Envelope } from '../types';
-import { Settings, MoreVertical, Download, RefreshCw } from 'lucide-react-native';
+import { Settings, MoreVertical, Download, RefreshCw, Upload } from 'lucide-react-native';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { ActionMenu, ActionMenuItem } from '../components/ActionMenu';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -24,9 +24,10 @@ const COLORS = {
 };
 
 const SYMBOLS: Record<Currency, string> = { CRC: '₡', USD: '$', EUR: '€' };
+const CURRENCY_CYCLE: Currency[] = ['CRC', 'USD', 'EUR'];
 
 export const MainScreen = ({ navigation }: any) => {
-  const { envelopes, getTotalByType, getEnvelopeBalance, formatAmount, settings, convertToCRC, resetAllEnvelopes, paymentMethods, categories, transactions } = useAppData();
+  const { envelopes, getTotalByType, getEnvelopeBalance, formatAmount, settings, convertToCRC, resetAllEnvelopes, paymentMethods, categories, transactions, importFromCSV } = useAppData();
   const [activeTab, setActiveTab] = useState<EnvelopeType>('gasto');
   const [displayCurrency, setDisplayCurrency] = useState<Currency>(settings.defaultCurrency);
   const [showMenu, setShowMenu] = useState(false);
@@ -68,13 +69,27 @@ export const MainScreen = ({ navigation }: any) => {
     if (to === 'USD') amount = crc / rates.USD_TO_CRC;
     else if (to === 'EUR') amount = crc / rates.EUR_TO_CRC;
     const sym = SYMBOLS[to];
-    const sign = amount < 0 ? '-' : '';
     const abs = Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return `${sign}${sym}${abs}`;
+    return `${sym}${abs}`;
   }
+
+  const cycleCurrency = () => {
+    const idx = CURRENCY_CYCLE.indexOf(displayCurrency);
+    setDisplayCurrency(CURRENCY_CYCLE[(idx + 1) % CURRENCY_CYCLE.length]);
+  };
+
+  const handleImport = async () => {
+    const result = await importFromCSV();
+    Alert.alert(
+      result.success ? 'Importación exitosa' : 'Error en importación',
+      result.message,
+      [{ text: 'OK' }]
+    );
+  };
 
   const menuItems: ActionMenuItem[] = [
     { label: 'Ajustes', icon: <Settings color={COLORS.secondaryText} size={20} />, onPress: () => navigation.navigate('Settings') },
+    { label: 'Importar CSV', icon: <Upload color={COLORS.secondaryText} size={20} />, onPress: handleImport },
     { label: 'Exportar a CSV', icon: <Download color={COLORS.secondaryText} size={20} />, onPress: () => exportDataToCSV(envelopes, transactions, paymentMethods, categories) },
     { label: 'Reiniciar todos los sobres', icon: <RefreshCw color={COLORS.redText} size={20} />, destructive: true, onPress: () => setShowResetConfirm(true) },
   ];
@@ -89,12 +104,10 @@ export const MainScreen = ({ navigation }: any) => {
     
     // 1. Balance Text Color
     let textColor = COLORS.white;
-    if (isGasto) {
-      if (item.isUnlimited) {
-        textColor = COLORS.white;
-      } else {
-        textColor = remaining < 0 ? COLORS.redText : COLORS.green;
-      }
+    if (remaining < 0) {
+      textColor = COLORS.redText;
+    } else if (isGasto && remaining > 0) {
+      textColor = COLORS.green;
     } else {
       textColor = COLORS.white;
     }
@@ -138,7 +151,7 @@ export const MainScreen = ({ navigation }: any) => {
         <Text style={styles.envelopeName} numberOfLines={1}>{item.name}</Text>
         <View style={styles.envelopeValues}>
           <Text style={[styles.envelopeAmount, { color: textColor }]}>
-            {formatAmount(remaining, item.currency)}
+            {formatAmount(Math.abs(remaining), item.currency)}
           </Text>
           <Text style={styles.envelopeSubtext}>
             {isGasto 
@@ -206,7 +219,7 @@ export const MainScreen = ({ navigation }: any) => {
       </View>
 
       <View style={styles.summaryCard}>
-        <TouchableOpacity onPress={() => {}} style={styles.currencyBtn} activeOpacity={0.7}>
+        <TouchableOpacity onPress={cycleCurrency} style={styles.currencyBtn} activeOpacity={0.7}>
           <Text style={styles.currencyText}>{displayCurrency}</Text>
         </TouchableOpacity>
         <View style={styles.summaryValues}>

@@ -49,7 +49,7 @@
 1. **Clonar el repositorio:**
    ```bash
    git clone <url-del-repo>
-   cd spent-app
+   cd trace
    ```
 
 2. **Instalar dependencias:**

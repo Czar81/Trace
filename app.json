@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Trace",
-    "slug": "spent-app",
+    "slug": "trace",
     "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -22,7 +22,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.czar81.spentapp"
+      "package": "com.czar81.trace"
     },
     "web": {
       "favicon": "./assets/icon.png"

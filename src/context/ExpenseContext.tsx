@@ -7,6 +7,7 @@ import {
   loadCategories, saveCategories,
   loadSettings, saveSettings
 } from '../utils/storage';
+import { pickAndParseCSV } from '../utils/importData';
 
 interface AppContextType {
   envelopes: Envelope[];
@@ -35,6 +36,9 @@ interface AppContextType {
 
   // Settings
   updateSettings: (updates: Partial<AppSettings>) => Promise<void>;
+
+  // Import/Export
+  importFromCSV: () => Promise<{ success: boolean; message: string; errors?: string[] }>;
 
   // Computed helpers
   getEnvelopeBalance: (envelopeId: string) => number;
@@ -216,6 +220,116 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await saveSettings(updated);
   };
 
+  // ─── Import/Export ─────────────────────────────────────────────────────────
+  const importFromCSV = async () => {
+    try {
+      const importResult = await pickAndParseCSV();
+      if (!importResult) {
+        return { success: false, message: 'Importación cancelada' };
+      }
+
+      if (importResult.errors.length > 0) {
+        return { success: false, message: 'Errores en el archivo', errors: importResult.errors };
+      }
+
+      // Create maps for new items
+      const newEnvelopesMap = new Map<string, Envelope>();
+      const newCategoriesMap = new Map<string, TransactionCategory>();
+      const newPaymentMethodsMap = new Map<string, PaymentMethod>();
+
+      // Add new envelopes
+      for (const envData of importResult.envelopes) {
+        const existing = envelopes.find(e => e.name.toLowerCase() === envData.name.toLowerCase());
+        if (existing) {
+          newEnvelopesMap.set(envData.name, existing);
+        } else {
+          const newEnv: Envelope = { ...envData, id: Date.now().toString() + Math.random() };
+          newEnvelopesMap.set(envData.name, newEnv);
+        }
+      }
+
+      // Add new categories
+      for (const cat of importResult.categories) {
+        const existing = categories.find(c => c.name.toLowerCase() === cat.name.toLowerCase());
+        if (existing) {
+          newCategoriesMap.set(cat.name, existing);
+        } else {
+          const newCat: TransactionCategory = { id: Date.now().toString() + Math.random(), name: cat.name };
+          newCategoriesMap.set(cat.name, newCat);
+        }
+      }
+
+      // Add new payment methods
+      for (const pm of importResult.paymentMethods) {
+        const existing = paymentMethods.find(p => p.name.toLowerCase() === pm.name.toLowerCase());
+        if (existing) {
+          newPaymentMethodsMap.set(pm.name, existing);
+        } else {
+          const newPM: PaymentMethod = { id: Date.now().toString() + Math.random(), name: pm.name };
+          newPaymentMethodsMap.set(pm.name, newPM);
+        }
+      }
+
+      // Merge envelopes
+      const existingEnvelopeNames = new Set(envelopes.map(e => e.name.toLowerCase()));
+      const newEnvelopesToAdd = Array.from(newEnvelopesMap.values()).filter(
+        e => !existingEnvelopeNames.has(e.name.toLowerCase())
+      );
+      const allEnvelopes = [...envelopes, ...newEnvelopesToAdd];
+
+      // Merge categories
+      const existingCategoryNames = new Set(categories.map(c => c.name.toLowerCase()));
+      const newCategoriesToAdd = Array.from(newCategoriesMap.values()).filter(
+        c => !existingCategoryNames.has(c.name.toLowerCase())
+      );
+      const allCategories = [...categories, ...newCategoriesToAdd];
+
+      // Merge payment methods
+      const existingPMNames = new Set(paymentMethods.map(p => p.name.toLowerCase()));
+      const newPMsToAdd = Array.from(newPaymentMethodsMap.values()).filter(
+        p => !existingPMNames.has(p.name.toLowerCase())
+      );
+      const allPaymentMethods = [...paymentMethods, ...newPMsToAdd];
+
+      // Map transactions to envelope IDs and create them
+      const newTransactions: Transaction[] = [];
+      for (const transData of importResult.transactions) {
+        const envelopeName = (transData as any)._envelopeName;
+        const envelope = allEnvelopes.find(e => e.name === envelopeName);
+        if (envelope) {
+          const categoryName = typeof transData.categoryId === 'string' ? transData.categoryId : undefined;
+          const pmName = typeof transData.paymentMethodId === 'string' ? transData.paymentMethodId : undefined;
+
+          const newTrans: Transaction = {
+            ...transData,
+            id: Date.now().toString() + Math.random(),
+            envelopeId: envelope.id,
+            categoryId: categoryName ? newCategoriesMap.get(categoryName)?.id : undefined,
+            paymentMethodId: pmName ? newPaymentMethodsMap.get(pmName)?.id : undefined,
+            isArchived: false,
+          };
+          newTransactions.push(newTrans);
+        }
+      }
+
+      // Save all
+      setEnvelopes(allEnvelopes);
+      setCategories(allCategories);
+      setPaymentMethods(allPaymentMethods);
+      setTransactions([...transactions, ...newTransactions]);
+
+      await saveEnvelopes(allEnvelopes);
+      await saveCategories(allCategories);
+      await savePaymentMethods(allPaymentMethods);
+      await saveTransactions([...transactions, ...newTransactions]);
+
+      const message = `Importados: ${newEnvelopesToAdd.length} sobres, ${newTransactions.length} transacciones, ${newCategoriesToAdd.length} categorías, ${newPMsToAdd.length} métodos de pago`;
+      return { success: true, message };
+    } catch (error) {
+      return { success: false, message: `Error: ${error}` };
+    }
+  };
+
   return (
     <AppContext.Provider value={{
       envelopes, transactions, paymentMethods, categories, settings,
@@ -224,6 +338,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addPaymentMethod, deletePaymentMethod,
       addCategory, deleteCategory,
       updateSettings,
+      importFromCSV,
       getEnvelopeBalance, getTotalByType, convertToCRC, formatAmount,
     }}>
       {children}

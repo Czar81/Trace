@@ -1,5 +1,5 @@
 {
-  "name": "spent-app",
+  "name": "trace",
   "version": "1.1.0",
   "main": "index.ts",
   "scripts": {
@@ -14,6 +14,7 @@
     "@react-navigation/native": "^7.2.2",
     "@react-navigation/native-stack": "^7.14.12",
     "expo": "~54.0.33",
+    "expo-document-picker": "^55.0.13",
     "expo-file-system": "~19.0.21",
     "expo-image-picker": "~17.0.10",
     "expo-sharing": "~14.0.8",

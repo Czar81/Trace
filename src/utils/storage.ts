@@ -2,11 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings } from '../types';
 
 const KEYS = {
-  ENVELOPES: '@spent_pro_envelopes',
-  TRANSACTIONS: '@spent_pro_transactions',
-  PAYMENT_METHODS: '@spent_pro_payment_methods',
-  CATEGORIES: '@spent_pro_categories',
-  SETTINGS: '@spent_pro_settings',
+  ENVELOPES: '@trace_envelopes',
+  TRANSACTIONS: '@trace_transactions',
+  PAYMENT_METHODS: '@trace_payment_methods',
+  CATEGORIES: '@trace_categories',
+  SETTINGS: '@trace_settings',
 };
 
 const DEFAULT_SETTINGS: AppSettings = {
