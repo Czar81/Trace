@@ -1,39 +1,36 @@
 import { documentDirectory, writeAsStringAsync, EncodingType } from 'expo-file-system/legacy';
 import { isAvailableAsync, shareAsync } from 'expo-sharing';
-import { Envelope, Transaction, PaymentMethod, TransactionCategory } from '../types';
+import { Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings } from '../types';
 
 export const exportDataToCSV = async (
   envelopes: Envelope[],
   transactions: Transaction[],
   paymentMethods: PaymentMethod[],
-  categories: TransactionCategory[]
+  categories: TransactionCategory[],
+  settings: AppSettings
 ) => {
   try {
-    let csv = 'ID,Fecha,Descripcion,Monto,Tipo,Sobre,Categoria,Metodo_de_Pago,Archivado\n';
+    // Create full data export as JSON for complete data migration
+    const fullData = {
+      envelopes,
+      transactions,
+      paymentMethods,
+      categories,
+      settings,
+      exportedAt: new Date().toISOString(),
+      version: '1.0',
+    };
 
-    for (const t of transactions) {
-      const envelope = envelopes.find(e => e.id === t.envelopeId)?.name ?? 'Desconocido';
-      const category = categories.find(c => c.id === t.categoryId)?.name ?? '';
-      const pm = paymentMethods.find(p => p.id === t.paymentMethodId)?.name ?? '';
-      const date = new Date(t.date).toLocaleDateString('es-ES');
-      const archived = t.isArchived ? 'SI' : 'NO';
-      const type = t.type === 'expense' ? 'Gasto' : 'Ingreso';
-
-      // escape commas in description
-      const desc = `"${t.description.replace(/"/g, '""')}"`;
-
-      csv += `${t.id},${date},${desc},${t.amount},${type},"${envelope}","${category}","${pm}",${archived}\n`;
-    }
-
-    const filename = `trace_export_${Date.now()}.csv`;
+    const jsonString = JSON.stringify(fullData, null, 2);
+    const filename = `trace_backup_${Date.now()}.json`;
     const uri = documentDirectory + filename;
 
-    await writeAsStringAsync(uri, csv, { encoding: EncodingType.UTF8 });
+    await writeAsStringAsync(uri, jsonString, { encoding: EncodingType.UTF8 });
 
     if (await isAvailableAsync()) {
-      await shareAsync(uri, { UTI: 'public.comma-separated-values-text', mimeType: 'text/csv' });
+      await shareAsync(uri, { UTI: 'public.json', mimeType: 'application/json' });
     }
   } catch (error) {
-    console.error('Error exporting CSV:', error);
+    console.error('Error exporting data:', error);
   }
 };

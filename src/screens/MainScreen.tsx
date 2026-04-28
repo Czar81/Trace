@@ -27,7 +27,7 @@ const SYMBOLS: Record<Currency, string> = { CRC: '₡', USD: '$', EUR: '€' };
 const CURRENCY_CYCLE: Currency[] = ['CRC', 'USD', 'EUR'];
 
 export const MainScreen = ({ navigation }: any) => {
-  const { envelopes, getTotalByType, getEnvelopeBalance, formatAmount, settings, convertToCRC, resetAllEnvelopes, paymentMethods, categories, transactions, importFromCSV } = useAppData();
+  const { envelopes, getTotalByType, getEnvelopeBalance, formatAmount, settings, convertToCRC, resetAllEnvelopes, paymentMethods, categories, transactions, importFromBackup } = useAppData();
   const [activeTab, setActiveTab] = useState<EnvelopeType>('gasto');
   const [displayCurrency, setDisplayCurrency] = useState<Currency>(settings.defaultCurrency);
   const [showMenu, setShowMenu] = useState(false);
@@ -79,19 +79,19 @@ export const MainScreen = ({ navigation }: any) => {
   };
 
   const handleImport = async () => {
-    const result = await importFromCSV();
+    const result = await importFromBackup();
     Alert.alert(
-      result.success ? 'Importación exitosa' : 'Error en importación',
+      result.success ? 'Import successful' : 'Import error',
       result.message,
       [{ text: 'OK' }]
     );
   };
 
   const menuItems: ActionMenuItem[] = [
-    { label: 'Ajustes', icon: <Settings color={COLORS.secondaryText} size={20} />, onPress: () => navigation.navigate('Settings') },
-    { label: 'Importar CSV', icon: <Upload color={COLORS.secondaryText} size={20} />, onPress: handleImport },
-    { label: 'Exportar a CSV', icon: <Download color={COLORS.secondaryText} size={20} />, onPress: () => exportDataToCSV(envelopes, transactions, paymentMethods, categories) },
-    { label: 'Reiniciar todos los sobres', icon: <RefreshCw color={COLORS.redText} size={20} />, destructive: true, onPress: () => setShowResetConfirm(true) },
+    { label: 'Settings', icon: <Settings color={COLORS.secondaryText} size={20} />, onPress: () => navigation.navigate('Settings') },
+    { label: 'Import backup', icon: <Upload color={COLORS.secondaryText} size={20} />, onPress: handleImport },
+    { label: 'Export backup', icon: <Download color={COLORS.secondaryText} size={20} />, onPress: () => exportDataToCSV(envelopes, transactions, paymentMethods, categories, settings) },
+    { label: 'Reset all envelopes', icon: <RefreshCw color={COLORS.redText} size={20} />, destructive: true, onPress: () => setShowResetConfirm(true) },
   ];
 
   const renderEnvelope = ({ item }: { item: Envelope }) => {
@@ -115,6 +115,7 @@ export const MainScreen = ({ navigation }: any) => {
     // 2. Progress Circle Logic
     let progress = 0;
     let progressColor = COLORS.green;
+    let iconColor = isGasto ? COLORS.redText : COLORS.blueText;
 
     if (isGasto) {
       if (item.isUnlimited) {
@@ -224,7 +225,9 @@ export const MainScreen = ({ navigation }: any) => {
         </TouchableOpacity>
         <View style={styles.summaryValues}>
           <Text style={styles.summaryLabel}>
-            {activeTab === 'gasto' ? 'Total disponible' : 'Total ahorrado'}
+            {activeTab === 'gasto' 
+              ? (totalCRC < 0 ? 'Total excedido' : 'Total disponible')
+              : 'Total ahorrado'}
           </Text>
           <Text style={[styles.summaryTotal, totalCRC < 0 && { color: COLORS.redText }]}>
             {totalDisplay}
