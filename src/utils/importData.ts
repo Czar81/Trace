@@ -12,6 +12,13 @@ export interface FullBackup {
   version: string;
 }
 
+const DEFAULT_SETTINGS: AppSettings = {
+  defaultCurrency: 'CRC',
+  exchangeRates: { USD_TO_CRC: 510, EUR_TO_CRC: 550 },
+  expenseCutoffEnabled: false,
+  expenseCutoffDay: null,
+};
+
 export interface ImportResult {
   backup: FullBackup;
   errors: string[];
@@ -42,10 +49,7 @@ export const parseBackup = (jsonContent: string): ImportResult => {
       transactions: [],
       paymentMethods: [],
       categories: [],
-      settings: {
-        defaultCurrency: 'CRC',
-        exchangeRates: { USD_TO_CRC: 510, EUR_TO_CRC: 550 },
-      },
+      settings: DEFAULT_SETTINGS,
       exportedAt: new Date().toISOString(),
       version: '1.0',
     },
@@ -61,12 +65,17 @@ export const parseBackup = (jsonContent: string): ImportResult => {
       return result;
     }
 
+    const parsedSettings = { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) };
+    if (parsed.settings?.expenseCutoffDate && parsedSettings.expenseCutoffDay == null) {
+      parsedSettings.expenseCutoffDay = new Date(parsed.settings.expenseCutoffDate).getDate();
+    }
+
     result.backup = {
       envelopes: parsed.envelopes || [],
       transactions: parsed.transactions || [],
       paymentMethods: parsed.paymentMethods || [],
       categories: parsed.categories || [],
-      settings: parsed.settings || result.backup.settings,
+      settings: parsedSettings,
       exportedAt: parsed.exportedAt || new Date().toISOString(),
       version: parsed.version || '1.0',
     };

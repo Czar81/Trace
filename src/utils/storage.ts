@@ -12,6 +12,8 @@ const KEYS = {
 const DEFAULT_SETTINGS: AppSettings = {
   defaultCurrency: 'CRC',
   exchangeRates: { USD_TO_CRC: 510, EUR_TO_CRC: 550 },
+  expenseCutoffEnabled: false,
+  expenseCutoffDay: null,
 };
 
 const DEFAULT_PAYMENT_METHODS: PaymentMethod[] = [
@@ -60,4 +62,11 @@ export const saveCategories = (data: TransactionCategory[]) => saveData(KEYS.CAT
 export const loadCategories = () => loadData<TransactionCategory[]>(KEYS.CATEGORIES, DEFAULT_CATEGORIES);
 
 export const saveSettings = (data: AppSettings) => saveData(KEYS.SETTINGS, data);
-export const loadSettings = () => loadData<AppSettings>(KEYS.SETTINGS, DEFAULT_SETTINGS);
+export const loadSettings = async (): Promise<AppSettings> => {
+  const loaded = await loadData<Partial<AppSettings> & { expenseCutoffDate?: string }>(KEYS.SETTINGS, DEFAULT_SETTINGS);
+  const mergedSettings = { ...DEFAULT_SETTINGS, ...loaded };
+  if (loaded.expenseCutoffDate && mergedSettings.expenseCutoffDay == null) {
+    mergedSettings.expenseCutoffDay = new Date(loaded.expenseCutoffDate).getDate();
+  }
+  return mergedSettings;
+};

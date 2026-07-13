@@ -14,8 +14,21 @@ import { SettingsScreen } from './src/screens/SettingsScreen';
 import { CurrencySettingsScreen } from './src/screens/CurrencySettingsScreen';
 import { PaymentMethodsSettingsScreen } from './src/screens/PaymentMethodsSettingsScreen';
 import { CategoriesSettingsScreen } from './src/screens/CategoriesSettingsScreen';
+import { CutoffSettingsScreen } from './src/screens/CutoffSettingsScreen';
 
-const Stack = createNativeStackNavigator();
+type RootStackParamList = {
+  Main: undefined;
+  EnvelopeDetail: undefined;
+  CreateEnvelope: undefined;
+  CreateTransaction: undefined;
+  Settings: undefined;
+  CurrencySettings: undefined;
+  PaymentMethodsSettings: undefined;
+  CategoriesSettings: undefined;
+  CutoffSettings: undefined;
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   return (
@@ -24,7 +37,7 @@ export default function App() {
       <KeyboardProvider>
         <AppProvider>
           <NavigationContainer>
-            <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#092230' } }}>
+            <Stack.Navigator id="root" screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#092230' } }}>
               <Stack.Screen name="Main" component={MainScreen} />
               <Stack.Screen name="EnvelopeDetail" component={EnvelopeDetailScreen} />
               <Stack.Screen name="CreateEnvelope" component={CreateEnvelopeScreen} />
@@ -33,6 +46,7 @@ export default function App() {
               <Stack.Screen name="CurrencySettings" component={CurrencySettingsScreen} />
               <Stack.Screen name="PaymentMethodsSettings" component={PaymentMethodsSettingsScreen} />
               <Stack.Screen name="CategoriesSettings" component={CategoriesSettingsScreen} />
+              <Stack.Screen name="CutoffSettings" component={CutoffSettingsScreen} />
             </Stack.Navigator>
           </NavigationContainer>
         </AppProvider>

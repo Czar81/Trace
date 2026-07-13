@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppData } from '../context/ExpenseContext';
 import { ArrowLeft, ChevronRight, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw } from 'lucide-react-native';
@@ -9,6 +9,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 const COLORS = {
   bg: '#092230',
   white: '#FFFFFF',
+  green: '#52A8D9',
   redText: '#E55B5B',
   secondaryText: '#A6B9C7',
   cardBg: '#1F3A47',
@@ -18,7 +19,7 @@ const COLORS = {
 export const SettingsScreen = ({ navigation }: any) => {
   const {
     envelopes, transactions, paymentMethods, categories, settings,
-    importFromBackup, resetAllEnvelopes,
+    importFromBackup, resetAllEnvelopes, updateSettings,
   } = useAppData();
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -47,6 +48,10 @@ export const SettingsScreen = ({ navigation }: any) => {
 
   const handleResetAll = () => {
     setShowResetConfirm(true);
+  };
+
+  const handleCutoffToggle = async (value: boolean) => {
+    await updateSettings({ expenseCutoffEnabled: value });
   };
 
   return (
@@ -103,6 +108,23 @@ export const SettingsScreen = ({ navigation }: any) => {
           <View style={styles.menuTextWrapper}>
             <Text style={styles.menuTitle}>Categorías</Text>
             <Text style={styles.menuSubtitle}>Organiza tus transacciones</Text>
+          </View>
+          <ChevronRight color={COLORS.secondaryText} size={20} />
+        </TouchableOpacity>
+
+        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Corte de gastos</Text>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('CutoffSettings')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <RefreshCw color={COLORS.white} size={18} />
+          </View>
+          <View style={styles.menuTextWrapper}>
+            <Text style={styles.menuTitle}>Corte mensual</Text>
+            <Text style={styles.menuSubtitle}>Configura el día de corte</Text>
           </View>
           <ChevronRight color={COLORS.secondaryText} size={20} />
         </TouchableOpacity>
@@ -174,7 +196,7 @@ export const SettingsScreen = ({ navigation }: any) => {
         visible={showInfoDialog}
         title={infoDialogTitle}
         message={infoDialogMessage}
-        confirmLabel="OK"
+        confirmLabel="Aceptar"
         cancelLabel=""
         onConfirm={() => setShowInfoDialog(false)}
         onCancel={() => setShowInfoDialog(false)}
@@ -195,4 +217,8 @@ const styles = StyleSheet.create({
   menuTextWrapper: { flex: 1 },
   menuTitle: { color: COLORS.white, fontSize: 16, fontWeight: '700', marginBottom: 4 },
   menuSubtitle: { color: COLORS.secondaryText, fontSize: 14 },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: COLORS.cardBg, borderRadius: 16, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: COLORS.divider },
+  toggleTextWrapper: { flex: 1, paddingRight: 12 },
+  helperText: { color: COLORS.secondaryText, fontSize: 13, lineHeight: 18, marginHorizontal: 20, marginTop: 8, marginBottom: 16 },
+  disabledItem: { opacity: 0.5 },
 });

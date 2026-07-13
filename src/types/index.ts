@@ -43,4 +43,6 @@ export interface AppSettings {
     USD_TO_CRC: number;
     EUR_TO_CRC: number;
   };
+  expenseCutoffEnabled: boolean;
+  expenseCutoffDay: number | null;
 }

@@ -58,6 +58,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [settings, setSettings] = useState<AppSettings>({
     defaultCurrency: 'CRC',
     exchangeRates: { USD_TO_CRC: 510, EUR_TO_CRC: 550 },
+    expenseCutoffEnabled: false,
+    expenseCutoffDay: null,
   });
 
   useEffect(() => {
@@ -90,8 +92,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ─── Balance computation ───────────────────────────────────────────────────
   const getEnvelopeBalance = useCallback((envelopeId: string): number => {
+    const envelope = envelopes.find(e => e.id === envelopeId);
+    const isGastoEnvelope = envelope?.type === 'gasto';
+    const hasCutoff = isGastoEnvelope && settings.expenseCutoffEnabled && !!settings.expenseCutoffDay;
+    const cutoffDay = hasCutoff ? settings.expenseCutoffDay as number : null;
+
     return transactions.reduce((sum, t) => {
       if (t.isArchived) return sum;
+
+      if (hasCutoff && t.type === 'expense' && t.envelopeId === envelopeId && cutoffDay != null) {
+        const transactionDate = new Date(t.date);
+        if (transactionDate.getDate() < cutoffDay) {
+          return sum;
+        }
+      }
+
       if (t.envelopeId === envelopeId) {
         return sum + (t.type === 'income' ? t.amount : -t.amount);
       }
@@ -100,7 +115,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return sum;
     }, 0);
-  }, [transactions]);
+  }, [transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay]);
 
   /**
    * getTotalByType computes the sum of all envelope *available balances* 
