@@ -32,6 +32,7 @@ export interface Transaction {
   date: string; // ISO string
   paymentMethodId?: string;
   categoryId?: string;
+  sourceSavingsEnvelopeId?: string;
   isArchived: boolean;
   archivedAt?: string;
 }

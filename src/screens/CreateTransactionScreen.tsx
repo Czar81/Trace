@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppData } from '../context/ExpenseContext';
@@ -36,6 +36,8 @@ export const CreateTransactionScreen = ({ route, navigation }: any) => {
   const [categoryId, setCategoryId] = useState(
     transaction?.categoryId ?? (categories[0]?.id ?? '')
   );
+  const [useSavingsEnvelope, setUseSavingsEnvelope] = useState(!!transaction?.sourceSavingsEnvelopeId);
+  const [sourceSavingsEnvelopeId, setSourceSavingsEnvelopeId] = useState(transaction?.sourceSavingsEnvelopeId ?? '');
   const [date, setDate] = useState(transaction ? new Date(transaction.date) : new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -50,6 +52,10 @@ export const CreateTransactionScreen = ({ route, navigation }: any) => {
       description: description.trim() || (type === 'income' ? 'Ingreso' : 'Gasto'),
       paymentMethodId: type === 'expense' ? paymentMethodId : undefined,
       categoryId: type === 'expense' ? categoryId : undefined,
+      sourceSavingsEnvelopeId:
+        type === 'expense' && envelope?.type === 'gasto' && useSavingsEnvelope && sourceSavingsEnvelopeId
+          ? sourceSavingsEnvelopeId
+          : undefined,
       date: date.toISOString(),
     };
 
@@ -65,6 +71,19 @@ export const CreateTransactionScreen = ({ route, navigation }: any) => {
 
   const pmOptions = paymentMethods.map(pm => ({ label: pm.name, value: pm.id }));
   const catOptions = categories.map(c => ({ label: c.name, value: c.id }));
+  const savingsEnvelopes = envelopes.filter(e => e.type === 'ahorro');
+  const savingsOptions = savingsEnvelopes.map(e => ({ label: e.name, value: e.id }));
+
+  useEffect(() => {
+    if (type !== 'expense' || envelope.type !== 'gasto') {
+      setUseSavingsEnvelope(false);
+      return;
+    }
+
+    if (useSavingsEnvelope && !sourceSavingsEnvelopeId && savingsEnvelopes.length > 0) {
+      setSourceSavingsEnvelopeId(savingsEnvelopes[0].id);
+    }
+  }, [type, envelope.type, useSavingsEnvelope, sourceSavingsEnvelopeId, savingsEnvelopes]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -168,6 +187,30 @@ export const CreateTransactionScreen = ({ route, navigation }: any) => {
               onSelect={setPaymentMethodId}
               placeholder={paymentMethods.length === 0 ? 'Agrega métodos en Ajustes' : 'Seleccionar método'}
             />
+
+            {envelope.type === 'gasto' && (
+              <>
+                <View style={styles.toggleRow}>
+                  <TouchableOpacity
+                    style={styles.checkbox}
+                    onPress={() => setUseSavingsEnvelope(prev => !prev)}
+                    activeOpacity={0.8}
+                  >
+                    {useSavingsEnvelope && <Check color={COLORS.green} size={16} />}
+                  </TouchableOpacity>
+                  <Text style={styles.toggleLabel}>Este gasto sale de un sobre de ahorro</Text>
+                </View>
+                {useSavingsEnvelope && (
+                  <Dropdown
+                    label="Sobre de ahorro"
+                    options={savingsOptions}
+                    value={sourceSavingsEnvelopeId}
+                    onSelect={setSourceSavingsEnvelopeId}
+                    placeholder={savingsEnvelopes.length === 0 ? 'Crea un sobre de ahorro primero' : 'Seleccionar sobre de ahorro'}
+                  />
+                )}
+              </>
+            )}
           </>
         )}
       </ScrollView>
@@ -199,6 +242,18 @@ const styles = StyleSheet.create({
   typeBtnIncome: { backgroundColor: COLORS.blueText },
   typeText: { color: COLORS.secondaryText, fontSize: 15, fontWeight: '700' },
   label: { color: COLORS.white, fontSize: 16, fontWeight: '600', marginTop: 24, marginBottom: 8 },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20, marginBottom: 16 },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: COLORS.secondaryText,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  toggleLabel: { color: COLORS.white, fontSize: 15, flex: 1 },
   datePickerBtn: {
     backgroundColor: COLORS.inputBg,
     borderRadius: 12,

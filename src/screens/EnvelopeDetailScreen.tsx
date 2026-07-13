@@ -35,7 +35,9 @@ export const EnvelopeDetailScreen = ({ route, navigation }: any) => {
   const [dialog, setDialog] = useState<DialogState | null>(null);
 
   const envelope = envelopes.find(e => e.id === envelopeId);
-  const envelopeTransactions = transactions.filter(t => t.envelopeId === envelopeId && !t.isArchived);
+  const envelopeTransactions = transactions.filter(t =>
+    !t.isArchived && (t.envelopeId === envelopeId || t.sourceSavingsEnvelopeId === envelopeId)
+  );
 
   if (!envelope) return null;
 
@@ -224,6 +226,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: any) => {
                     {new Date(item.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
                     {cat ? ` · ${cat.name}` : ''}
                     {pm ? ` · ${pm.name}` : ''}
+                    {item.sourceSavingsEnvelopeId ? ` · Pago desde ${envelopes.find(e => e.id === item.sourceSavingsEnvelopeId)?.name ?? 'ahorro'}` : ''}
                   </Text>
                 </View>
                 <Text style={[styles.transactionAmount, { color: item.type === 'expense' ? COLORS.redText : (isGasto ? COLORS.green : COLORS.white) }]}>

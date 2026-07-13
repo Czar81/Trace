@@ -90,9 +90,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ─── Balance computation ───────────────────────────────────────────────────
   const getEnvelopeBalance = useCallback((envelopeId: string): number => {
-    return transactions
-      .filter(t => t.envelopeId === envelopeId && !t.isArchived)
-      .reduce((sum, t) => (t.type === 'income' ? sum + t.amount : sum - t.amount), 0);
+    return transactions.reduce((sum, t) => {
+      if (t.isArchived) return sum;
+      if (t.envelopeId === envelopeId) {
+        return sum + (t.type === 'income' ? t.amount : -t.amount);
+      }
+      if (t.type === 'expense' && t.sourceSavingsEnvelopeId === envelopeId) {
+        return sum - t.amount;
+      }
+      return sum;
+    }, 0);
   }, [transactions]);
 
   /**
