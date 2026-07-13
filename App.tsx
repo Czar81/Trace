@@ -11,6 +11,9 @@ import { EnvelopeDetailScreen } from './src/screens/EnvelopeDetailScreen';
 import { CreateEnvelopeScreen } from './src/screens/CreateEnvelopeScreen';
 import { CreateTransactionScreen } from './src/screens/CreateTransactionScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import { CurrencySettingsScreen } from './src/screens/CurrencySettingsScreen';
+import { PaymentMethodsSettingsScreen } from './src/screens/PaymentMethodsSettingsScreen';
+import { CategoriesSettingsScreen } from './src/screens/CategoriesSettingsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -27,6 +30,9 @@ export default function App() {
               <Stack.Screen name="CreateEnvelope" component={CreateEnvelopeScreen} />
               <Stack.Screen name="CreateTransaction" component={CreateTransactionScreen} />
               <Stack.Screen name="Settings" component={SettingsScreen} />
+              <Stack.Screen name="CurrencySettings" component={CurrencySettingsScreen} />
+              <Stack.Screen name="PaymentMethodsSettings" component={PaymentMethodsSettingsScreen} />
+              <Stack.Screen name="CategoriesSettings" component={CategoriesSettingsScreen} />
             </Stack.Navigator>
           </NavigationContainer>
         </AppProvider>
