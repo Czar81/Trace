@@ -88,10 +88,10 @@ export const MainScreen = ({ navigation }: any) => {
   };
 
   const menuItems: ActionMenuItem[] = [
-    { label: 'Settings', icon: <Settings color={COLORS.secondaryText} size={20} />, onPress: () => navigation.navigate('Settings') },
-    { label: 'Import backup', icon: <Upload color={COLORS.secondaryText} size={20} />, onPress: handleImport },
-    { label: 'Export backup', icon: <Download color={COLORS.secondaryText} size={20} />, onPress: () => exportDataToCSV(envelopes, transactions, paymentMethods, categories, settings) },
-    { label: 'Reset all envelopes', icon: <RefreshCw color={COLORS.redText} size={20} />, destructive: true, onPress: () => setShowResetConfirm(true) },
+    { label: 'Configuracion', icon: <Settings color={COLORS.secondaryText} size={20} />, onPress: () => navigation.navigate('Settings') },
+    { label: 'Importar backup', icon: <Upload color={COLORS.secondaryText} size={20} />, onPress: handleImport },
+    { label: 'Exportar backup', icon: <Download color={COLORS.secondaryText} size={20} />, onPress: () => exportDataToCSV(envelopes, transactions, paymentMethods, categories, settings) },
+    { label: 'Resetear todos los sobres', icon: <RefreshCw color={COLORS.redText} size={20} />, destructive: true, onPress: () => setShowResetConfirm(true) },
   ];
 
   const renderEnvelope = ({ item }: { item: Envelope }) => {
