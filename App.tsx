@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AppProvider } from './src/context/ExpenseContext';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { MainScreen } from './src/screens/MainScreen';
 import { EnvelopeDetailScreen } from './src/screens/EnvelopeDetailScreen';
@@ -17,17 +18,19 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="light-content" backgroundColor="#092230" />
-      <AppProvider>
-        <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#092230' } }}>
-            <Stack.Screen name="Main" component={MainScreen} />
-            <Stack.Screen name="EnvelopeDetail" component={EnvelopeDetailScreen} />
-            <Stack.Screen name="CreateEnvelope" component={CreateEnvelopeScreen} />
-            <Stack.Screen name="CreateTransaction" component={CreateTransactionScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </AppProvider>
+      <KeyboardProvider>
+        <AppProvider>
+          <NavigationContainer>
+            <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#092230' } }}>
+              <Stack.Screen name="Main" component={MainScreen} />
+              <Stack.Screen name="EnvelopeDetail" component={EnvelopeDetailScreen} />
+              <Stack.Screen name="CreateEnvelope" component={CreateEnvelopeScreen} />
+              <Stack.Screen name="CreateTransaction" component={CreateTransactionScreen} />
+              <Stack.Screen name="Settings" component={SettingsScreen} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </AppProvider>
+      </KeyboardProvider>
     </SafeAreaProvider>
   );
 }

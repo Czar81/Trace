@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppData } from '../context/ExpenseContext';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Trash2, Plus, ArrowLeft } from 'lucide-react-native';
 import { Dropdown } from '../components/Dropdown';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -85,7 +86,12 @@ export const SettingsScreen = ({ navigation }: any) => {
         <View style={{ width: 32 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoiding}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={1}
+      >
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
         {/* ── Moneda ── */}
         <Text style={styles.sectionTitle}>Moneda por defecto</Text>
@@ -184,12 +190,14 @@ export const SettingsScreen = ({ navigation }: any) => {
         </View>
 
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
+  keyboardAvoiding: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 },
   headerTitle: { color: COLORS.white, fontSize: 20, fontWeight: 'bold' },
   scroll: { paddingHorizontal: 20, paddingBottom: 60 },

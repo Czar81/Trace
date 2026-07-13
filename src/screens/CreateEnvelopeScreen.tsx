@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Switch, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Switch, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppData } from '../context/ExpenseContext';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ArrowLeft, Check } from 'lucide-react-native';
 import { EnvelopeType } from '../types';
 import { CurrencyInput } from '../components/CurrencyInput';
@@ -81,7 +82,12 @@ export const CreateEnvelopeScreen = ({ route, navigation }: any) => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoiding}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={1}
+      >
+        <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
 
         {/* ── Icon preview + picker trigger ── */}
         <View style={styles.iconSection}>
@@ -139,12 +145,14 @@ export const CreateEnvelopeScreen = ({ route, navigation }: any) => {
           />
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
+  keyboardAvoiding: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 20 },
   headerBtn: { padding: 4 },
   headerTitle: { color: COLORS.white, fontSize: 17, fontWeight: 'bold', flex: 1, textAlign: 'center' },
