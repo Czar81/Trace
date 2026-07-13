@@ -115,7 +115,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: any) => {
         <Text style={styles.label}>
           Moneda: <Text style={{ color: COLORS.green }}>{settings.defaultCurrency}</Text>
         </Text>
-        <Text style={styles.hint}>Configurable en Ajustes → Moneda por defecto</Text>
+        <Text style={styles.hint}>Configurable en Configuración → Moneda por defecto</Text>
 
         {!isUnlimited && (
           <CurrencyInput

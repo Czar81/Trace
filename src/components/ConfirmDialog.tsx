@@ -47,14 +47,18 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <View style={styles.divider} />
 
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={onCancel} activeOpacity={0.7}>
-              <Text style={styles.cancelText}>{cancelLabel}</Text>
-            </TouchableOpacity>
+            {cancelLabel ? (
+              <>
+                <TouchableOpacity style={styles.cancelBtn} onPress={onCancel} activeOpacity={0.7}>
+                  <Text style={styles.cancelText}>{cancelLabel}</Text>
+                </TouchableOpacity>
 
-            <View style={styles.actionDivider} />
+                <View style={styles.actionDivider} />
+              </>
+            ) : null}
 
             <TouchableOpacity
-              style={[styles.confirmBtn, destructive && styles.confirmBtnDestructive]}
+              style={[styles.confirmBtn, destructive && styles.confirmBtnDestructive, !cancelLabel && styles.singleActionBtn]}
               onPress={onConfirm}
               activeOpacity={0.7}
             >
@@ -128,6 +132,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 16,
     alignItems: 'center',
+  },
+  singleActionBtn: {
+    flex: 1,
   },
   confirmBtnDestructive: {},
   confirmText: {
