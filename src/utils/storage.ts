@@ -9,7 +9,7 @@ const KEYS = {
   SETTINGS: '@trace_settings',
 };
 
-const DEFAULT_SETTINGS: AppSettings = {
+export const DEFAULT_SETTINGS: AppSettings = {
   defaultCurrency: 'CRC',
   exchangeRates: { USD_TO_CRC: 510, EUR_TO_CRC: 550 },
   expenseCutoffEnabled: false,

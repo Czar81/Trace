@@ -1,6 +1,7 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { readAsStringAsync } from 'expo-file-system/legacy';
 import { Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings } from '../types';
+import { DEFAULT_SETTINGS } from './storage';
 
 export interface FullBackup {
   envelopes: Envelope[];
@@ -11,13 +12,6 @@ export interface FullBackup {
   exportedAt: string;
   version: string;
 }
-
-const DEFAULT_SETTINGS: AppSettings = {
-  defaultCurrency: 'CRC',
-  exchangeRates: { USD_TO_CRC: 510, EUR_TO_CRC: 550 },
-  expenseCutoffEnabled: false,
-  expenseCutoffDay: null,
-};
 
 export interface ImportResult {
   backup: FullBackup;

@@ -6,22 +6,23 @@ import { EnvelopeType, Currency, Envelope } from '../types';
 import { Settings, MoreVertical, RefreshCw } from 'lucide-react-native';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { COLORS as SHARED } from '../theme/colors';
+import { formatCurrency } from '../utils/formatCurrency';
 
 const { width } = Dimensions.get('window');
 
 const COLORS = {
-  bg: '#092230',
-  cardBg: '#1F3A47',
-  green: '#A7E7B4',
-  redText: '#E55B5B',
-  blueText: '#52A8D9',
-  white: '#FFFFFF',
-  secondaryText: '#A6B9C7',
-  tabActive: '#A7E7B4',
-  tabInactive: '#A6B9C7',
+  bg: SHARED.bg,
+  cardBg: SHARED.cardBg,
+  green: SHARED.green,
+  redText: SHARED.red,
+  blueText: SHARED.blue,
+  white: SHARED.white,
+  secondaryText: SHARED.secondaryText,
+  tabActive: SHARED.green,
+  tabInactive: SHARED.secondaryText,
 };
 
-const SYMBOLS: Record<Currency, string> = { CRC: '₡', USD: '$', EUR: '€' };
 const CURRENCY_CYCLE: Currency[] = ['CRC', 'USD', 'EUR'];
 
 export const MainScreen = ({ navigation }: any) => {
@@ -65,9 +66,7 @@ export const MainScreen = ({ navigation }: any) => {
     let amount = crc;
     if (to === 'USD') amount = crc / rates.USD_TO_CRC;
     else if (to === 'EUR') amount = crc / rates.EUR_TO_CRC;
-    const sym = SYMBOLS[to];
-    const abs = Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return `${sym}${abs}`;
+    return formatCurrency(Math.abs(amount), to);
   }
 
   const cycleCurrency = () => {

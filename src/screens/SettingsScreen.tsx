@@ -5,21 +5,22 @@ import { useAppData } from '../context/ExpenseContext';
 import { ArrowLeft, ChevronRight, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw } from 'lucide-react-native';
 import { exportDataToCSV } from '../utils/exportData';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { COLORS as SHARED } from '../theme/colors';
 
 const COLORS = {
-  bg: '#092230',
-  white: '#FFFFFF',
+  bg: SHARED.bg,
+  white: SHARED.white,
   green: '#52A8D9',
-  redText: '#E55B5B',
-  secondaryText: '#A6B9C7',
-  cardBg: '#1F3A47',
-  divider: '#142E3D',
+  redText: SHARED.red,
+  secondaryText: SHARED.secondaryText,
+  cardBg: SHARED.cardBg,
+  divider: SHARED.divider,
 };
 
 export const SettingsScreen = ({ navigation }: any) => {
   const {
     envelopes, transactions, paymentMethods, categories, settings,
-    importFromBackup, resetAllEnvelopes, updateSettings,
+    importFromBackup, resetAllEnvelopes,
   } = useAppData();
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -48,10 +49,6 @@ export const SettingsScreen = ({ navigation }: any) => {
 
   const handleResetAll = () => {
     setShowResetConfirm(true);
-  };
-
-  const handleCutoffToggle = async (value: boolean) => {
-    await updateSettings({ expenseCutoffEnabled: value });
   };
 
   return (
@@ -217,8 +214,4 @@ const styles = StyleSheet.create({
   menuTextWrapper: { flex: 1 },
   menuTitle: { color: COLORS.white, fontSize: 16, fontWeight: '700', marginBottom: 4 },
   menuSubtitle: { color: COLORS.secondaryText, fontSize: 14 },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: COLORS.cardBg, borderRadius: 16, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: COLORS.divider },
-  toggleTextWrapper: { flex: 1, paddingRight: 12 },
-  helperText: { color: COLORS.secondaryText, fontSize: 13, lineHeight: 18, marginHorizontal: 20, marginTop: 8, marginBottom: 16 },
-  disabledItem: { opacity: 0.5 },
 });

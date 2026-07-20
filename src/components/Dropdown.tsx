@@ -4,6 +4,7 @@ import {
   StyleSheet, SafeAreaView, TextInput,
 } from 'react-native';
 import { ChevronDown, Check } from 'lucide-react-native';
+import { COLORS as SHARED } from '../theme/colors';
 
 export interface DropdownOption {
   label: string;
@@ -20,12 +21,12 @@ interface DropdownProps {
 }
 
 const COLORS = {
-  bg: '#092230',
-  cardBg: '#1F3A47',
-  green: '#A7E7B4',
-  white: '#FFFFFF',
-  secondaryText: '#A6B9C7',
-  divider: '#142E3D',
+  bg: SHARED.bg,
+  cardBg: SHARED.cardBg,
+  green: SHARED.green,
+  white: SHARED.white,
+  secondaryText: SHARED.secondaryText,
+  divider: SHARED.divider,
   overlay: 'rgba(0,0,0,0.6)',
 };
 

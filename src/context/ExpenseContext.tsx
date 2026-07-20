@@ -8,6 +8,19 @@ import {
   loadSettings, saveSettings
 } from '../utils/storage';
 import { pickAndImportBackup } from '../utils/importData';
+import { formatCurrency } from '../utils/formatCurrency';
+
+/**
+ * Start of the current cutoff period: this month's cutoffDay if we've reached it,
+ * otherwise last month's. Clamped to the target month's last day so cutoffDay values
+ * like 31 don't roll over into the next month on shorter months.
+ */
+function getCutoffPeriodStart(now: Date, cutoffDay: number): Date {
+  const targetMonth = now.getDate() >= cutoffDay ? now.getMonth() : now.getMonth() - 1;
+  const daysInTargetMonth = new Date(now.getFullYear(), targetMonth + 1, 0).getDate();
+  const day = Math.min(cutoffDay, daysInTargetMonth);
+  return new Date(now.getFullYear(), targetMonth, day, 0, 0, 0, 0);
+}
 
 interface AppContextType {
   envelopes: Envelope[];
@@ -81,13 +94,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return amount;
   }, [settings.exchangeRates]);
 
-  const SYMBOLS: Record<Currency, string> = { CRC: '₡', USD: '$', EUR: '€' };
-
   const formatAmount = useCallback((amount: number, currency: Currency): string => {
-    const sym = SYMBOLS[currency] ?? '₡';
-    const sign = amount < 0 ? '-' : '';
-    const abs = Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return `${sign}${sym}${abs}`;
+    return formatCurrency(amount, currency);
   }, []);
 
   // ─── Balance computation ───────────────────────────────────────────────────
@@ -95,14 +103,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const envelope = envelopes.find(e => e.id === envelopeId);
     const isGastoEnvelope = envelope?.type === 'gasto';
     const hasCutoff = isGastoEnvelope && settings.expenseCutoffEnabled && !!settings.expenseCutoffDay;
-    const cutoffDay = hasCutoff ? settings.expenseCutoffDay as number : null;
+    const periodStart = hasCutoff ? getCutoffPeriodStart(new Date(), settings.expenseCutoffDay as number) : null;
 
     return transactions.reduce((sum, t) => {
       if (t.isArchived) return sum;
 
-      if (hasCutoff && t.type === 'expense' && t.envelopeId === envelopeId && cutoffDay != null) {
+      if (hasCutoff && t.type === 'expense' && t.envelopeId === envelopeId && periodStart != null) {
         const transactionDate = new Date(t.date);
-        if (transactionDate.getDate() < cutoffDay) {
+        if (transactionDate < periodStart) {
           return sum;
         }
       }
@@ -162,9 +170,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await saveTransactions(updatedTransactions);
   };
 
-  const resetEnvelope = async (envelopeId: string) => {
+  const archiveTransactions = async (envelopeId?: string) => {
     const updatedTransactions = transactions.map(t =>
-      t.envelopeId === envelopeId && !t.isArchived
+      !t.isArchived && (envelopeId == null || t.envelopeId === envelopeId)
         ? { ...t, isArchived: true, archivedAt: new Date().toISOString() }
         : t
     );
@@ -172,15 +180,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await saveTransactions(updatedTransactions);
   };
 
-  const resetAllEnvelopes = async () => {
-    const updatedTransactions = transactions.map(t =>
-      !t.isArchived
-        ? { ...t, isArchived: true, archivedAt: new Date().toISOString() }
-        : t
-    );
-    setTransactions(updatedTransactions);
-    await saveTransactions(updatedTransactions);
-  };
+  const resetEnvelope = (envelopeId: string) => archiveTransactions(envelopeId);
+
+  const resetAllEnvelopes = () => archiveTransactions();
 
   // ─── Transaction CRUD ──────────────────────────────────────────────────────
   const addTransaction = async (transactionData: Omit<Transaction, 'id' | 'isArchived'>) => {

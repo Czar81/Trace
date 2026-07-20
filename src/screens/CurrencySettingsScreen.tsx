@@ -6,16 +6,17 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ArrowLeft } from 'lucide-react-native';
 import { Dropdown } from '../components/Dropdown';
 import { Currency } from '../types';
+import { COLORS as SHARED } from '../theme/colors';
 
 const COLORS = {
-  bg: '#092230',
-  cardBg: '#1F3A47',
-  inputBg: '#1F3A47',
-  green: '#A7E7B4',
-  white: '#FFFFFF',
-  secondaryText: '#A6B9C7',
-  border: '#142E3D',
-  divider: '#142E3D',
+  bg: SHARED.bg,
+  cardBg: SHARED.cardBg,
+  inputBg: SHARED.cardBg,
+  green: SHARED.green,
+  white: SHARED.white,
+  secondaryText: SHARED.secondaryText,
+  border: SHARED.divider,
+  divider: SHARED.divider,
 };
 
 export const CurrencySettingsScreen = ({ navigation }: any) => {

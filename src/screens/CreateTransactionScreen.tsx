@@ -8,16 +8,17 @@ import { CurrencyInput } from '../components/CurrencyInput';
 import { Dropdown } from '../components/Dropdown';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar } from 'lucide-react-native';
+import { COLORS as SHARED } from '../theme/colors';
 
 const COLORS = {
-  bg: '#092230',
-  cardBg: '#1F3A47',
-  inputBg: '#1F3A47',
-  green: '#A7E7B4',
-  redText: '#E55B5B',
-  blueText: '#52A8D9',
-  white: '#FFFFFF',
-  secondaryText: '#A6B9C7',
+  bg: SHARED.bg,
+  cardBg: SHARED.cardBg,
+  inputBg: SHARED.cardBg,
+  green: SHARED.green,
+  redText: SHARED.red,
+  blueText: SHARED.blue,
+  white: SHARED.white,
+  secondaryText: SHARED.secondaryText,
 };
 
 export const CreateTransactionScreen = ({ route, navigation }: any) => {

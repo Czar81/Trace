@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { COLORS as SHARED } from '../theme/colors';
 
 interface ConfirmDialogProps {
   visible: boolean;
@@ -15,12 +16,12 @@ interface ConfirmDialogProps {
 const COLORS = {
   overlay: 'rgba(0,0,0,0.65)',
   bg: '#0d2e42',
-  card: '#1F3A47',
-  white: '#FFFFFF',
-  secondaryText: '#A6B9C7',
-  red: '#E55B5B',
-  green: '#A7E7B4',
-  divider: '#142E3D',
+  card: SHARED.cardBg,
+  white: SHARED.white,
+  secondaryText: SHARED.secondaryText,
+  red: SHARED.red,
+  green: SHARED.green,
+  divider: SHARED.divider,
 };
 
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({

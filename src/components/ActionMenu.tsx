@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { COLORS as SHARED } from '../theme/colors';
 
 export interface ActionMenuItem {
   label: string;
@@ -16,10 +17,10 @@ interface ActionMenuProps {
 
 const COLORS = {
   overlay: 'rgba(0,0,0,0.4)',
-  sheet: '#1F3A47',
-  white: '#FFFFFF',
-  red: '#E55B5B',
-  divider: '#142E3D',
+  sheet: SHARED.cardBg,
+  white: SHARED.white,
+  red: SHARED.red,
+  divider: SHARED.divider,
 };
 
 export const ActionMenu: React.FC<ActionMenuProps> = ({ visible, items, onClose }) => {
