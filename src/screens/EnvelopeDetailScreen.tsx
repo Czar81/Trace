@@ -6,16 +6,17 @@ import { ArrowLeft, RefreshCw, Edit2, Trash2 } from 'lucide-react-native';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Transaction } from '../types';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
+import { COLORS as SHARED } from '../theme/colors';
 
 const COLORS = {
-  bg: '#092230',
-  cardBg: '#1F3A47',
-  green: '#A7E7B4',
-  redText: '#E55B5B',
-  blueText: '#52A8D9',
-  white: '#FFFFFF',
-  secondaryText: '#A6B9C7',
-  divider: '#142E3D',
+  bg: SHARED.bg,
+  cardBg: SHARED.cardBg,
+  green: SHARED.green,
+  redText: SHARED.red,
+  blueText: SHARED.blue,
+  white: SHARED.white,
+  secondaryText: SHARED.secondaryText,
+  divider: SHARED.divider,
 };
 
 type DialogState =

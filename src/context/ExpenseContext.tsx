@@ -8,6 +8,7 @@ import {
   loadSettings, saveSettings
 } from '../utils/storage';
 import { pickAndImportBackup } from '../utils/importData';
+import { formatCurrency } from '../utils/formatCurrency';
 
 interface AppContextType {
   envelopes: Envelope[];
@@ -81,13 +82,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return amount;
   }, [settings.exchangeRates]);
 
-  const SYMBOLS: Record<Currency, string> = { CRC: '₡', USD: '$', EUR: '€' };
-
   const formatAmount = useCallback((amount: number, currency: Currency): string => {
-    const sym = SYMBOLS[currency] ?? '₡';
-    const sign = amount < 0 ? '-' : '';
-    const abs = Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return `${sign}${sym}${abs}`;
+    return formatCurrency(amount, currency);
   }, []);
 
   // ─── Balance computation ───────────────────────────────────────────────────
@@ -162,9 +158,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await saveTransactions(updatedTransactions);
   };
 
-  const resetEnvelope = async (envelopeId: string) => {
+  const archiveTransactions = async (envelopeId?: string) => {
     const updatedTransactions = transactions.map(t =>
-      t.envelopeId === envelopeId && !t.isArchived
+      !t.isArchived && (envelopeId == null || t.envelopeId === envelopeId)
         ? { ...t, isArchived: true, archivedAt: new Date().toISOString() }
         : t
     );
@@ -172,15 +168,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await saveTransactions(updatedTransactions);
   };
 
-  const resetAllEnvelopes = async () => {
-    const updatedTransactions = transactions.map(t =>
-      !t.isArchived
-        ? { ...t, isArchived: true, archivedAt: new Date().toISOString() }
-        : t
-    );
-    setTransactions(updatedTransactions);
-    await saveTransactions(updatedTransactions);
-  };
+  const resetEnvelope = (envelopeId: string) => archiveTransactions(envelopeId);
+
+  const resetAllEnvelopes = () => archiveTransactions();
 
   // ─── Transaction CRUD ──────────────────────────────────────────────────────
   const addTransaction = async (transactionData: Omit<Transaction, 'id' | 'isArchived'>) => {

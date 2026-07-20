@@ -4,14 +4,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppData } from '../context/ExpenseContext';
 import { ArrowLeft, ChevronRight, RefreshCw } from 'lucide-react-native';
 import { Dropdown } from '../components/Dropdown';
+import { COLORS as SHARED } from '../theme/colors';
 
 const COLORS = {
-  bg: '#092230',
-  white: '#FFFFFF',
+  bg: SHARED.bg,
+  white: SHARED.white,
   green: '#52A8D9',
-  secondaryText: '#A6B9C7',
-  cardBg: '#1F3A47',
-  divider: '#142E3D',
+  secondaryText: SHARED.secondaryText,
+  cardBg: SHARED.cardBg,
+  divider: SHARED.divider,
 };
 
 export const CutoffSettingsScreen = ({ navigation }: any) => {
