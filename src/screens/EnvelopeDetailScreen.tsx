@@ -218,7 +218,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: any) => {
             return (
               <TouchableOpacity
                 style={styles.transactionItem}
-                onPress={() => navigation.navigate('CreateTransaction', { envelopeId, transaction: item })}
+                onPress={() => navigation.navigate('CreateTransaction', { envelopeId: item.envelopeId, transaction: item })}
                 onLongPress={() => setDialog({ type: 'deleteTransaction', transaction: item })}
               >
                 <View style={styles.transactionLeft}>

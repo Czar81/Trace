@@ -188,24 +188,28 @@ export const CreateTransactionScreen = ({ route, navigation }: any) => {
               onSelect={setPaymentMethodId}
               placeholder={paymentMethods.length === 0 ? 'Agrega métodos en Configuración' : 'Seleccionar método'}
             />
-            <View style={styles.toggleRow}>
-              <TouchableOpacity
-                style={styles.checkbox}
-                onPress={() => setUseSavingsEnvelope(prev => !prev)}
-                activeOpacity={0.8}
-              >
-                {useSavingsEnvelope && <Check color={COLORS.green} size={16} />}
-              </TouchableOpacity>
-              <Text style={styles.toggleLabel}>Este gasto sale de un sobre de ahorro</Text>
-            </View>
-            {useSavingsEnvelope && (
-              <Dropdown
-                label="Sobre de ahorro"
-                options={savingsOptions}
-                value={sourceSavingsEnvelopeId}
-                onSelect={setSourceSavingsEnvelopeId}
-                placeholder={savingsEnvelopes.length === 0 ? 'Crea un sobre de ahorro primero' : 'Seleccionar sobre de ahorro'}
-              />
+            {envelope.type === 'gasto' && (
+              <>
+                <View style={styles.toggleRow}>
+                  <TouchableOpacity
+                    style={styles.checkbox}
+                    onPress={() => setUseSavingsEnvelope(prev => !prev)}
+                    activeOpacity={0.8}
+                  >
+                    {useSavingsEnvelope && <Check color={COLORS.green} size={16} />}
+                  </TouchableOpacity>
+                  <Text style={styles.toggleLabel}>Este gasto sale de un sobre de ahorro</Text>
+                </View>
+                {useSavingsEnvelope && (
+                  <Dropdown
+                    label="Sobre de ahorro"
+                    options={savingsOptions}
+                    value={sourceSavingsEnvelopeId}
+                    onSelect={setSourceSavingsEnvelopeId}
+                    placeholder={savingsEnvelopes.length === 0 ? 'Crea un sobre de ahorro primero' : 'Seleccionar sobre de ahorro'}
+                  />
+                )}
+              </>
             )}
           </>
         )}
