@@ -39,12 +39,19 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
   const [icon, setIcon] = useState<IconName>((envelope?.icon as IconName) ?? 'box');
   const [imageUri, setImageUri] = useState<string | undefined>(envelope?.imageUri);
   const [showIconPicker, setShowIconPicker] = useState(false);
+  const [limitError, setLimitError] = useState('');
 
   const color = envelope?.color ?? defaultColor;
 
   const handleSave = async () => {
     if (!name.trim()) return;
     const limit = isUnlimited ? 0 : parseFloat(limitStr || '0');
+
+    if (!isUnlimited && (isNaN(limit) || limit < 0)) {
+      setLimitError('Ingresa un monto válido mayor o igual a 0');
+      return;
+    }
+    setLimitError('');
 
     if (isEditing && envelope) {
       await updateEnvelope(envelope.id, { name: name.trim(), limit, isUnlimited, icon, imageUri });
@@ -123,12 +130,15 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
         <Text style={styles.hint}>Configurable en Configuración → Moneda por defecto</Text>
 
         {!isUnlimited && (
-          <CurrencyInput
-            label={envelopeType === 'gasto' ? 'Presupuesto' : 'Meta de ahorro'}
-            currency={settings.defaultCurrency}
-            value={limitStr}
-            onChangeText={setLimitStr}
-          />
+          <>
+            <CurrencyInput
+              label={envelopeType === 'gasto' ? 'Presupuesto' : 'Meta de ahorro'}
+              currency={settings.defaultCurrency}
+              value={limitStr}
+              onChangeText={(text) => { setLimitStr(text); setLimitError(''); }}
+            />
+            {limitError ? <Text style={styles.errorText}>{limitError}</Text> : null}
+          </>
         )}
 
         <View style={styles.switchRow}>
@@ -144,7 +154,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
           </View>
           <Switch
             value={isUnlimited}
-            onValueChange={setIsUnlimited}
+            onValueChange={(value) => { setIsUnlimited(value); if (value) setLimitError(''); }}
             trackColor={{ false: COLORS.cardBg, true: COLORS.green }}
             thumbColor={COLORS.white}
           />
@@ -168,5 +178,6 @@ const styles = StyleSheet.create({
   label: { color: COLORS.white, fontSize: 16, fontWeight: '600', marginBottom: 8 },
   hint: { color: COLORS.secondaryText, fontSize: 13, marginBottom: 16 },
   input: { backgroundColor: COLORS.inputBg, borderRadius: 12, padding: 16, color: COLORS.white, fontSize: 16, marginBottom: 24 },
+  errorText: { color: COLORS.redText, fontSize: 13, marginTop: -20, marginBottom: 20 },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
 });

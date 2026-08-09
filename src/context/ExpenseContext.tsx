@@ -32,6 +32,44 @@ export function getCutoffPeriodStart(now: Date, cutoffDay: number): Date {
   return new Date(now.getFullYear(), targetMonth, day, 0, 0, 0, 0);
 }
 
+/**
+ * Pure envelope-balance formula shared by getEnvelopeBalance (live state) and
+ * computeSpentPercentage (explicit before/after snapshots for budget alerts).
+ * For 'gasto' envelopes with an active cutoff, expenses dated before the current
+ * cutoff period start are excluded from the balance.
+ */
+export function calculateEnvelopeBalance(
+  envelopeId: string,
+  transactions: Transaction[],
+  envelopes: Envelope[],
+  expenseCutoffEnabled: boolean,
+  expenseCutoffDay: number | null
+): number {
+  const envelope = envelopes.find(e => e.id === envelopeId);
+  const isGastoEnvelope = envelope?.type === 'gasto';
+  const hasCutoff = isGastoEnvelope && expenseCutoffEnabled && !!expenseCutoffDay;
+  const periodStart = hasCutoff ? getCutoffPeriodStart(new Date(), expenseCutoffDay as number) : null;
+
+  return transactions.reduce((sum, t) => {
+    if (t.isArchived) return sum;
+
+    if (hasCutoff && t.type === 'expense' && t.envelopeId === envelopeId && periodStart != null) {
+      const transactionDate = new Date(t.date);
+      if (transactionDate < periodStart) {
+        return sum;
+      }
+    }
+
+    if (t.envelopeId === envelopeId) {
+      return sum + (t.type === 'income' ? t.amount : -t.amount);
+    }
+    if (t.type === 'expense' && t.sourceSavingsEnvelopeId === envelopeId) {
+      return sum - t.amount;
+    }
+    return sum;
+  }, 0);
+}
+
 interface AppContextType {
   envelopes: Envelope[];
   transactions: Transaction[];
@@ -162,31 +200,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   // ─── Balance computation ───────────────────────────────────────────────────
-  const getEnvelopeBalance = useCallback((envelopeId: string): number => {
-    const envelope = envelopes.find(e => e.id === envelopeId);
-    const isGastoEnvelope = envelope?.type === 'gasto';
-    const hasCutoff = isGastoEnvelope && settings.expenseCutoffEnabled && !!settings.expenseCutoffDay;
-    const periodStart = hasCutoff ? getCutoffPeriodStart(new Date(), settings.expenseCutoffDay as number) : null;
+  /**
+   * Envelope id -> balance, computed in a single pass over `transactions` so
+   * per-envelope lookups (e.g. rendering the envelope list) are O(1) instead of
+   * each doing its own O(n) reduce. Mirrors calculateEnvelopeBalance's formula:
+   * a transaction affects at most two envelopes (its own envelopeId, and, for
+   * expenses funded from savings, sourceSavingsEnvelopeId), so both effects are
+   * applied per transaction as the map is built.
+   */
+  const envelopeBalanceMap = useMemo(() => {
+    const map = new Map<string, number>();
+    const envelopeById = new Map(envelopes.map(e => [e.id, e]));
+    const cutoffPeriodStart = settings.expenseCutoffEnabled && settings.expenseCutoffDay
+      ? getCutoffPeriodStart(new Date(), settings.expenseCutoffDay)
+      : null;
 
-    return transactions.reduce((sum, t) => {
-      if (t.isArchived) return sum;
+    for (const t of transactions) {
+      if (t.isArchived) continue;
 
-      if (hasCutoff && t.type === 'expense' && t.envelopeId === envelopeId && periodStart != null) {
-        const transactionDate = new Date(t.date);
-        if (transactionDate < periodStart) {
-          return sum;
+      if (t.envelopeId) {
+        const envelope = envelopeById.get(t.envelopeId);
+        const hasCutoff = envelope?.type === 'gasto' && cutoffPeriodStart != null;
+        const skip = hasCutoff && t.type === 'expense' && new Date(t.date) < (cutoffPeriodStart as Date);
+        if (!skip) {
+          const delta = t.type === 'income' ? t.amount : -t.amount;
+          map.set(t.envelopeId, (map.get(t.envelopeId) ?? 0) + delta);
         }
       }
+      if (t.type === 'expense' && t.sourceSavingsEnvelopeId) {
+        const sourceId = t.sourceSavingsEnvelopeId;
+        map.set(sourceId, (map.get(sourceId) ?? 0) - t.amount);
+      }
+    }
 
-      if (t.envelopeId === envelopeId) {
-        return sum + (t.type === 'income' ? t.amount : -t.amount);
-      }
-      if (t.type === 'expense' && t.sourceSavingsEnvelopeId === envelopeId) {
-        return sum - t.amount;
-      }
-      return sum;
-    }, 0);
+    return map;
   }, [transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay]);
+
+  const getEnvelopeBalance = useCallback((envelopeId: string): number => {
+    const cached = envelopeBalanceMap.get(envelopeId);
+    if (cached !== undefined) return cached;
+    // Fallback for ids not present in the map (e.g. a brand-new envelope with
+    // zero transactions) — never hit in practice, but keeps this correct.
+    return calculateEnvelopeBalance(envelopeId, transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay);
+  }, [envelopeBalanceMap, transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay]);
 
   /**
    * getTotalByType computes the sum of all envelope *available balances* 
@@ -219,28 +275,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const envelope = envelopes.find(e => e.id === envelopeId);
     if (!envelope || !envelope.limit) return 0;
 
-    const isGastoEnvelope = envelope.type === 'gasto';
-    const hasCutoff = isGastoEnvelope && settings.expenseCutoffEnabled && !!settings.expenseCutoffDay;
-    const periodStart = hasCutoff ? getCutoffPeriodStart(new Date(), settings.expenseCutoffDay as number) : null;
-
-    const balance = txns.reduce((sum, t) => {
-      if (t.isArchived) return sum;
-
-      if (hasCutoff && t.type === 'expense' && t.envelopeId === envelopeId && periodStart != null) {
-        const transactionDate = new Date(t.date);
-        if (transactionDate < periodStart) {
-          return sum;
-        }
-      }
-
-      if (t.envelopeId === envelopeId) {
-        return sum + (t.type === 'income' ? t.amount : -t.amount);
-      }
-      if (t.type === 'expense' && t.sourceSavingsEnvelopeId === envelopeId) {
-        return sum - t.amount;
-      }
-      return sum;
-    }, 0);
+    const balance = calculateEnvelopeBalance(envelopeId, txns, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay);
 
     const spent = -balance;
     return spent / envelope.limit;

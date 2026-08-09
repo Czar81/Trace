@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Switch, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
@@ -27,7 +27,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransaction'>;
 
 export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   const { envelopeId, transaction } = route.params;
-  const { envelopes, addTransaction, updateTransaction, paymentMethods, categories } = useAppData();
+  const { envelopes, addTransaction, updateTransaction, paymentMethods, categories, getEnvelopeBalance, formatAmount } = useAppData();
 
   const envelope = envelopes.find(e => e.id === envelopeId);
   const isEditing = !!transaction;
@@ -195,23 +195,39 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
             {envelope.type === 'gasto' && (
               <>
                 <View style={styles.toggleRow}>
-                  <TouchableOpacity
-                    style={styles.checkbox}
-                    onPress={() => setUseSavingsEnvelope(prev => !prev)}
-                    activeOpacity={0.8}
-                  >
-                    {useSavingsEnvelope && <Check color={COLORS.green} size={16} />}
-                  </TouchableOpacity>
                   <Text style={styles.toggleLabel}>Este gasto sale de un sobre de ahorro</Text>
+                  <Switch
+                    value={useSavingsEnvelope}
+                    onValueChange={setUseSavingsEnvelope}
+                    trackColor={{ false: COLORS.cardBg, true: COLORS.green }}
+                    thumbColor={COLORS.white}
+                  />
                 </View>
                 {useSavingsEnvelope && (
-                  <Dropdown
-                    label="Sobre de ahorro"
-                    options={savingsOptions}
-                    value={sourceSavingsEnvelopeId}
-                    onSelect={setSourceSavingsEnvelopeId}
-                    placeholder={savingsEnvelopes.length === 0 ? 'Crea un sobre de ahorro primero' : 'Seleccionar sobre de ahorro'}
-                  />
+                  <>
+                    <Dropdown
+                      label="Sobre de ahorro"
+                      options={savingsOptions}
+                      value={sourceSavingsEnvelopeId}
+                      onSelect={setSourceSavingsEnvelopeId}
+                      placeholder={savingsEnvelopes.length === 0 ? 'Crea un sobre de ahorro primero' : 'Seleccionar sobre de ahorro'}
+                    />
+                    {sourceSavingsEnvelopeId && (() => {
+                      const sourceEnvelope = savingsEnvelopes.find(e => e.id === sourceSavingsEnvelopeId);
+                      if (!sourceEnvelope) return null;
+                      const parsedAmount = parseFloat(amountStr);
+                      const hasValidAmount = amountStr !== '' && !isNaN(parsedAmount) && parsedAmount > 0;
+                      const currentBalance = getEnvelopeBalance(sourceEnvelope.id);
+                      const projectedBalance = hasValidAmount ? currentBalance - parsedAmount : currentBalance;
+                      return (
+                        <Text style={styles.savingsPreview}>
+                          {hasValidAmount
+                            ? `Saldo del sobre de ahorro después de este gasto: ${formatAmount(projectedBalance, sourceEnvelope.currency)}`
+                            : `Saldo actual del sobre de ahorro: ${formatAmount(currentBalance, sourceEnvelope.currency)}`}
+                        </Text>
+                      );
+                    })()}
+                  </>
                 )}
               </>
             )}
@@ -246,18 +262,9 @@ const styles = StyleSheet.create({
   typeBtnIncome: { backgroundColor: COLORS.blueText },
   typeText: { color: COLORS.secondaryText, fontSize: 15, fontWeight: '700' },
   label: { color: COLORS.white, fontSize: 16, fontWeight: '600', marginTop: 24, marginBottom: 8 },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20, marginBottom: 16 },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: COLORS.secondaryText,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  toggleLabel: { color: COLORS.white, fontSize: 15, flex: 1 },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20, marginBottom: 16 },
+  toggleLabel: { color: COLORS.white, fontSize: 15, flex: 1, paddingRight: 12 },
+  savingsPreview: { color: COLORS.secondaryText, fontSize: 13, marginTop: -8, marginBottom: 16 },
   datePickerBtn: {
     backgroundColor: COLORS.inputBg,
     borderRadius: 12,

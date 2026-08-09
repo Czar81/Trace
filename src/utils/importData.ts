@@ -59,6 +59,25 @@ export const parseBackup = (jsonContent: string): ImportResult => {
       return result;
     }
 
+    if (
+      !Array.isArray(parsed.envelopes) ||
+      !Array.isArray(parsed.transactions) ||
+      !Array.isArray(parsed.paymentMethods) ||
+      !Array.isArray(parsed.categories)
+    ) {
+      result.errors.push('Formato de backup inválido. envelopes, transactions, paymentMethods y categories deben ser listas (arrays)');
+      return result;
+    }
+
+    if (
+      parsed.transactions.some(
+        (tx: any) => typeof tx?.amount !== 'number' || !Number.isFinite(tx.amount)
+      )
+    ) {
+      result.errors.push('Formato de backup inválido. Todas las transacciones deben tener un monto (amount) numérico válido');
+      return result;
+    }
+
     const parsedSettings = { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) };
     if (parsed.settings?.expenseCutoffDate && parsedSettings.expenseCutoffDay == null) {
       parsedSettings.expenseCutoffDay = new Date(parsed.settings.expenseCutoffDate).getDate();
