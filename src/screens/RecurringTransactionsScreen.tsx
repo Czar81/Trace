@@ -5,19 +5,10 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { ArrowLeft, Plus, Trash2, Pause, Play } from 'lucide-react-native';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { EmptyState } from '../components/EmptyState';
 import { RecurringTransactionTemplate } from '../types';
 import { RootStackParamList } from '../navigation/types';
-import { COLORS as SHARED } from '../theme/colors';
-
-const COLORS = {
-  bg: SHARED.bg,
-  white: SHARED.white,
-  green: SHARED.green,
-  redText: SHARED.red,
-  secondaryText: SHARED.secondaryText,
-  cardBg: SHARED.cardBg,
-  divider: SHARED.divider,
-};
+import { COLORS } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Recurring'>;
 
@@ -50,7 +41,11 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
         keyExtractor={item => item.id}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No tienes transacciones recurrentes todavía.</Text>
+          <EmptyState
+            message="No tienes transacciones recurrentes todavía."
+            ctaLabel="Nueva plantilla"
+            onPress={() => navigation.navigate('CreateRecurringTransaction', {})}
+          />
         }
         renderItem={({ item }) => {
           const envelope = envelopes.find(e => e.id === item.envelopeId);
@@ -83,7 +78,7 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
                 style={styles.iconBtn}
                 onPress={() => setTemplateToDelete(item)}
               >
-                <Trash2 color={COLORS.redText} size={20} />
+                <Trash2 color={COLORS.red} size={20} />
               </TouchableOpacity>
             </TouchableOpacity>
           );

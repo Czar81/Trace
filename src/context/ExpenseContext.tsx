@@ -487,8 +487,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const message = `Backup restored: ${backup.envelopes.length} envelopes, ${backup.transactions.length} transactions, ${backup.categories.length} categories, ${backup.paymentMethods.length} payment methods`;
       return { success: true, message };
-    } catch (error) {
-      return { success: false, message: `Error: ${error}` };
+    } catch {
+      return { success: false, message: 'No se pudo importar el backup. Verifica que el archivo sea válido.' };
     }
   }, []);
 

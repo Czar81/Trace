@@ -3,7 +3,7 @@ import { Modal, View, SectionList, TouchableOpacity, Text, StyleSheet } from 're
 import { EnvelopeIcon, CATEGORIZED_ICONS, IconName } from './EnvelopeIcon';
 import { Check, Image as ImageIcon } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { COLORS as SHARED } from '../theme/colors';
+import { COLORS } from '../theme/colors';
 
 interface IconPickerProps {
   visible: boolean;
@@ -15,14 +15,7 @@ interface IconPickerProps {
   onClose: () => void;
 }
 
-const COLORS = {
-  overlay: 'rgba(0,0,0,0.65)',
-  sheet: '#0d2e42',
-  cardBg: SHARED.cardBg,
-  white: SHARED.white,
-  secondaryText: SHARED.secondaryText,
-  green: SHARED.green,
-};
+const OVERLAY = 'rgba(0,0,0,0.65)';
 
 export const IconPicker: React.FC<IconPickerProps> = ({ visible, selectedIcon, selectedImageUri, color, onSelectIcon, onSelectImage, onClose }) => {
   const handlePickImage = async () => {
@@ -111,11 +104,11 @@ export const IconPicker: React.FC<IconPickerProps> = ({ visible, selectedIcon, s
 };
 
 const styles = StyleSheet.create({
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: COLORS.overlay },
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: OVERLAY },
   sheet: {
     position: 'absolute',
     bottom: 0, left: 0, right: 0,
-    backgroundColor: COLORS.sheet,
+    backgroundColor: COLORS.modalSheet,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingBottom: 40,

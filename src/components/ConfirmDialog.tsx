@@ -1,6 +1,8 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { COLORS as SHARED } from '../theme/colors';
+import Animated, { useSharedValue, useAnimatedStyle, withSequence, withTiming } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { COLORS } from '../theme/colors';
 
 interface ConfirmDialogProps {
   visible: boolean;
@@ -13,16 +15,7 @@ interface ConfirmDialogProps {
   onCancel: () => void;
 }
 
-const COLORS = {
-  overlay: 'rgba(0,0,0,0.65)',
-  bg: '#0d2e42',
-  card: SHARED.cardBg,
-  white: SHARED.white,
-  secondaryText: SHARED.secondaryText,
-  red: SHARED.red,
-  green: SHARED.green,
-  divider: SHARED.divider,
-};
+const OVERLAY = 'rgba(0,0,0,0.65)';
 
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   visible,
@@ -34,6 +27,23 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  const confirmScale = useSharedValue(1);
+  const confirmAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: confirmScale.value }],
+  }));
+
+  const handleConfirmPress = () => {
+    if (destructive) {
+      try {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      } catch {
+        // Haptics unavailable on this platform/device — proceed silently.
+      }
+      confirmScale.value = withSequence(withTiming(0.92, { duration: 80 }), withTiming(1, { duration: 120 }));
+    }
+    onConfirm();
+  };
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       {/* Scrim */}
@@ -58,15 +68,17 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               </>
             ) : null}
 
-            <TouchableOpacity
-              style={[styles.confirmBtn, destructive && styles.confirmBtnDestructive, !cancelLabel && styles.singleActionBtn]}
-              onPress={onConfirm}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.confirmText, destructive && styles.confirmTextDestructive]}>
-                {confirmLabel}
-              </Text>
-            </TouchableOpacity>
+            <Animated.View style={[styles.confirmBtn, !cancelLabel && styles.singleActionBtn, confirmAnimatedStyle]}>
+              <TouchableOpacity
+                style={[styles.confirmBtnInner, destructive && styles.confirmBtnDestructive]}
+                onPress={handleConfirmPress}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.confirmText, destructive && styles.confirmTextDestructive]}>
+                  {confirmLabel}
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
           </View>
         </View>
       </View>
@@ -77,7 +89,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: COLORS.overlay,
+    backgroundColor: OVERLAY,
   },
   center: {
     flex: 1,
@@ -87,7 +99,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
-    backgroundColor: COLORS.card,
+    backgroundColor: COLORS.cardBg,
     borderRadius: 20,
     overflow: 'hidden',
   },
@@ -131,6 +143,8 @@ const styles = StyleSheet.create({
   },
   confirmBtn: {
     flex: 1,
+  },
+  confirmBtnInner: {
     paddingVertical: 16,
     alignItems: 'center',
   },

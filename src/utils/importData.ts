@@ -93,8 +93,8 @@ export const parseBackup = (jsonContent: string): ImportResult => {
       version: parsed.version || '1.0',
     };
 
-  } catch (error) {
-    result.errors.push(`Error al parsear JSON: ${error}`);
+  } catch {
+    result.errors.push('El archivo no es un backup válido (JSON corrupto).');
   }
 
   return result;

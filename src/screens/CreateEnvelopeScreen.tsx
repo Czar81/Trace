@@ -5,24 +5,20 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ArrowLeft, Check } from 'lucide-react-native';
-import { EnvelopeType } from '../types';
+import { EnvelopeType, Currency } from '../types';
 import { RootStackParamList } from '../navigation/types';
 import { CurrencyInput } from '../components/CurrencyInput';
 import { EnvelopeIcon, IconName } from '../components/EnvelopeIcon';
 import { IconPicker } from '../components/IconPicker';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
-import { COLORS as SHARED } from '../theme/colors';
+import { Dropdown } from '../components/Dropdown';
+import { COLORS } from '../theme/colors';
 
-const COLORS = {
-  bg: SHARED.bg,
-  cardBg: SHARED.cardBg,
-  inputBg: SHARED.cardBg,
-  green: SHARED.green,
-  redText: SHARED.red,
-  blueText: SHARED.blue,
-  white: SHARED.white,
-  secondaryText: SHARED.secondaryText,
-};
+const CURRENCY_OPTIONS = [
+  { label: 'CRC', value: 'CRC' },
+  { label: 'USD', value: 'USD' },
+  { label: 'EUR', value: 'EUR' },
+];
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateEnvelope'>;
 
@@ -40,6 +36,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
   const [imageUri, setImageUri] = useState<string | undefined>(envelope?.imageUri);
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [limitError, setLimitError] = useState('');
+  const [currency, setCurrency] = useState<Currency>(envelope?.currency ?? settings.defaultCurrency);
 
   const color = envelope?.color ?? defaultColor;
 
@@ -54,12 +51,12 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
     setLimitError('');
 
     if (isEditing && envelope) {
-      await updateEnvelope(envelope.id, { name: name.trim(), limit, isUnlimited, icon, imageUri });
+      await updateEnvelope(envelope.id, { name: name.trim(), currency, limit, isUnlimited, icon, imageUri });
     } else {
       await addEnvelope({
         name: name.trim(),
         type: envelopeType,
-        currency: settings.defaultCurrency,
+        currency,
         limit,
         isUnlimited,
         color,
@@ -124,10 +121,12 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
           autoFocus={!isEditing}
         />
 
-        <Text style={styles.label}>
-          Moneda: <Text style={{ color: COLORS.green }}>{settings.defaultCurrency}</Text>
-        </Text>
-        <Text style={styles.hint}>Configurable en Configuración → Moneda por defecto</Text>
+        <Dropdown
+          label="Moneda"
+          options={CURRENCY_OPTIONS}
+          value={currency}
+          onSelect={(value) => setCurrency(value as Currency)}
+        />
 
         {!isUnlimited && (
           <>
@@ -177,7 +176,7 @@ const styles = StyleSheet.create({
   changeIconText: { color: COLORS.secondaryText, fontSize: 14, fontWeight: '600' },
   label: { color: COLORS.white, fontSize: 16, fontWeight: '600', marginBottom: 8 },
   hint: { color: COLORS.secondaryText, fontSize: 13, marginBottom: 16 },
-  input: { backgroundColor: COLORS.inputBg, borderRadius: 12, padding: 16, color: COLORS.white, fontSize: 16, marginBottom: 24 },
-  errorText: { color: COLORS.redText, fontSize: 13, marginTop: -20, marginBottom: 20 },
+  input: { backgroundColor: COLORS.cardBg, borderRadius: 12, padding: 16, color: COLORS.white, fontSize: 16, marginBottom: 24 },
+  errorText: { color: COLORS.red, fontSize: 13, marginTop: -20, marginBottom: 20 },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
 });

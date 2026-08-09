@@ -6,16 +6,7 @@ import { useAppData } from '../context/ExpenseContext';
 import { ArrowLeft, ChevronRight, RefreshCw } from 'lucide-react-native';
 import { Dropdown } from '../components/Dropdown';
 import { RootStackParamList } from '../navigation/types';
-import { COLORS as SHARED } from '../theme/colors';
-
-const COLORS = {
-  bg: SHARED.bg,
-  white: SHARED.white,
-  green: '#52A8D9',
-  secondaryText: SHARED.secondaryText,
-  cardBg: SHARED.cardBg,
-  divider: SHARED.divider,
-};
+import { COLORS } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CutoffSettings'>;
 

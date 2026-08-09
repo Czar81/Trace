@@ -5,7 +5,8 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { ArrowLeft } from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/types';
-import { COLORS as SHARED } from '../theme/colors';
+import { EmptyState as SharedEmptyState } from '../components/EmptyState';
+import { COLORS } from '../theme/colors';
 import {
   ReportPeriod,
   getSpendingByCategory,
@@ -17,17 +18,6 @@ import {
 } from '../utils/reports';
 import { formatCurrency } from '../utils/formatCurrency';
 
-const COLORS = {
-  bg: SHARED.bg,
-  cardBg: SHARED.cardBg,
-  white: SHARED.white,
-  secondaryText: SHARED.secondaryText,
-  divider: SHARED.divider,
-  green: SHARED.green,
-  blue: SHARED.blue,
-  red: SHARED.red,
-};
-
 const TREND_MONTHS = 6;
 
 const PERIOD_OPTIONS: { label: string; value: ReportPeriod }[] = [
@@ -37,7 +27,7 @@ const PERIOD_OPTIONS: { label: string; value: ReportPeriod }[] = [
   { label: 'Todo', value: 'all-time' },
 ];
 
-const EmptyState = () => <Text style={styles.emptyText}>Sin datos para este período</Text>;
+const EmptyState = () => <SharedEmptyState message="Sin datos para este período" />;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Reports'>;
 

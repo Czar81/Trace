@@ -8,18 +8,7 @@ import { ArrowLeft } from 'lucide-react-native';
 import { Dropdown } from '../components/Dropdown';
 import { Currency } from '../types';
 import { RootStackParamList } from '../navigation/types';
-import { COLORS as SHARED } from '../theme/colors';
-
-const COLORS = {
-  bg: SHARED.bg,
-  cardBg: SHARED.cardBg,
-  inputBg: SHARED.cardBg,
-  green: SHARED.green,
-  white: SHARED.white,
-  secondaryText: SHARED.secondaryText,
-  border: SHARED.divider,
-  divider: SHARED.divider,
-};
+import { COLORS } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CurrencySettings'>;
 
@@ -112,7 +101,7 @@ const styles = StyleSheet.create({
   sectionTitle: { color: COLORS.white, fontSize: 16, fontWeight: '700', marginTop: 28, marginBottom: 12 },
   rateRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   rateLabel: { color: COLORS.secondaryText, fontSize: 15, width: 60 },
-  rateInput: { flex: 1, backgroundColor: COLORS.inputBg, borderRadius: 10, padding: 12, color: COLORS.white, fontSize: 16 },
+  rateInput: { flex: 1, backgroundColor: COLORS.cardBg, borderRadius: 10, padding: 12, color: COLORS.white, fontSize: 16 },
   rateSuffix: { color: COLORS.secondaryText, fontSize: 15, marginLeft: 10, width: 36 },
   saveBtn: { backgroundColor: COLORS.green, borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 8, marginBottom: 4 },
   saveBtnSuccess: { backgroundColor: '#4ADE80' },

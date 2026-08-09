@@ -4,18 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ArrowLeft, Trash2, Plus } from 'lucide-react-native';
 import { ConfirmDialog } from './ConfirmDialog';
-import { COLORS as SHARED } from '../theme/colors';
-
-const COLORS = {
-  bg: SHARED.bg,
-  cardBg: SHARED.cardBg,
-  inputBg: SHARED.cardBg,
-  green: SHARED.green,
-  redText: SHARED.red,
-  white: SHARED.white,
-  secondaryText: SHARED.secondaryText,
-  divider: SHARED.divider,
-};
+import { COLORS } from '../theme/colors';
 
 interface ListItem {
   id: string;
@@ -94,7 +83,7 @@ export const SimpleListSettingsScreen: React.FC<SimpleListSettingsScreenProps> =
                 hitSlop={{ top: 10, bottom: 10, left: 16, right: 10 }}
                 onPress={() => setPendingDelete({ id: item.id, name: item.name })}
               >
-                <Trash2 color={COLORS.redText} size={20} />
+                <Trash2 color={COLORS.red} size={20} />
               </TouchableOpacity>
             </View>
           ))}
@@ -131,6 +120,6 @@ const styles = StyleSheet.create({
   listItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.divider },
   listItemText: { color: COLORS.white, fontSize: 16, flex: 1, paddingRight: 12 },
   addRow: { flexDirection: 'row', alignItems: 'center', marginTop: 14 },
-  input: { backgroundColor: COLORS.inputBg, borderRadius: 12, padding: 14, color: COLORS.white, fontSize: 16, marginBottom: 12 },
+  input: { backgroundColor: COLORS.cardBg, borderRadius: 12, padding: 14, color: COLORS.white, fontSize: 16, marginBottom: 12 },
   addBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: COLORS.green, justifyContent: 'center', alignItems: 'center' },
 });

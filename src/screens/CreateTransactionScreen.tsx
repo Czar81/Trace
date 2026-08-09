@@ -10,18 +10,7 @@ import { Dropdown } from '../components/Dropdown';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar } from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/types';
-import { COLORS as SHARED } from '../theme/colors';
-
-const COLORS = {
-  bg: SHARED.bg,
-  cardBg: SHARED.cardBg,
-  inputBg: SHARED.cardBg,
-  green: SHARED.green,
-  redText: SHARED.red,
-  blueText: SHARED.blue,
-  white: SHARED.white,
-  secondaryText: SHARED.secondaryText,
-};
+import { COLORS } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransaction'>;
 
@@ -258,15 +247,15 @@ const styles = StyleSheet.create({
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     paddingVertical: 12, borderRadius: 10, gap: 8,
   },
-  typeBtnExpense: { backgroundColor: COLORS.redText },
-  typeBtnIncome: { backgroundColor: COLORS.blueText },
+  typeBtnExpense: { backgroundColor: COLORS.red },
+  typeBtnIncome: { backgroundColor: COLORS.blue },
   typeText: { color: COLORS.secondaryText, fontSize: 15, fontWeight: '700' },
   label: { color: COLORS.white, fontSize: 16, fontWeight: '600', marginTop: 24, marginBottom: 8 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20, marginBottom: 16 },
   toggleLabel: { color: COLORS.white, fontSize: 15, flex: 1, paddingRight: 12 },
   savingsPreview: { color: COLORS.secondaryText, fontSize: 13, marginTop: -8, marginBottom: 16 },
   datePickerBtn: {
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: COLORS.cardBg,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -276,7 +265,7 @@ const styles = StyleSheet.create({
   },
   dateText: { color: COLORS.white, fontSize: 16 },
   input: {
-    backgroundColor: COLORS.inputBg, borderRadius: 12, padding: 16,
+    backgroundColor: COLORS.cardBg, borderRadius: 12, padding: 16,
     color: COLORS.white, fontSize: 16, marginBottom: 24,
   },
 });

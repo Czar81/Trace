@@ -6,22 +6,12 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { ArrowLeft, RefreshCw, Edit2, Trash2, Calendar, X } from 'lucide-react-native';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { EmptyState } from '../components/EmptyState';
 import { RootStackParamList } from '../navigation/types';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
-import { COLORS as SHARED } from '../theme/colors';
+import { COLORS } from '../theme/colors';
 
 const PAGE_SIZE = 10;
-
-const COLORS = {
-  bg: SHARED.bg,
-  cardBg: SHARED.cardBg,
-  green: SHARED.green,
-  redText: SHARED.red,
-  blueText: SHARED.blue,
-  white: SHARED.white,
-  secondaryText: SHARED.secondaryText,
-  divider: SHARED.divider,
-};
 
 type DialogState =
   | { type: 'reset' }
@@ -164,11 +154,11 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
   if (isGasto) {
     if (envelope.isUnlimited) {
       progress = 1;
-      progressColor = COLORS.blueText;
+      progressColor = COLORS.blue;
     } else {
       const spent = -balance;
       progress = Math.max(0, spent / envelope.limit);
-      progressColor = remaining < 0 ? COLORS.redText : COLORS.green;
+      progressColor = remaining < 0 ? COLORS.red : COLORS.green;
     }
   } else {
     progress = envelope.limit > 0 ? balance / envelope.limit : 1;
@@ -178,7 +168,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
   // Text Color
   let textColor = COLORS.white;
   if (remaining < 0) {
-    textColor = COLORS.redText;
+    textColor = COLORS.red;
   } else if (isGasto && remaining > 0) {
     textColor = COLORS.green;
   } else {
@@ -244,7 +234,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
             <RefreshCw color={COLORS.secondaryText} size={20} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} onPress={() => setDialog({ type: 'deleteEnvelope' })}>
-            <Trash2 color={COLORS.redText} size={20} />
+            <Trash2 color={COLORS.red} size={20} />
           </TouchableOpacity>
         </View>
       </View>
@@ -361,9 +351,13 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
           contentContainerStyle={{ paddingBottom: 110 }}
           ListEmptyComponent={
             sortedTransactions.length === 0 ? (
-              <Text style={styles.emptyText}>Sin transacciones aún.</Text>
+              <EmptyState
+                message="Sin transacciones aún."
+                ctaLabel="Agregar transacción"
+                onPress={() => navigation.navigate('CreateTransaction', { envelopeId })}
+              />
             ) : (
-              <Text style={styles.emptyText}>No hay transacciones en este período.</Text>
+              <EmptyState message="No hay transacciones en este período." />
             )
           }
           ListFooterComponent={
@@ -408,7 +402,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                       {item.sourceSavingsEnvelopeId ? ` · Pago desde ${envelopes.find(e => e.id === item.sourceSavingsEnvelopeId)?.name ?? 'ahorro'}` : ''}
                     </Text>
                   </View>
-                  <Text style={[styles.transactionAmount, { color: item.type === 'expense' ? COLORS.redText : (isGasto ? COLORS.green : COLORS.white) }]}>
+                  <Text style={[styles.transactionAmount, { color: item.type === 'expense' ? COLORS.red : (isGasto ? COLORS.green : COLORS.white) }]}>
                     {formatAmount(item.amount, envelope.currency)}
                   </Text>
                 </TouchableOpacity>
@@ -490,7 +484,7 @@ const styles = StyleSheet.create({
   fab: { position: 'absolute', bottom: 30, right: 20, backgroundColor: COLORS.green, paddingVertical: 16, paddingHorizontal: 24, borderRadius: 30 },
   fabText: { color: COLORS.bg, fontSize: 16, fontWeight: 'bold' },
   deleteAction: {
-    backgroundColor: COLORS.redText, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: COLORS.red, justifyContent: 'center', alignItems: 'center',
     width: 72, height: '100%',
   },
   undoBanner: {

@@ -7,17 +7,7 @@ import { ArrowLeft, ChevronRight, CreditCard, DollarSign, Tag, Download, Upload,
 import { exportDataToCSV } from '../utils/exportData';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { RootStackParamList } from '../navigation/types';
-import { COLORS as SHARED } from '../theme/colors';
-
-const COLORS = {
-  bg: SHARED.bg,
-  white: SHARED.white,
-  green: '#52A8D9',
-  redText: SHARED.red,
-  secondaryText: SHARED.secondaryText,
-  cardBg: SHARED.cardBg,
-  divider: SHARED.divider,
-};
+import { COLORS } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
@@ -216,7 +206,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <RefreshCw color={COLORS.white} size={18} />
           </View>
           <View style={styles.menuTextWrapper}>
-            <Text style={[styles.menuTitle, { color: COLORS.redText }]}>Resetear todos los sobres</Text>
+            <Text style={[styles.menuTitle, { color: COLORS.red }]}>Resetear todos los sobres</Text>
             <Text style={styles.menuSubtitle}>Reinicia los saldos y mueve todo al historial</Text>
           </View>
           <ChevronRight color={COLORS.secondaryText} size={20} />
