@@ -62,3 +62,25 @@ The system SHALL show a clear empty-state message when the selected month/year h
 #### Scenario: Envelope has no transactions at all
 - **WHEN** the envelope has zero non-archived transactions in any period
 - **THEN** the system displays a generic empty-state message (e.g. "Sin transacciones aún") regardless of the selected period
+
+### Requirement: Swipe-to-delete with undo
+The transaction list on the envelope detail screen SHALL let the user delete a transaction by swiping it, rather than long-pressing it. On swipe-delete, the system SHALL optimistically hide the transaction from the list immediately and show an "Deshacer" (Undo) affordance for a few seconds before the deletion is committed.
+
+#### Scenario: User swipes a transaction to delete it
+- **WHEN** the user swipes a transaction row and confirms the delete action
+- **THEN** the system immediately hides that transaction from the visible list and shows an Undo affordance
+
+#### Scenario: User taps Undo before it expires
+- **WHEN** the user taps "Deshacer" while the Undo affordance is still visible
+- **THEN** the system restores the transaction to the list and does not delete it
+
+#### Scenario: Undo window expires without action
+- **WHEN** the Undo affordance's time window elapses without the user tapping it
+- **THEN** the system permanently deletes the transaction, matching prior delete behavior (removed from the envelope's history)
+
+### Requirement: Long-press no longer deletes a transaction
+Long-pressing a transaction row SHALL NOT trigger deletion. Tapping a transaction row SHALL continue to open it for editing, unchanged from prior behavior.
+
+#### Scenario: User long-presses a transaction
+- **WHEN** the user long-presses a transaction row
+- **THEN** the system does not delete it and does not open any delete confirmation dialog
