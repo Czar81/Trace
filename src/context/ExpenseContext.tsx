@@ -300,24 +300,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const before = computeSpentPercentage(envelopeId, beforeTxns);
     const after = computeSpentPercentage(envelopeId, afterTxns);
 
-    if (before < 0.8 && after >= 0.8) {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Presupuesto al 80%',
-          body: `Tu sobre "${envelope.name}" llegó al ${Math.round(after * 100)}% de su presupuesto.`,
-        },
-        trigger: null,
-      });
-    }
+    try {
+      if (before < 0.8 && after >= 0.8) {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Presupuesto al 80%',
+            body: `Tu sobre "${envelope.name}" llegó al ${Math.round(after * 100)}% de su presupuesto.`,
+          },
+          trigger: null,
+        });
+      }
 
-    if (before < 1.0 && after >= 1.0) {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Presupuesto excedido',
-          body: `Tu sobre "${envelope.name}" superó su presupuesto (${Math.round(after * 100)}%).`,
-        },
-        trigger: null,
-      });
+      if (before < 1.0 && after >= 1.0) {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Presupuesto excedido',
+            body: `Tu sobre "${envelope.name}" superó su presupuesto (${Math.round(after * 100)}%).`,
+          },
+          trigger: null,
+        });
+      }
+    } catch (e) {
+      console.error('Error scheduling budget alert notification', e);
     }
   }, [envelopes, settings.budgetAlertsEnabled, computeSpentPercentage]);
 
