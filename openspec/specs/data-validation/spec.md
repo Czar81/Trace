@@ -35,3 +35,14 @@ The system SHALL prevent saving an envelope (new or edited) with a limit that is
 #### Scenario: User enters a valid limit
 - **WHEN** a user submits the envelope form with a limit field that parses to a finite, non-negative number, or the envelope is marked unlimited
 - **THEN** the system saves the envelope exactly as it did before this change
+
+### Requirement: Import failures show a readable error message
+When a backup import fails for any reason (malformed JSON, unreadable file, or a validation failure), the system SHALL show the user a readable, human-language error message instead of a raw exception or error object rendered as text.
+
+#### Scenario: Backup file contains invalid JSON
+- **WHEN** a user selects a backup file that fails to parse as JSON
+- **THEN** the system shows a readable message explaining the file couldn't be read, not the raw parse exception text
+
+#### Scenario: Backup import fails for any other reason
+- **WHEN** a backup import fails (including the shape/amount validation failures already covered by this capability)
+- **THEN** the message shown to the user is human-readable and does not include a raw `Error: ...`-prefixed JavaScript exception string
