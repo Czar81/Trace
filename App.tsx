@@ -15,6 +15,7 @@ import { CurrencySettingsScreen } from './src/screens/CurrencySettingsScreen';
 import { PaymentMethodsSettingsScreen } from './src/screens/PaymentMethodsSettingsScreen';
 import { CategoriesSettingsScreen } from './src/screens/CategoriesSettingsScreen';
 import { CutoffSettingsScreen } from './src/screens/CutoffSettingsScreen';
+import { ReportsScreen } from './src/screens/ReportsScreen';
 
 type RootStackParamList = {
   Main: undefined;
@@ -26,6 +27,7 @@ type RootStackParamList = {
   PaymentMethodsSettings: undefined;
   CategoriesSettings: undefined;
   CutoffSettings: undefined;
+  Reports: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -47,6 +49,7 @@ export default function App() {
               <Stack.Screen name="PaymentMethodsSettings" component={PaymentMethodsSettingsScreen} />
               <Stack.Screen name="CategoriesSettings" component={CategoriesSettingsScreen} />
               <Stack.Screen name="CutoffSettings" component={CutoffSettingsScreen} />
+              <Stack.Screen name="Reports" component={ReportsScreen} />
             </Stack.Navigator>
           </NavigationContainer>
         </AppProvider>

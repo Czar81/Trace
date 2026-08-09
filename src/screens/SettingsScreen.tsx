@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppData } from '../context/ExpenseContext';
-import { ArrowLeft, ChevronRight, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw } from 'lucide-react-native';
+import { ArrowLeft, ChevronRight, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3 } from 'lucide-react-native';
 import { exportDataToCSV } from '../utils/exportData';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { COLORS as SHARED } from '../theme/colors';
@@ -105,6 +105,21 @@ export const SettingsScreen = ({ navigation }: any) => {
           <View style={styles.menuTextWrapper}>
             <Text style={styles.menuTitle}>Categorías</Text>
             <Text style={styles.menuSubtitle}>Organiza tus transacciones</Text>
+          </View>
+          <ChevronRight color={COLORS.secondaryText} size={20} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('Reports')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <BarChart3 color={COLORS.white} size={18} />
+          </View>
+          <View style={styles.menuTextWrapper}>
+            <Text style={styles.menuTitle}>Reportes</Text>
+            <Text style={styles.menuSubtitle}>Gastos por categoría, mes y más</Text>
           </View>
           <ChevronRight color={COLORS.secondaryText} size={20} />
         </TouchableOpacity>
