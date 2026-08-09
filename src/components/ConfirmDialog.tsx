@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { COLORS as SHARED } from '../theme/colors';
 
 interface ConfirmDialogProps {
   visible: boolean;
@@ -15,12 +16,12 @@ interface ConfirmDialogProps {
 const COLORS = {
   overlay: 'rgba(0,0,0,0.65)',
   bg: '#0d2e42',
-  card: '#1F3A47',
-  white: '#FFFFFF',
-  secondaryText: '#A6B9C7',
-  red: '#E55B5B',
-  green: '#A7E7B4',
-  divider: '#142E3D',
+  card: SHARED.cardBg,
+  white: SHARED.white,
+  secondaryText: SHARED.secondaryText,
+  red: SHARED.red,
+  green: SHARED.green,
+  divider: SHARED.divider,
 };
 
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -47,14 +48,18 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <View style={styles.divider} />
 
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={onCancel} activeOpacity={0.7}>
-              <Text style={styles.cancelText}>{cancelLabel}</Text>
-            </TouchableOpacity>
+            {cancelLabel ? (
+              <>
+                <TouchableOpacity style={styles.cancelBtn} onPress={onCancel} activeOpacity={0.7}>
+                  <Text style={styles.cancelText}>{cancelLabel}</Text>
+                </TouchableOpacity>
 
-            <View style={styles.actionDivider} />
+                <View style={styles.actionDivider} />
+              </>
+            ) : null}
 
             <TouchableOpacity
-              style={[styles.confirmBtn, destructive && styles.confirmBtnDestructive]}
+              style={[styles.confirmBtn, destructive && styles.confirmBtnDestructive, !cancelLabel && styles.singleActionBtn]}
               onPress={onConfirm}
               activeOpacity={0.7}
             >
@@ -128,6 +133,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 16,
     alignItems: 'center',
+  },
+  singleActionBtn: {
+    flex: 1,
   },
   confirmBtnDestructive: {},
   confirmText: {

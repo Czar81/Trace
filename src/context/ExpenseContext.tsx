@@ -8,6 +8,19 @@ import {
   loadSettings, saveSettings
 } from '../utils/storage';
 import { pickAndImportBackup } from '../utils/importData';
+import { formatCurrency } from '../utils/formatCurrency';
+
+/**
+ * Start of the current cutoff period: this month's cutoffDay if we've reached it,
+ * otherwise last month's. Clamped to the target month's last day so cutoffDay values
+ * like 31 don't roll over into the next month on shorter months.
+ */
+function getCutoffPeriodStart(now: Date, cutoffDay: number): Date {
+  const targetMonth = now.getDate() >= cutoffDay ? now.getMonth() : now.getMonth() - 1;
+  const daysInTargetMonth = new Date(now.getFullYear(), targetMonth + 1, 0).getDate();
+  const day = Math.min(cutoffDay, daysInTargetMonth);
+  return new Date(now.getFullYear(), targetMonth, day, 0, 0, 0, 0);
+}
 
 interface AppContextType {
   envelopes: Envelope[];
@@ -58,6 +71,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [settings, setSettings] = useState<AppSettings>({
     defaultCurrency: 'CRC',
     exchangeRates: { USD_TO_CRC: 510, EUR_TO_CRC: 550 },
+    expenseCutoffEnabled: false,
+    expenseCutoffDay: null,
   });
 
   useEffect(() => {
@@ -79,21 +94,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return amount;
   }, [settings.exchangeRates]);
 
-  const SYMBOLS: Record<Currency, string> = { CRC: '₡', USD: '$', EUR: '€' };
-
   const formatAmount = useCallback((amount: number, currency: Currency): string => {
-    const sym = SYMBOLS[currency] ?? '₡';
-    const sign = amount < 0 ? '-' : '';
-    const abs = Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return `${sign}${sym}${abs}`;
+    return formatCurrency(amount, currency);
   }, []);
 
   // ─── Balance computation ───────────────────────────────────────────────────
   const getEnvelopeBalance = useCallback((envelopeId: string): number => {
-    return transactions
-      .filter(t => t.envelopeId === envelopeId && !t.isArchived)
-      .reduce((sum, t) => (t.type === 'income' ? sum + t.amount : sum - t.amount), 0);
-  }, [transactions]);
+    const envelope = envelopes.find(e => e.id === envelopeId);
+    const isGastoEnvelope = envelope?.type === 'gasto';
+    const hasCutoff = isGastoEnvelope && settings.expenseCutoffEnabled && !!settings.expenseCutoffDay;
+    const periodStart = hasCutoff ? getCutoffPeriodStart(new Date(), settings.expenseCutoffDay as number) : null;
+
+    return transactions.reduce((sum, t) => {
+      if (t.isArchived) return sum;
+
+      if (hasCutoff && t.type === 'expense' && t.envelopeId === envelopeId && periodStart != null) {
+        const transactionDate = new Date(t.date);
+        if (transactionDate < periodStart) {
+          return sum;
+        }
+      }
+
+      if (t.envelopeId === envelopeId) {
+        return sum + (t.type === 'income' ? t.amount : -t.amount);
+      }
+      if (t.type === 'expense' && t.sourceSavingsEnvelopeId === envelopeId) {
+        return sum - t.amount;
+      }
+      return sum;
+    }, 0);
+  }, [transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay]);
 
   /**
    * getTotalByType computes the sum of all envelope *available balances* 
@@ -140,9 +170,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await saveTransactions(updatedTransactions);
   };
 
-  const resetEnvelope = async (envelopeId: string) => {
+  const archiveTransactions = async (envelopeId?: string) => {
     const updatedTransactions = transactions.map(t =>
-      t.envelopeId === envelopeId && !t.isArchived
+      !t.isArchived && (envelopeId == null || t.envelopeId === envelopeId)
         ? { ...t, isArchived: true, archivedAt: new Date().toISOString() }
         : t
     );
@@ -150,15 +180,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await saveTransactions(updatedTransactions);
   };
 
-  const resetAllEnvelopes = async () => {
-    const updatedTransactions = transactions.map(t =>
-      !t.isArchived
-        ? { ...t, isArchived: true, archivedAt: new Date().toISOString() }
-        : t
-    );
-    setTransactions(updatedTransactions);
-    await saveTransactions(updatedTransactions);
-  };
+  const resetEnvelope = (envelopeId: string) => archiveTransactions(envelopeId);
+
+  const resetAllEnvelopes = () => archiveTransactions();
 
   // ─── Transaction CRUD ──────────────────────────────────────────────────────
   const addTransaction = async (transactionData: Omit<Transaction, 'id' | 'isArchived'>) => {

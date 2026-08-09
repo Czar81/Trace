@@ -32,6 +32,7 @@ export interface Transaction {
   date: string; // ISO string
   paymentMethodId?: string;
   categoryId?: string;
+  sourceSavingsEnvelopeId?: string;
   isArchived: boolean;
   archivedAt?: string;
 }
@@ -42,4 +43,6 @@ export interface AppSettings {
     USD_TO_CRC: number;
     EUR_TO_CRC: number;
   };
+  expenseCutoffEnabled: boolean;
+  expenseCutoffDay: number | null;
 }

@@ -1,217 +1,232 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppData } from '../context/ExpenseContext';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { Trash2, Plus, ArrowLeft } from 'lucide-react-native';
-import { Dropdown } from '../components/Dropdown';
+import { ArrowLeft, ChevronRight, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3 } from 'lucide-react-native';
+import { exportDataToCSV } from '../utils/exportData';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { Currency } from '../types';
+import { COLORS as SHARED } from '../theme/colors';
 
 const COLORS = {
-  bg: '#092230',
-  cardBg: '#1F3A47',
-  inputBg: '#1F3A47',
-  green: '#A7E7B4',
-  redText: '#E55B5B',
-  white: '#FFFFFF',
-  secondaryText: '#A6B9C7',
-  border: '#142E3D',
-  divider: '#142E3D',
+  bg: SHARED.bg,
+  white: SHARED.white,
+  green: '#52A8D9',
+  redText: SHARED.red,
+  secondaryText: SHARED.secondaryText,
+  cardBg: SHARED.cardBg,
+  divider: SHARED.divider,
 };
-
-type PendingDelete =
-  | { type: 'paymentMethod'; id: string; name: string }
-  | { type: 'category'; id: string; name: string };
 
 export const SettingsScreen = ({ navigation }: any) => {
   const {
-    settings, updateSettings,
-    paymentMethods, addPaymentMethod, deletePaymentMethod,
-    categories, addCategory, deleteCategory,
+    envelopes, transactions, paymentMethods, categories, settings,
+    importFromBackup, resetAllEnvelopes,
   } = useAppData();
 
-  const [newPaymentMethod, setNewPaymentMethod] = useState('');
-  const [newCategory, setNewCategory] = useState('');
-  const [usdRate, setUsdRate] = useState(settings.exchangeRates.USD_TO_CRC.toString());
-  const [eurRate, setEurRate] = useState(settings.exchangeRates.EUR_TO_CRC.toString());
-  const [ratesSaved, setRatesSaved] = useState(false);
-  const [pending, setPending] = useState<PendingDelete | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showInfoDialog, setShowInfoDialog] = useState(false);
+  const [infoDialogTitle, setInfoDialogTitle] = useState('');
+  const [infoDialogMessage, setInfoDialogMessage] = useState('');
 
-  const handleSaveRates = async () => {
-    const usd = parseFloat(usdRate);
-    const eur = parseFloat(eurRate);
-    if (isNaN(usd) || isNaN(eur)) return;
-    await updateSettings({ exchangeRates: { USD_TO_CRC: usd, EUR_TO_CRC: eur } });
-    setRatesSaved(true);
-    setTimeout(() => setRatesSaved(false), 2000);
+  const showInfo = (title: string, message: string) => {
+    setInfoDialogTitle(title);
+    setInfoDialogMessage(message);
+    setShowInfoDialog(true);
   };
 
-  const handleAddPaymentMethod = async () => {
-    if (!newPaymentMethod.trim()) return;
-    await addPaymentMethod(newPaymentMethod.trim());
-    setNewPaymentMethod('');
+  const handleImport = async () => {
+    const result = await importFromBackup();
+    showInfo(
+      result.success ? 'Importación exitosa' : 'Error de importación',
+      result.message
+    );
   };
 
-  const handleAddCategory = async () => {
-    if (!newCategory.trim()) return;
-    await addCategory(newCategory.trim());
-    setNewCategory('');
+  const handleExport = () => {
+    exportDataToCSV(envelopes, transactions, paymentMethods, categories, settings);
+    showInfo('Exportación', 'Backup exportado correctamente.');
   };
 
-  const handleConfirmDelete = async () => {
-    if (!pending) return;
-    if (pending.type === 'paymentMethod') await deletePaymentMethod(pending.id);
-    if (pending.type === 'category') await deleteCategory(pending.id);
-    setPending(null);
+  const handleResetAll = () => {
+    setShowResetConfirm(true);
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ConfirmDialog
-        visible={!!pending}
-        title={`Eliminar "${pending?.name}"`}
-        message="Esta acción no se puede deshacer."
-        confirmLabel="Eliminar"
-        destructive
-        onConfirm={handleConfirmDelete}
-        onCancel={() => setPending(null)}
-      />
-
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
           <ArrowLeft color={COLORS.white} size={24} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Ajustes</Text>
+        <Text style={styles.headerTitle}>Configuración</Text>
         <View style={{ width: 32 }} />
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoiding}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={1}
-      >
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <Text style={styles.sectionTitle}>Configura tu app</Text>
 
-        {/* ── Moneda ── */}
-        <Text style={styles.sectionTitle}>Moneda por defecto</Text>
-        <Dropdown
-          options={[
-            { label: '₡ CRC — Colón costarricense', value: 'CRC' },
-            { label: '$ USD — Dólar estadounidense', value: 'USD' },
-            { label: '€ EUR — Euro', value: 'EUR' },
-          ]}
-          value={settings.defaultCurrency}
-          onSelect={(val) => updateSettings({ defaultCurrency: val as Currency })}
-        />
-
-        {/* ── Tasas de cambio ── */}
-        <Text style={styles.sectionTitle}>Tasas de cambio (base CRC)</Text>
-        <View style={styles.rateRow}>
-          <Text style={styles.rateLabel}>1 USD =</Text>
-          <TextInput
-            style={styles.rateInput}
-            value={usdRate}
-            onChangeText={setUsdRate}
-            keyboardType="numeric"
-            placeholderTextColor={COLORS.secondaryText}
-          />
-          <Text style={styles.rateSuffix}>CRC</Text>
-        </View>
-        <View style={styles.rateRow}>
-          <Text style={styles.rateLabel}>1 EUR =</Text>
-          <TextInput
-            style={styles.rateInput}
-            value={eurRate}
-            onChangeText={setEurRate}
-            keyboardType="numeric"
-            placeholderTextColor={COLORS.secondaryText}
-          />
-          <Text style={styles.rateSuffix}>CRC</Text>
-        </View>
-        <TouchableOpacity style={[styles.saveBtn, ratesSaved && styles.saveBtnSuccess]} onPress={handleSaveRates}>
-          <Text style={styles.saveBtnText}>{ratesSaved ? '✓ Guardado' : 'Guardar tasas'}</Text>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('CurrencySettings')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <DollarSign color={COLORS.white} size={18} />
+          </View>
+          <View style={styles.menuTextWrapper}>
+            <Text style={styles.menuTitle}>Monedas</Text>
+            <Text style={styles.menuSubtitle}>Tipo de moneda y tasas de cambio</Text>
+          </View>
+          <ChevronRight color={COLORS.secondaryText} size={20} />
         </TouchableOpacity>
 
-        {/* ── Métodos de pago ── */}
-        <Text style={styles.sectionTitle}>Métodos de pago</Text>
-        {paymentMethods.map(pm => (
-          <View key={pm.id} style={styles.listItem}>
-            <Text style={styles.listItemText}>{pm.name}</Text>
-            <TouchableOpacity
-              hitSlop={{ top: 10, bottom: 10, left: 16, right: 10 }}
-              onPress={() => setPending({ type: 'paymentMethod', id: pm.id, name: pm.name })}
-            >
-              <Trash2 color={COLORS.redText} size={20} />
-            </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('PaymentMethodsSettings')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <CreditCard color={COLORS.white} size={18} />
           </View>
-        ))}
-        <View style={styles.addRow}>
-          <TextInput
-            style={[styles.input, { flex: 1, marginBottom: 0, marginRight: 12 }]}
-            value={newPaymentMethod}
-            onChangeText={setNewPaymentMethod}
-            placeholder="Nuevo método..."
-            placeholderTextColor={COLORS.secondaryText}
-            onSubmitEditing={handleAddPaymentMethod}
-            returnKeyType="done"
-          />
-          <TouchableOpacity style={styles.addBtn} onPress={handleAddPaymentMethod}>
-            <Plus color={COLORS.bg} size={22} />
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Categorías ── */}
-        <Text style={styles.sectionTitle}>Categorías</Text>
-        {categories.map(cat => (
-          <View key={cat.id} style={styles.listItem}>
-            <Text style={styles.listItemText}>{cat.name}</Text>
-            <TouchableOpacity
-              hitSlop={{ top: 10, bottom: 10, left: 16, right: 10 }}
-              onPress={() => setPending({ type: 'category', id: cat.id, name: cat.name })}
-            >
-              <Trash2 color={COLORS.redText} size={20} />
-            </TouchableOpacity>
+          <View style={styles.menuTextWrapper}>
+            <Text style={styles.menuTitle}>Métodos de pago</Text>
+            <Text style={styles.menuSubtitle}>Agregar, editar y eliminar métodos</Text>
           </View>
-        ))}
-        <View style={styles.addRow}>
-          <TextInput
-            style={[styles.input, { flex: 1, marginBottom: 0, marginRight: 12 }]}
-            value={newCategory}
-            onChangeText={setNewCategory}
-            placeholder="Nueva categoría..."
-            placeholderTextColor={COLORS.secondaryText}
-            onSubmitEditing={handleAddCategory}
-            returnKeyType="done"
-          />
-          <TouchableOpacity style={styles.addBtn} onPress={handleAddCategory}>
-            <Plus color={COLORS.bg} size={22} />
-          </TouchableOpacity>
-        </View>
+          <ChevronRight color={COLORS.secondaryText} size={20} />
+        </TouchableOpacity>
 
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('CategoriesSettings')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <Tag color={COLORS.white} size={18} />
+          </View>
+          <View style={styles.menuTextWrapper}>
+            <Text style={styles.menuTitle}>Categorías</Text>
+            <Text style={styles.menuSubtitle}>Organiza tus transacciones</Text>
+          </View>
+          <ChevronRight color={COLORS.secondaryText} size={20} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('Reports')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <BarChart3 color={COLORS.white} size={18} />
+          </View>
+          <View style={styles.menuTextWrapper}>
+            <Text style={styles.menuTitle}>Reportes</Text>
+            <Text style={styles.menuSubtitle}>Gastos por categoría, mes y más</Text>
+          </View>
+          <ChevronRight color={COLORS.secondaryText} size={20} />
+        </TouchableOpacity>
+
+        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Corte de gastos</Text>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('CutoffSettings')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <RefreshCw color={COLORS.white} size={18} />
+          </View>
+          <View style={styles.menuTextWrapper}>
+            <Text style={styles.menuTitle}>Corte mensual</Text>
+            <Text style={styles.menuSubtitle}>Configura el día de corte</Text>
+          </View>
+          <ChevronRight color={COLORS.secondaryText} size={20} />
+        </TouchableOpacity>
+
+        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Backup y restauración</Text>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={handleImport}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <Upload color={COLORS.white} size={18} />
+          </View>
+          <View style={styles.menuTextWrapper}>
+            <Text style={styles.menuTitle}>Importar backup</Text>
+            <Text style={styles.menuSubtitle}>Cargar datos desde backup</Text>
+          </View>
+          <ChevronRight color={COLORS.secondaryText} size={20} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={handleExport}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <Download color={COLORS.white} size={18} />
+          </View>
+          <View style={styles.menuTextWrapper}>
+            <Text style={styles.menuTitle}>Exportar backup</Text>
+            <Text style={styles.menuSubtitle}>Guardar copia de seguridad</Text>
+          </View>
+          <ChevronRight color={COLORS.secondaryText} size={20} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={handleResetAll}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <RefreshCw color={COLORS.white} size={18} />
+          </View>
+          <View style={styles.menuTextWrapper}>
+            <Text style={[styles.menuTitle, { color: COLORS.redText }]}>Resetear todos los sobres</Text>
+            <Text style={styles.menuSubtitle}>Reinicia los saldos y mueve todo al historial</Text>
+          </View>
+          <ChevronRight color={COLORS.secondaryText} size={20} />
+        </TouchableOpacity>
       </ScrollView>
-      </KeyboardAvoidingView>
+
+      <ConfirmDialog
+        visible={showResetConfirm}
+        title="Resetear todos los sobres"
+        message="Esta acción moverá el historial de todos los sobres y reiniciará sus balances. Es irreversible."
+        confirmLabel="Resetear"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={async () => {
+          await resetAllEnvelopes();
+          setShowResetConfirm(false);
+          showInfo('Éxito', 'Todos los sobres han sido reiniciados.');
+        }}
+        onCancel={() => setShowResetConfirm(false)}
+      />
+
+      <ConfirmDialog
+        visible={showInfoDialog}
+        title={infoDialogTitle}
+        message={infoDialogMessage}
+        confirmLabel="Aceptar"
+        cancelLabel=""
+        onConfirm={() => setShowInfoDialog(false)}
+        onCancel={() => setShowInfoDialog(false)}
+      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  keyboardAvoiding: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 },
+  headerBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
   headerTitle: { color: COLORS.white, fontSize: 20, fontWeight: 'bold' },
   scroll: { paddingHorizontal: 20, paddingBottom: 60 },
-  sectionTitle: { color: COLORS.white, fontSize: 16, fontWeight: '700', marginTop: 28, marginBottom: 12 },
-  rateRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  rateLabel: { color: COLORS.secondaryText, fontSize: 15, width: 60 },
-  rateInput: { flex: 1, backgroundColor: COLORS.inputBg, borderRadius: 10, padding: 12, color: COLORS.white, fontSize: 16 },
-  rateSuffix: { color: COLORS.secondaryText, fontSize: 15, marginLeft: 10, width: 36 },
-  input: { backgroundColor: COLORS.inputBg, borderRadius: 12, padding: 14, color: COLORS.white, fontSize: 16, marginBottom: 12 },
-  saveBtn: { backgroundColor: COLORS.green, borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 8, marginBottom: 4 },
-  saveBtnSuccess: { backgroundColor: '#4ADE80' },
-  saveBtnText: { color: COLORS.bg, fontSize: 16, fontWeight: '700' },
-  listItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.divider },
-  listItemText: { color: COLORS.white, fontSize: 16, flex: 1, paddingRight: 12 },
-  addRow: { flexDirection: 'row', alignItems: 'center', marginTop: 14 },
-  addBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: COLORS.green, justifyContent: 'center', alignItems: 'center' },
+  sectionTitle: { color: COLORS.white, fontSize: 16, fontWeight: '700', marginBottom: 20 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.cardBg, borderRadius: 16, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: COLORS.divider },
+  menuIconWrapper: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#0D2E42', justifyContent: 'center', alignItems: 'center', marginRight: 14 },
+  menuTextWrapper: { flex: 1 },
+  menuTitle: { color: COLORS.white, fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  menuSubtitle: { color: COLORS.secondaryText, fontSize: 14 },
 });

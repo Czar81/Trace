@@ -1,21 +1,24 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppData } from '../context/ExpenseContext';
-import { ArrowLeft, RefreshCw, Edit2, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, RefreshCw, Edit2, Trash2, Calendar, X } from 'lucide-react-native';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Transaction } from '../types';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
+import { COLORS as SHARED } from '../theme/colors';
+
+const PAGE_SIZE = 10;
 
 const COLORS = {
-  bg: '#092230',
-  cardBg: '#1F3A47',
-  green: '#A7E7B4',
-  redText: '#E55B5B',
-  blueText: '#52A8D9',
-  white: '#FFFFFF',
-  secondaryText: '#A6B9C7',
-  divider: '#142E3D',
+  bg: SHARED.bg,
+  cardBg: SHARED.cardBg,
+  green: SHARED.green,
+  redText: SHARED.red,
+  blueText: SHARED.blue,
+  white: SHARED.white,
+  secondaryText: SHARED.secondaryText,
+  divider: SHARED.divider,
 };
 
 type DialogState =
@@ -35,7 +38,69 @@ export const EnvelopeDetailScreen = ({ route, navigation }: any) => {
   const [dialog, setDialog] = useState<DialogState | null>(null);
 
   const envelope = envelopes.find(e => e.id === envelopeId);
-  const envelopeTransactions = transactions.filter(t => t.envelopeId === envelopeId && !t.isArchived);
+  const envelopeTransactions = transactions.filter(t =>
+    !t.isArchived && (t.envelopeId === envelopeId || t.sourceSavingsEnvelopeId === envelopeId)
+  );
+
+  const periodKey = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  };
+
+  const sortedTransactions = useMemo(
+    () => [...envelopeTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [envelopeTransactions]
+  );
+
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+  const periodLabel = (key: string) => {
+    const [y, m] = key.split('-');
+    const d = new Date(Number(y), Number(m) - 1, 1);
+    return capitalize(d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }));
+  };
+
+  const monthsByYear = useMemo(() => {
+    const byYear = new Map<number, Map<string, string>>();
+    sortedTransactions.forEach(t => {
+      const d = new Date(t.date);
+      const year = d.getFullYear();
+      const key = periodKey(t.date);
+      if (!byYear.has(year)) byYear.set(year, new Map());
+      byYear.get(year)!.set(key, capitalize(d.toLocaleDateString('es-ES', { month: 'long' })));
+    });
+    return Array.from(byYear.entries())
+      .sort((a, b) => b[0] - a[0])
+      .map(([year, months]) => ({
+        year,
+        months: Array.from(months.entries())
+          .sort((a, b) => b[0].localeCompare(a[0]))
+          .map(([key, label]) => ({ key, label })),
+      }));
+  }, [sortedTransactions]);
+
+  const [selectedPeriod, setSelectedPeriod] = useState(() => periodKey(new Date().toISOString()));
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [selectedPeriod]);
+
+  const periodFiltered = useMemo(
+    () => sortedTransactions.filter(t => periodKey(t.date) === selectedPeriod),
+    [sortedTransactions, selectedPeriod]
+  );
+
+  const totalPages = useMemo(
+    () => Math.ceil(periodFiltered.length / PAGE_SIZE),
+    [periodFiltered]
+  );
+
+  const visibleTransactions = useMemo(
+    () => periodFiltered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [periodFiltered, page]
+  );
 
   if (!envelope) return null;
 
@@ -203,19 +268,87 @@ export const EnvelopeDetailScreen = ({ route, navigation }: any) => {
       </View>
 
       <View style={styles.transactionsSection}>
-        <Text style={styles.sectionTitle}>Transacciones recientes</Text>
+        <Text style={styles.sectionTitle}>Transacciones</Text>
+        <View style={styles.filterRow}>
+          <TouchableOpacity
+            style={[styles.filterPill, styles.filterPillActive]}
+            onPress={() => setMonthPickerOpen(true)}
+          >
+            <Calendar color={COLORS.bg} size={16} />
+            <Text style={[styles.filterPillText, styles.filterPillTextActive]}>
+              {periodLabel(selectedPeriod)}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <Modal visible={monthPickerOpen} animationType="slide" onRequestClose={() => setMonthPickerOpen(false)}>
+          <SafeAreaView style={styles.monthPickerContainer}>
+            <View style={styles.monthPickerHeader}>
+              <Text style={styles.monthPickerTitle}>Seleccione el mes que desea visualizar</Text>
+              <TouchableOpacity onPress={() => setMonthPickerOpen(false)} style={styles.monthPickerClose}>
+                <X color={COLORS.white} size={22} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+              {monthsByYear.length === 0 ? (
+                <Text style={styles.emptyText}>Sin transacciones aún.</Text>
+              ) : (
+                monthsByYear.map(group => (
+                  <View key={group.year} style={styles.yearGroup}>
+                    <Text style={styles.yearLabel}>{group.year}</Text>
+                    <View style={styles.monthGrid}>
+                      {group.months.map(m => (
+                        <TouchableOpacity
+                          key={m.key}
+                          style={[styles.monthCell, m.key === selectedPeriod && styles.monthCellActive]}
+                          onPress={() => { setSelectedPeriod(m.key); setMonthPickerOpen(false); }}
+                        >
+                          <Text style={[styles.monthCellText, m.key === selectedPeriod && styles.monthCellTextActive]}>
+                            {m.label}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+
         <FlatList
-          data={envelopeTransactions}
+          data={visibleTransactions}
           keyExtractor={item => item.id}
           contentContainerStyle={{ paddingBottom: 110 }}
-          ListEmptyComponent={<Text style={styles.emptyText}>Sin transacciones aún.</Text>}
+          ListEmptyComponent={
+            sortedTransactions.length === 0 ? (
+              <Text style={styles.emptyText}>Sin transacciones aún.</Text>
+            ) : (
+              <Text style={styles.emptyText}>No hay transacciones en este período.</Text>
+            )
+          }
+          ListFooterComponent={
+            totalPages > 1 ? (
+              <View style={styles.pagination}>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
+                  <TouchableOpacity
+                    key={n}
+                    style={[styles.pageBtn, n === page && styles.pageBtnActive]}
+                    onPress={() => setPage(n)}
+                  >
+                    <Text style={[styles.pageBtnText, n === page && styles.pageBtnTextActive]}>{n}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null
+          }
           renderItem={({ item }) => {
             const pm = paymentMethods.find(p => p.id === item.paymentMethodId);
             const cat = categories.find(c => c.id === item.categoryId);
             return (
               <TouchableOpacity
                 style={styles.transactionItem}
-                onPress={() => navigation.navigate('CreateTransaction', { envelopeId, transaction: item })}
+                onPress={() => navigation.navigate('CreateTransaction', { envelopeId: item.envelopeId, transaction: item })}
                 onLongPress={() => setDialog({ type: 'deleteTransaction', transaction: item })}
               >
                 <View style={styles.transactionLeft}>
@@ -224,6 +357,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: any) => {
                     {new Date(item.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
                     {cat ? ` · ${cat.name}` : ''}
                     {pm ? ` · ${pm.name}` : ''}
+                    {item.sourceSavingsEnvelopeId ? ` · Pago desde ${envelopes.find(e => e.id === item.sourceSavingsEnvelopeId)?.name ?? 'ahorro'}` : ''}
                   </Text>
                 </View>
                 <Text style={[styles.transactionAmount, { color: item.type === 'expense' ? COLORS.redText : (isGasto ? COLORS.green : COLORS.white) }]}>
@@ -268,6 +402,33 @@ const styles = StyleSheet.create({
   transactionDate: { color: COLORS.secondaryText, fontSize: 12 },
   transactionAmount: { fontSize: 15, fontWeight: '700' },
   separator: { height: 1, backgroundColor: COLORS.divider },
+  filterRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
+  filterPill: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: COLORS.cardBg, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 12,
+  },
+  filterPillActive: { backgroundColor: COLORS.green },
+  filterPillText: { color: COLORS.white, fontSize: 14, fontWeight: '600' },
+  filterPillTextActive: { color: COLORS.bg },
+  monthPickerContainer: { flex: 1, backgroundColor: COLORS.bg },
+  monthPickerHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', padding: 20 },
+  monthPickerTitle: { flex: 1, color: COLORS.white, fontSize: 20, fontWeight: '700', marginRight: 12 },
+  monthPickerClose: { padding: 4 },
+  yearGroup: { paddingHorizontal: 20, marginBottom: 20 },
+  yearLabel: { color: COLORS.white, fontSize: 17, fontWeight: '700', marginBottom: 12 },
+  monthGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  monthCell: {
+    width: '47%', borderWidth: 1, borderColor: COLORS.divider, borderRadius: 12,
+    paddingVertical: 18, alignItems: 'center', backgroundColor: COLORS.cardBg,
+  },
+  monthCellActive: { borderColor: COLORS.green, backgroundColor: COLORS.green },
+  monthCellText: { color: COLORS.secondaryText, fontSize: 16 },
+  monthCellTextActive: { color: COLORS.bg, fontWeight: '700' },
+  pagination: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, paddingVertical: 14 },
+  pageBtn: { minWidth: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.cardBg },
+  pageBtnActive: { backgroundColor: COLORS.green },
+  pageBtnText: { color: COLORS.secondaryText, fontSize: 14, fontWeight: '600' },
+  pageBtnTextActive: { color: COLORS.bg },
   fab: { position: 'absolute', bottom: 30, right: 20, backgroundColor: COLORS.green, paddingVertical: 16, paddingHorizontal: 24, borderRadius: 30 },
   fabText: { color: COLORS.bg, fontSize: 16, fontWeight: 'bold' },
 });

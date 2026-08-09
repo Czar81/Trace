@@ -1,36 +1,34 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Animated, Dimensions, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Animated, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppData } from '../context/ExpenseContext';
 import { EnvelopeType, Currency, Envelope } from '../types';
-import { Settings, MoreVertical, Download, RefreshCw, Upload } from 'lucide-react-native';
+import { Settings, MoreVertical, RefreshCw } from 'lucide-react-native';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
-import { ActionMenu, ActionMenuItem } from '../components/ActionMenu';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { exportDataToCSV } from '../utils/exportData';
+import { COLORS as SHARED } from '../theme/colors';
+import { formatCurrency } from '../utils/formatCurrency';
 
 const { width } = Dimensions.get('window');
 
 const COLORS = {
-  bg: '#092230',
-  cardBg: '#1F3A47',
-  green: '#A7E7B4',
-  redText: '#E55B5B',
-  blueText: '#52A8D9',
-  white: '#FFFFFF',
-  secondaryText: '#A6B9C7',
-  tabActive: '#A7E7B4',
-  tabInactive: '#A6B9C7',
+  bg: SHARED.bg,
+  cardBg: SHARED.cardBg,
+  green: SHARED.green,
+  redText: SHARED.red,
+  blueText: SHARED.blue,
+  white: SHARED.white,
+  secondaryText: SHARED.secondaryText,
+  tabActive: SHARED.green,
+  tabInactive: SHARED.secondaryText,
 };
 
-const SYMBOLS: Record<Currency, string> = { CRC: '₡', USD: '$', EUR: '€' };
 const CURRENCY_CYCLE: Currency[] = ['CRC', 'USD', 'EUR'];
 
 export const MainScreen = ({ navigation }: any) => {
-  const { envelopes, getTotalByType, getEnvelopeBalance, formatAmount, settings, convertToCRC, resetAllEnvelopes, paymentMethods, categories, transactions, importFromBackup } = useAppData();
+  const { envelopes, getTotalByType, getEnvelopeBalance, formatAmount, settings, convertToCRC, resetAllEnvelopes, paymentMethods, categories, transactions } = useAppData();
   const [activeTab, setActiveTab] = useState<EnvelopeType>('gasto');
   const [displayCurrency, setDisplayCurrency] = useState<Currency>(settings.defaultCurrency);
-  const [showMenu, setShowMenu] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -68,9 +66,7 @@ export const MainScreen = ({ navigation }: any) => {
     let amount = crc;
     if (to === 'USD') amount = crc / rates.USD_TO_CRC;
     else if (to === 'EUR') amount = crc / rates.EUR_TO_CRC;
-    const sym = SYMBOLS[to];
-    const abs = Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return `${sym}${abs}`;
+    return formatCurrency(Math.abs(amount), to);
   }
 
   const cycleCurrency = () => {
@@ -78,21 +74,6 @@ export const MainScreen = ({ navigation }: any) => {
     setDisplayCurrency(CURRENCY_CYCLE[(idx + 1) % CURRENCY_CYCLE.length]);
   };
 
-  const handleImport = async () => {
-    const result = await importFromBackup();
-    Alert.alert(
-      result.success ? 'Import successful' : 'Import error',
-      result.message,
-      [{ text: 'OK' }]
-    );
-  };
-
-  const menuItems: ActionMenuItem[] = [
-    { label: 'Configuracion', icon: <Settings color={COLORS.secondaryText} size={20} />, onPress: () => navigation.navigate('Settings') },
-    { label: 'Importar backup', icon: <Upload color={COLORS.secondaryText} size={20} />, onPress: handleImport },
-    { label: 'Exportar backup', icon: <Download color={COLORS.secondaryText} size={20} />, onPress: () => exportDataToCSV(envelopes, transactions, paymentMethods, categories, settings) },
-    { label: 'Resetear todos los sobres', icon: <RefreshCw color={COLORS.redText} size={20} />, destructive: true, onPress: () => setShowResetConfirm(true) },
-  ];
 
   const renderEnvelope = ({ item }: { item: Envelope }) => {
     const balance = getEnvelopeBalance(item.id);
@@ -191,7 +172,6 @@ export const MainScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ActionMenu visible={showMenu} items={menuItems} onClose={() => setShowMenu(false)} />
       <ConfirmDialog
         visible={showResetConfirm}
         onConfirm={async () => { await resetAllEnvelopes(); setShowResetConfirm(false); }}
@@ -204,7 +184,7 @@ export const MainScreen = ({ navigation }: any) => {
 
       <View style={styles.header}>
         <Text style={styles.title}>TRACE</Text>
-        <TouchableOpacity style={styles.iconBtn} onPress={() => setShowMenu(true)}>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Settings')}>
           <MoreVertical color={COLORS.secondaryText} size={24} />
         </TouchableOpacity>
       </View>

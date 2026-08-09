@@ -3,6 +3,7 @@ import { Modal, View, SectionList, TouchableOpacity, Text, StyleSheet } from 're
 import { EnvelopeIcon, CATEGORIZED_ICONS, IconName } from './EnvelopeIcon';
 import { Check, Image as ImageIcon } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { COLORS as SHARED } from '../theme/colors';
 
 interface IconPickerProps {
   visible: boolean;
@@ -17,10 +18,10 @@ interface IconPickerProps {
 const COLORS = {
   overlay: 'rgba(0,0,0,0.65)',
   sheet: '#0d2e42',
-  cardBg: '#1F3A47',
-  white: '#FFFFFF',
-  secondaryText: '#A6B9C7',
-  green: '#A7E7B4',
+  cardBg: SHARED.cardBg,
+  white: SHARED.white,
+  secondaryText: SHARED.secondaryText,
+  green: SHARED.green,
 };
 
 export const IconPicker: React.FC<IconPickerProps> = ({ visible, selectedIcon, selectedImageUri, color, onSelectIcon, onSelectImage, onClose }) => {

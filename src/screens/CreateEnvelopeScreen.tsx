@@ -9,16 +9,17 @@ import { CurrencyInput } from '../components/CurrencyInput';
 import { EnvelopeIcon, IconName } from '../components/EnvelopeIcon';
 import { IconPicker } from '../components/IconPicker';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
+import { COLORS as SHARED } from '../theme/colors';
 
 const COLORS = {
-  bg: '#092230',
-  cardBg: '#1F3A47',
-  inputBg: '#1F3A47',
-  green: '#A7E7B4',
-  redText: '#E55B5B',
-  blueText: '#52A8D9',
-  white: '#FFFFFF',
-  secondaryText: '#A6B9C7',
+  bg: SHARED.bg,
+  cardBg: SHARED.cardBg,
+  inputBg: SHARED.cardBg,
+  green: SHARED.green,
+  redText: SHARED.red,
+  blueText: SHARED.blue,
+  white: SHARED.white,
+  secondaryText: SHARED.secondaryText,
 };
 
 export const CreateEnvelopeScreen = ({ route, navigation }: any) => {
@@ -115,7 +116,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: any) => {
         <Text style={styles.label}>
           Moneda: <Text style={{ color: COLORS.green }}>{settings.defaultCurrency}</Text>
         </Text>
-        <Text style={styles.hint}>Configurable en Ajustes → Moneda por defecto</Text>
+        <Text style={styles.hint}>Configurable en Configuración → Moneda por defecto</Text>
 
         {!isUnlimited && (
           <CurrencyInput
