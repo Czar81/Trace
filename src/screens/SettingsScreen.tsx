@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
-import { ArrowLeft, ChevronRight, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3 } from 'lucide-react-native';
+import { ArrowLeft, ChevronRight, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat } from 'lucide-react-native';
 import { exportDataToCSV } from '../utils/exportData';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { RootStackParamList } from '../navigation/types';
@@ -24,7 +24,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 export const SettingsScreen = ({ navigation }: Props) => {
   const {
     envelopes, transactions, paymentMethods, categories, settings,
-    importFromBackup, resetAllEnvelopes,
+    importFromBackup, resetAllEnvelopes, updateSettings,
   } = useAppData();
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -127,6 +127,36 @@ export const SettingsScreen = ({ navigation }: Props) => {
           </View>
           <ChevronRight color={COLORS.secondaryText} size={20} />
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('Recurring')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <Repeat color={COLORS.white} size={18} />
+          </View>
+          <View style={styles.menuTextWrapper}>
+            <Text style={styles.menuTitle}>Recurrentes</Text>
+            <Text style={styles.menuSubtitle}>Transacciones automáticas mensuales</Text>
+          </View>
+          <ChevronRight color={COLORS.secondaryText} size={20} />
+        </TouchableOpacity>
+
+        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Alertas</Text>
+
+        <View style={styles.toggleRow}>
+          <View style={styles.toggleTextWrapper}>
+            <Text style={styles.menuTitle}>Alertas de presupuesto</Text>
+            <Text style={styles.menuSubtitle}>Notifica al llegar al 80% y 100% de un sobre de gasto</Text>
+          </View>
+          <Switch
+            value={settings.budgetAlertsEnabled}
+            onValueChange={() => updateSettings({ budgetAlertsEnabled: !settings.budgetAlertsEnabled })}
+            trackColor={{ false: '#3d4b59', true: COLORS.green }}
+            thumbColor={settings.budgetAlertsEnabled ? COLORS.green : COLORS.white}
+          />
+        </View>
 
         <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Corte de gastos</Text>
 
@@ -233,4 +263,6 @@ const styles = StyleSheet.create({
   menuTextWrapper: { flex: 1 },
   menuTitle: { color: COLORS.white, fontSize: 16, fontWeight: '700', marginBottom: 4 },
   menuSubtitle: { color: COLORS.secondaryText, fontSize: 14 },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: COLORS.cardBg, borderRadius: 16, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: COLORS.divider },
+  toggleTextWrapper: { flex: 1, paddingRight: 12 },
 });

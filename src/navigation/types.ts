@@ -1,4 +1,4 @@
-import { Envelope, EnvelopeType, Transaction } from '../types';
+import { Envelope, EnvelopeType, Transaction, RecurringTransactionTemplate } from '../types';
 
 export type RootStackParamList = {
   Main: undefined;
@@ -11,4 +11,6 @@ export type RootStackParamList = {
   CategoriesSettings: undefined;
   CutoffSettings: undefined;
   Reports: undefined;
+  Recurring: undefined;
+  CreateRecurringTransaction: { template?: RecurringTransactionTemplate };
 };

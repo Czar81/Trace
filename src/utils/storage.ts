@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings } from '../types';
+import { Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings, RecurringTransactionTemplate } from '../types';
 
 const KEYS = {
   ENVELOPES: '@trace_envelopes',
@@ -7,6 +7,7 @@ const KEYS = {
   PAYMENT_METHODS: '@trace_payment_methods',
   CATEGORIES: '@trace_categories',
   SETTINGS: '@trace_settings',
+  RECURRING_TEMPLATES: '@trace_recurring_templates',
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -14,6 +15,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   exchangeRates: { USD_TO_CRC: 510, EUR_TO_CRC: 550 },
   expenseCutoffEnabled: false,
   expenseCutoffDay: null,
+  budgetAlertsEnabled: false,
 };
 
 const DEFAULT_PAYMENT_METHODS: PaymentMethod[] = [
@@ -60,6 +62,9 @@ export const loadPaymentMethods = () => loadData<PaymentMethod[]>(KEYS.PAYMENT_M
 
 export const saveCategories = (data: TransactionCategory[]) => saveData(KEYS.CATEGORIES, data);
 export const loadCategories = () => loadData<TransactionCategory[]>(KEYS.CATEGORIES, DEFAULT_CATEGORIES);
+
+export const saveRecurringTemplates = (data: RecurringTransactionTemplate[]) => saveData(KEYS.RECURRING_TEMPLATES, data);
+export const loadRecurringTemplates = () => loadData<RecurringTransactionTemplate[]>(KEYS.RECURRING_TEMPLATES, []);
 
 export const saveSettings = (data: AppSettings) => saveData(KEYS.SETTINGS, data);
 export const loadSettings = async (): Promise<AppSettings> => {

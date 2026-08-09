@@ -1,14 +1,25 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { Envelope, Transaction, EnvelopeType, PaymentMethod, TransactionCategory, AppSettings, Currency } from '../types';
+import * as Notifications from 'expo-notifications';
+import { Envelope, Transaction, EnvelopeType, PaymentMethod, TransactionCategory, AppSettings, Currency, RecurringTransactionTemplate } from '../types';
 import {
   loadEnvelopes, saveEnvelopes,
   loadTransactions, saveTransactions,
   loadPaymentMethods, savePaymentMethods,
   loadCategories, saveCategories,
-  loadSettings, saveSettings
+  loadSettings, saveSettings,
+  loadRecurringTemplates, saveRecurringTemplates
 } from '../utils/storage';
 import { pickAndImportBackup } from '../utils/importData';
 import { formatCurrency } from '../utils/formatCurrency';
+
+/**
+ * Clamps `day` to the last valid day of the given year/month (0-indexed month),
+ * so values like 31 don't roll over into the next month on shorter months.
+ */
+export function clampDayOfMonth(year: number, month: number, day: number): number {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  return Math.min(day, daysInMonth);
+}
 
 /**
  * Start of the current cutoff period: this month's cutoffDay if we've reached it,
@@ -17,8 +28,7 @@ import { formatCurrency } from '../utils/formatCurrency';
  */
 export function getCutoffPeriodStart(now: Date, cutoffDay: number): Date {
   const targetMonth = now.getDate() >= cutoffDay ? now.getMonth() : now.getMonth() - 1;
-  const daysInTargetMonth = new Date(now.getFullYear(), targetMonth + 1, 0).getDate();
-  const day = Math.min(cutoffDay, daysInTargetMonth);
+  const day = clampDayOfMonth(now.getFullYear(), targetMonth, cutoffDay);
   return new Date(now.getFullYear(), targetMonth, day, 0, 0, 0, 0);
 }
 
@@ -28,6 +38,7 @@ interface AppContextType {
   paymentMethods: PaymentMethod[];
   categories: TransactionCategory[];
   settings: AppSettings;
+  recurringTemplates: RecurringTransactionTemplate[];
 
   // Envelope CRUD
   addEnvelope: (envelope: Omit<Envelope, 'id'>) => Promise<void>;
@@ -40,6 +51,11 @@ interface AppContextType {
   addTransaction: (transaction: Omit<Transaction, 'id' | 'isArchived'>) => Promise<void>;
   updateTransaction: (id: string, updates: Partial<Omit<Transaction, 'id'>>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
+
+  // Recurring Transaction Template CRUD
+  addRecurringTemplate: (template: Omit<RecurringTransactionTemplate, 'id' | 'lastGeneratedPeriod'>) => Promise<void>;
+  updateRecurringTemplate: (id: string, updates: Partial<Omit<RecurringTransactionTemplate, 'id'>>) => Promise<void>;
+  deleteRecurringTemplate: (id: string) => Promise<void>;
 
   // Payment Methods & Categories CRUD
   addPaymentMethod: (name: string) => Promise<void>;
@@ -68,20 +84,67 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [categories, setCategories] = useState<TransactionCategory[]>([]);
+  const [recurringTemplates, setRecurringTemplates] = useState<RecurringTransactionTemplate[]>([]);
   const [settings, setSettings] = useState<AppSettings>({
     defaultCurrency: 'CRC',
     exchangeRates: { USD_TO_CRC: 510, EUR_TO_CRC: 550 },
     expenseCutoffEnabled: false,
     expenseCutoffDay: null,
+    budgetAlertsEnabled: false,
   });
 
   useEffect(() => {
     const initData = async () => {
       setEnvelopes(await loadEnvelopes());
-      setTransactions(await loadTransactions());
+      const loadedTransactions = await loadTransactions();
+      const loadedTemplates = await loadRecurringTemplates();
       setPaymentMethods(await loadPaymentMethods());
       setCategories(await loadCategories());
       setSettings(await loadSettings());
+
+      // ─── Automatic generation of due recurring transactions ──────────────
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      const currentPeriod = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+      const today = now.getDate();
+
+      const newTransactions: Transaction[] = [];
+      let idOffset = 0;
+      const finalTemplates = loadedTemplates.map(template => {
+        if (!template.isActive) return template;
+        if (template.lastGeneratedPeriod === currentPeriod) return template;
+
+        const clampedDay = clampDayOfMonth(currentYear, currentMonth, template.dayOfMonth);
+        if (today < clampedDay) return template;
+
+        const generatedDate = new Date(currentYear, currentMonth, clampedDay, 0, 0, 0, 0);
+        newTransactions.push({
+          id: (Date.now() + idOffset++).toString(),
+          envelopeId: template.envelopeId,
+          type: template.type,
+          amount: template.amount,
+          description: template.description,
+          date: generatedDate.toISOString(),
+          paymentMethodId: template.paymentMethodId,
+          categoryId: template.categoryId,
+          sourceSavingsEnvelopeId: template.sourceSavingsEnvelopeId,
+          isArchived: false,
+        });
+
+        return { ...template, lastGeneratedPeriod: currentPeriod };
+      });
+
+      if (newTransactions.length > 0) {
+        const finalTransactions = [...newTransactions, ...loadedTransactions];
+        await saveTransactions(finalTransactions);
+        await saveRecurringTemplates(finalTemplates);
+        setTransactions(finalTransactions);
+        setRecurringTemplates(finalTemplates);
+      } else {
+        setTransactions(loadedTransactions);
+        setRecurringTemplates(loadedTemplates);
+      }
     };
     initData();
   }, []);
@@ -146,6 +209,83 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }, 0);
   }, [envelopes, getEnvelopeBalance, convertToCRC]);
 
+  // ─── Budget alerts (spent-percentage transition detection) ─────────────────
+  /**
+   * Same formula as getEnvelopeBalance/spent, but takes an explicit transactions
+   * array so it can be computed for a "before" and "after" snapshot of a mutation
+   * without touching state.
+   */
+  const computeSpentPercentage = useCallback((envelopeId: string, txns: Transaction[]): number => {
+    const envelope = envelopes.find(e => e.id === envelopeId);
+    if (!envelope || !envelope.limit) return 0;
+
+    const isGastoEnvelope = envelope.type === 'gasto';
+    const hasCutoff = isGastoEnvelope && settings.expenseCutoffEnabled && !!settings.expenseCutoffDay;
+    const periodStart = hasCutoff ? getCutoffPeriodStart(new Date(), settings.expenseCutoffDay as number) : null;
+
+    const balance = txns.reduce((sum, t) => {
+      if (t.isArchived) return sum;
+
+      if (hasCutoff && t.type === 'expense' && t.envelopeId === envelopeId && periodStart != null) {
+        const transactionDate = new Date(t.date);
+        if (transactionDate < periodStart) {
+          return sum;
+        }
+      }
+
+      if (t.envelopeId === envelopeId) {
+        return sum + (t.type === 'income' ? t.amount : -t.amount);
+      }
+      if (t.type === 'expense' && t.sourceSavingsEnvelopeId === envelopeId) {
+        return sum - t.amount;
+      }
+      return sum;
+    }, 0);
+
+    const spent = -balance;
+    return spent / envelope.limit;
+  }, [envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay]);
+
+  /**
+   * Compares an envelope's spent-percentage before/after a transaction mutation
+   * and fires a local notification only on the transition into the 80% or 100%
+   * band, per budget-alerts spec. No-op for ahorro envelopes, unlimited gasto
+   * envelopes, or when the setting is off.
+   */
+  const checkBudgetAlerts = useCallback(async (
+    envelopeId: string,
+    beforeTxns: Transaction[],
+    afterTxns: Transaction[]
+  ) => {
+    if (!settings.budgetAlertsEnabled) return;
+
+    const envelope = envelopes.find(e => e.id === envelopeId);
+    if (!envelope || envelope.type !== 'gasto' || envelope.isUnlimited) return;
+
+    const before = computeSpentPercentage(envelopeId, beforeTxns);
+    const after = computeSpentPercentage(envelopeId, afterTxns);
+
+    if (before < 0.8 && after >= 0.8) {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Presupuesto al 80%',
+          body: `Tu sobre "${envelope.name}" llegó al ${Math.round(after * 100)}% de su presupuesto.`,
+        },
+        trigger: null,
+      });
+    }
+
+    if (before < 1.0 && after >= 1.0) {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Presupuesto excedido',
+          body: `Tu sobre "${envelope.name}" superó su presupuesto (${Math.round(after * 100)}%).`,
+        },
+        trigger: null,
+      });
+    }
+  }, [envelopes, settings.budgetAlertsEnabled, computeSpentPercentage]);
+
   // ─── Envelope CRUD ─────────────────────────────────────────────────────────
   const addEnvelope = useCallback(async (envelopeData: Omit<Envelope, 'id'>) => {
     const newEnvelope: Envelope = { ...envelopeData, id: Date.now().toString() };
@@ -195,19 +335,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = [newTransaction, ...transactions];
     setTransactions(updated);
     await saveTransactions(updated);
-  }, [transactions]);
+    if (newTransaction.type === 'expense') {
+      await checkBudgetAlerts(newTransaction.envelopeId, transactions, updated);
+    }
+  }, [transactions, checkBudgetAlerts]);
 
   const updateTransaction = useCallback(async (id: string, updates: Partial<Omit<Transaction, 'id'>>) => {
     const updated = transactions.map(t => (t.id === id ? { ...t, ...updates } : t));
     setTransactions(updated);
     await saveTransactions(updated);
-  }, [transactions]);
+    const updatedTransaction = updated.find(t => t.id === id);
+    if (updatedTransaction && updatedTransaction.type === 'expense') {
+      await checkBudgetAlerts(updatedTransaction.envelopeId, transactions, updated);
+    }
+  }, [transactions, checkBudgetAlerts]);
 
   const deleteTransaction = useCallback(async (id: string) => {
     const updated = transactions.filter(t => t.id !== id);
     setTransactions(updated);
     await saveTransactions(updated);
   }, [transactions]);
+
+  // ─── Recurring Transaction Template CRUD ───────────────────────────────────
+  const addRecurringTemplate = useCallback(async (templateData: Omit<RecurringTransactionTemplate, 'id' | 'lastGeneratedPeriod'>) => {
+    const newTemplate: RecurringTransactionTemplate = {
+      ...templateData,
+      id: Date.now().toString(),
+      lastGeneratedPeriod: null,
+    };
+    const updated = [newTemplate, ...recurringTemplates];
+    setRecurringTemplates(updated);
+    await saveRecurringTemplates(updated);
+  }, [recurringTemplates]);
+
+  const updateRecurringTemplate = useCallback(async (id: string, updates: Partial<Omit<RecurringTransactionTemplate, 'id'>>) => {
+    const updated = recurringTemplates.map(t => (t.id === id ? { ...t, ...updates } : t));
+    setRecurringTemplates(updated);
+    await saveRecurringTemplates(updated);
+  }, [recurringTemplates]);
+
+  const deleteRecurringTemplate = useCallback(async (id: string) => {
+    const updated = recurringTemplates.filter(t => t.id !== id);
+    setRecurringTemplates(updated);
+    await saveRecurringTemplates(updated);
+  }, [recurringTemplates]);
 
   // ─── Payment Methods CRUD ──────────────────────────────────────────────────
   const addPaymentMethod = useCallback(async (name: string) => {
@@ -239,6 +410,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ─── Settings ──────────────────────────────────────────────────────────────
   const updateSettings = useCallback(async (updates: Partial<AppSettings>) => {
+    if (updates.budgetAlertsEnabled === true && !settings.budgetAlertsEnabled) {
+      try {
+        await Notifications.requestPermissionsAsync();
+      } catch (e) {
+        console.error('Error requesting notification permissions', e);
+      }
+    }
     const updated = { ...settings, ...updates };
     setSettings(updated);
     await saveSettings(updated);
@@ -280,18 +458,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const value = useMemo(() => ({
-    envelopes, transactions, paymentMethods, categories, settings,
+    envelopes, transactions, paymentMethods, categories, settings, recurringTemplates,
     addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
     addTransaction, updateTransaction, deleteTransaction,
+    addRecurringTemplate, updateRecurringTemplate, deleteRecurringTemplate,
     addPaymentMethod, deletePaymentMethod,
     addCategory, deleteCategory,
     updateSettings,
     importFromBackup,
     getEnvelopeBalance, getTotalByType, convertToCRC, formatAmount,
   }), [
-    envelopes, transactions, paymentMethods, categories, settings,
+    envelopes, transactions, paymentMethods, categories, settings, recurringTemplates,
     addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
     addTransaction, updateTransaction, deleteTransaction,
+    addRecurringTemplate, updateRecurringTemplate, deleteRecurringTemplate,
     addPaymentMethod, deletePaymentMethod,
     addCategory, deleteCategory,
     updateSettings,

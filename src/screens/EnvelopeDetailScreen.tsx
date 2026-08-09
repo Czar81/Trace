@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Swipeable } from 'react-native-gesture-handler';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { ArrowLeft, RefreshCw, Edit2, Trash2, Calendar, X } from 'lucide-react-native';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { Transaction } from '../types';
 import { RootStackParamList } from '../navigation/types';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { COLORS as SHARED } from '../theme/colors';
@@ -25,8 +25,7 @@ const COLORS = {
 
 type DialogState =
   | { type: 'reset' }
-  | { type: 'deleteEnvelope' }
-  | { type: 'deleteTransaction'; transaction: Transaction };
+  | { type: 'deleteEnvelope' };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EnvelopeDetail'>;
 
@@ -87,13 +86,58 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const [page, setPage] = useState(1);
 
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const deleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const commitPendingDelete = () => {
+    if (deleteTimeoutRef.current) {
+      clearTimeout(deleteTimeoutRef.current);
+      deleteTimeoutRef.current = null;
+    }
+    if (pendingDeleteId) {
+      deleteTransaction(pendingDeleteId);
+      setPendingDeleteId(null);
+    }
+  };
+
+  const handleSwipeDelete = (id: string) => {
+    if (pendingDeleteId && pendingDeleteId !== id) {
+      commitPendingDelete();
+    }
+    if (deleteTimeoutRef.current) {
+      clearTimeout(deleteTimeoutRef.current);
+    }
+    setPendingDeleteId(id);
+    deleteTimeoutRef.current = setTimeout(() => {
+      deleteTransaction(id);
+      setPendingDeleteId(null);
+      deleteTimeoutRef.current = null;
+    }, 4000);
+  };
+
+  const handleUndoDelete = () => {
+    if (deleteTimeoutRef.current) {
+      clearTimeout(deleteTimeoutRef.current);
+      deleteTimeoutRef.current = null;
+    }
+    setPendingDeleteId(null);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (deleteTimeoutRef.current) {
+        clearTimeout(deleteTimeoutRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     setPage(1);
   }, [selectedPeriod]);
 
   const periodFiltered = useMemo(
-    () => sortedTransactions.filter(t => periodKey(t.date) === selectedPeriod),
-    [sortedTransactions, selectedPeriod]
+    () => sortedTransactions.filter(t => periodKey(t.date) === selectedPeriod && t.id !== pendingDeleteId),
+    [sortedTransactions, selectedPeriod, pendingDeleteId]
   );
 
   const totalPages = useMemo(
@@ -148,8 +192,6 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
     } else if (dialog.type === 'deleteEnvelope') {
       await deleteEnvelope(envelopeId);
       navigation.goBack();
-    } else if (dialog.type === 'deleteTransaction') {
-      await deleteTransaction(dialog.transaction.id);
     }
     setDialog(null);
   };
@@ -167,13 +209,6 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
       return {
         title: `Eliminar "${envelope.name}"`,
         message: 'Se eliminarán el sobre y todas sus transacciones. Esta acción no se puede deshacer.',
-        confirmLabel: 'Eliminar',
-      };
-    }
-    if (dialog.type === 'deleteTransaction') {
-      return {
-        title: 'Eliminar transacción',
-        message: `¿Eliminar "${dialog.transaction.description}"?`,
         confirmLabel: 'Eliminar',
       };
     }
@@ -350,29 +385,48 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
             const pm = paymentMethods.find(p => p.id === item.paymentMethodId);
             const cat = categories.find(c => c.id === item.categoryId);
             return (
-              <TouchableOpacity
-                style={styles.transactionItem}
-                onPress={() => navigation.navigate('CreateTransaction', { envelopeId: item.envelopeId, transaction: item })}
-                onLongPress={() => setDialog({ type: 'deleteTransaction', transaction: item })}
+              <Swipeable
+                renderRightActions={() => (
+                  <TouchableOpacity
+                    style={styles.deleteAction}
+                    onPress={() => handleSwipeDelete(item.id)}
+                  >
+                    <Trash2 color={COLORS.white} size={20} />
+                  </TouchableOpacity>
+                )}
               >
-                <View style={styles.transactionLeft}>
-                  <Text style={styles.transactionDesc}>{item.description}</Text>
-                  <Text style={styles.transactionDate}>
-                    {new Date(item.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    {cat ? ` · ${cat.name}` : ''}
-                    {pm ? ` · ${pm.name}` : ''}
-                    {item.sourceSavingsEnvelopeId ? ` · Pago desde ${envelopes.find(e => e.id === item.sourceSavingsEnvelopeId)?.name ?? 'ahorro'}` : ''}
+                <TouchableOpacity
+                  style={styles.transactionItem}
+                  onPress={() => navigation.navigate('CreateTransaction', { envelopeId: item.envelopeId, transaction: item })}
+                >
+                  <View style={styles.transactionLeft}>
+                    <Text style={styles.transactionDesc}>{item.description}</Text>
+                    <Text style={styles.transactionDate}>
+                      {new Date(item.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {cat ? ` · ${cat.name}` : ''}
+                      {pm ? ` · ${pm.name}` : ''}
+                      {item.sourceSavingsEnvelopeId ? ` · Pago desde ${envelopes.find(e => e.id === item.sourceSavingsEnvelopeId)?.name ?? 'ahorro'}` : ''}
+                    </Text>
+                  </View>
+                  <Text style={[styles.transactionAmount, { color: item.type === 'expense' ? COLORS.redText : (isGasto ? COLORS.green : COLORS.white) }]}>
+                    {formatAmount(item.amount, envelope.currency)}
                   </Text>
-                </View>
-                <Text style={[styles.transactionAmount, { color: item.type === 'expense' ? COLORS.redText : (isGasto ? COLORS.green : COLORS.white) }]}>
-                  {formatAmount(item.amount, envelope.currency)}
-                </Text>
-              </TouchableOpacity>
+                </TouchableOpacity>
+              </Swipeable>
             );
           }}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
         />
       </View>
+
+      {pendingDeleteId !== null && (
+        <View style={styles.undoBanner}>
+          <Text style={styles.undoText}>Transacción eliminada</Text>
+          <TouchableOpacity onPress={handleUndoDelete}>
+            <Text style={styles.undoBtnText}>Deshacer</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('CreateTransaction', { envelopeId })}>
         <Text style={styles.fabText}>+ Nueva transacción</Text>
@@ -435,4 +489,15 @@ const styles = StyleSheet.create({
   pageBtnTextActive: { color: COLORS.bg },
   fab: { position: 'absolute', bottom: 30, right: 20, backgroundColor: COLORS.green, paddingVertical: 16, paddingHorizontal: 24, borderRadius: 30 },
   fabText: { color: COLORS.bg, fontSize: 16, fontWeight: 'bold' },
+  deleteAction: {
+    backgroundColor: COLORS.redText, justifyContent: 'center', alignItems: 'center',
+    width: 72, height: '100%',
+  },
+  undoBanner: {
+    position: 'absolute', left: 20, right: 20, bottom: 96,
+    backgroundColor: '#1a3a4a', borderRadius: 14, paddingVertical: 14, paddingHorizontal: 18,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  },
+  undoText: { color: COLORS.white, fontSize: 14, fontWeight: '600' },
+  undoBtnText: { color: COLORS.green, fontSize: 14, fontWeight: '700' },
 });
