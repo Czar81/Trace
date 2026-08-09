@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Switch, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ArrowLeft, Check } from 'lucide-react-native';
 import { EnvelopeType } from '../types';
+import { RootStackParamList } from '../navigation/types';
 import { CurrencyInput } from '../components/CurrencyInput';
 import { EnvelopeIcon, IconName } from '../components/EnvelopeIcon';
 import { IconPicker } from '../components/IconPicker';
@@ -22,7 +24,9 @@ const COLORS = {
   secondaryText: SHARED.secondaryText,
 };
 
-export const CreateEnvelopeScreen = ({ route, navigation }: any) => {
+type Props = NativeStackScreenProps<RootStackParamList, 'CreateEnvelope'>;
+
+export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
   const { envelopeType, envelope } = route.params;
   const { addEnvelope, updateEnvelope, settings } = useAppData();
 

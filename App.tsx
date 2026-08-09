@@ -16,19 +16,7 @@ import { PaymentMethodsSettingsScreen } from './src/screens/PaymentMethodsSettin
 import { CategoriesSettingsScreen } from './src/screens/CategoriesSettingsScreen';
 import { CutoffSettingsScreen } from './src/screens/CutoffSettingsScreen';
 import { ReportsScreen } from './src/screens/ReportsScreen';
-
-type RootStackParamList = {
-  Main: undefined;
-  EnvelopeDetail: undefined;
-  CreateEnvelope: undefined;
-  CreateTransaction: undefined;
-  Settings: undefined;
-  CurrencySettings: undefined;
-  PaymentMethodsSettings: undefined;
-  CategoriesSettings: undefined;
-  CutoffSettings: undefined;
-  Reports: undefined;
-};
+import { RootStackParamList } from './src/navigation/types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 

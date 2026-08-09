@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ArrowLeft } from 'lucide-react-native';
 import { Dropdown } from '../components/Dropdown';
 import { Currency } from '../types';
+import { RootStackParamList } from '../navigation/types';
 import { COLORS as SHARED } from '../theme/colors';
 
 const COLORS = {
@@ -19,7 +21,9 @@ const COLORS = {
   divider: SHARED.divider,
 };
 
-export const CurrencySettingsScreen = ({ navigation }: any) => {
+type Props = NativeStackScreenProps<RootStackParamList, 'CurrencySettings'>;
+
+export const CurrencySettingsScreen = ({ navigation }: Props) => {
   const { settings, updateSettings } = useAppData();
   const [usdRate, setUsdRate] = useState(settings.exchangeRates.USD_TO_CRC.toString());
   const [eurRate, setEurRate] = useState(settings.exchangeRates.EUR_TO_CRC.toString());

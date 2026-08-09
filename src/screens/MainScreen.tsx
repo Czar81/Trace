@@ -1,8 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Animated, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { EnvelopeType, Currency, Envelope } from '../types';
+import { RootStackParamList } from '../navigation/types';
 import { Settings, MoreVertical, RefreshCw } from 'lucide-react-native';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -25,7 +27,9 @@ const COLORS = {
 
 const CURRENCY_CYCLE: Currency[] = ['CRC', 'USD', 'EUR'];
 
-export const MainScreen = ({ navigation }: any) => {
+type Props = NativeStackScreenProps<RootStackParamList, 'Main'>;
+
+export const MainScreen = ({ navigation }: Props) => {
   const { envelopes, getTotalByType, getEnvelopeBalance, formatAmount, settings, convertToCRC, resetAllEnvelopes, paymentMethods, categories, transactions } = useAppData();
   const [activeTab, setActiveTab] = useState<EnvelopeType>('gasto');
   const [displayCurrency, setDisplayCurrency] = useState<Currency>(settings.defaultCurrency);

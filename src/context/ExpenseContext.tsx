@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Envelope, Transaction, EnvelopeType, PaymentMethod, TransactionCategory, AppSettings, Currency } from '../types';
 import {
   loadEnvelopes, saveEnvelopes,
@@ -15,7 +15,7 @@ import { formatCurrency } from '../utils/formatCurrency';
  * otherwise last month's. Clamped to the target month's last day so cutoffDay values
  * like 31 don't roll over into the next month on shorter months.
  */
-function getCutoffPeriodStart(now: Date, cutoffDay: number): Date {
+export function getCutoffPeriodStart(now: Date, cutoffDay: number): Date {
   const targetMonth = now.getDate() >= cutoffDay ? now.getMonth() : now.getMonth() - 1;
   const daysInTargetMonth = new Date(now.getFullYear(), targetMonth + 1, 0).getDate();
   const day = Math.min(cutoffDay, daysInTargetMonth);
@@ -147,20 +147,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [envelopes, getEnvelopeBalance, convertToCRC]);
 
   // ─── Envelope CRUD ─────────────────────────────────────────────────────────
-  const addEnvelope = async (envelopeData: Omit<Envelope, 'id'>) => {
+  const addEnvelope = useCallback(async (envelopeData: Omit<Envelope, 'id'>) => {
     const newEnvelope: Envelope = { ...envelopeData, id: Date.now().toString() };
     const updated = [newEnvelope, ...envelopes];
     setEnvelopes(updated);
     await saveEnvelopes(updated);
-  };
+  }, [envelopes]);
 
-  const updateEnvelope = async (id: string, updates: Partial<Omit<Envelope, 'id'>>) => {
+  const updateEnvelope = useCallback(async (id: string, updates: Partial<Omit<Envelope, 'id'>>) => {
     const updated = envelopes.map(e => (e.id === id ? { ...e, ...updates } : e));
     setEnvelopes(updated);
     await saveEnvelopes(updated);
-  };
+  }, [envelopes]);
 
-  const deleteEnvelope = async (id: string) => {
+  const deleteEnvelope = useCallback(async (id: string) => {
     const updatedEnvelopes = envelopes.filter(e => e.id !== id);
     // Also remove associated transactions
     const updatedTransactions = transactions.filter(t => t.envelopeId !== id);
@@ -168,9 +168,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTransactions(updatedTransactions);
     await saveEnvelopes(updatedEnvelopes);
     await saveTransactions(updatedTransactions);
-  };
+  }, [envelopes, transactions]);
 
-  const archiveTransactions = async (envelopeId?: string) => {
+  const archiveTransactions = useCallback(async (envelopeId?: string) => {
     const updatedTransactions = transactions.map(t =>
       !t.isArchived && (envelopeId == null || t.envelopeId === envelopeId)
         ? { ...t, isArchived: true, archivedAt: new Date().toISOString() }
@@ -178,14 +178,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
     setTransactions(updatedTransactions);
     await saveTransactions(updatedTransactions);
-  };
+  }, [transactions]);
 
-  const resetEnvelope = (envelopeId: string) => archiveTransactions(envelopeId);
+  const resetEnvelope = useCallback((envelopeId: string) => archiveTransactions(envelopeId), [archiveTransactions]);
 
-  const resetAllEnvelopes = () => archiveTransactions();
+  const resetAllEnvelopes = useCallback(() => archiveTransactions(), [archiveTransactions]);
 
   // ─── Transaction CRUD ──────────────────────────────────────────────────────
-  const addTransaction = async (transactionData: Omit<Transaction, 'id' | 'isArchived'>) => {
+  const addTransaction = useCallback(async (transactionData: Omit<Transaction, 'id' | 'isArchived'>) => {
     const newTransaction: Transaction = {
       ...transactionData,
       id: Date.now().toString(),
@@ -195,57 +195,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = [newTransaction, ...transactions];
     setTransactions(updated);
     await saveTransactions(updated);
-  };
+  }, [transactions]);
 
-  const updateTransaction = async (id: string, updates: Partial<Omit<Transaction, 'id'>>) => {
+  const updateTransaction = useCallback(async (id: string, updates: Partial<Omit<Transaction, 'id'>>) => {
     const updated = transactions.map(t => (t.id === id ? { ...t, ...updates } : t));
     setTransactions(updated);
     await saveTransactions(updated);
-  };
+  }, [transactions]);
 
-  const deleteTransaction = async (id: string) => {
+  const deleteTransaction = useCallback(async (id: string) => {
     const updated = transactions.filter(t => t.id !== id);
     setTransactions(updated);
     await saveTransactions(updated);
-  };
+  }, [transactions]);
 
   // ─── Payment Methods CRUD ──────────────────────────────────────────────────
-  const addPaymentMethod = async (name: string) => {
+  const addPaymentMethod = useCallback(async (name: string) => {
     const newPM: PaymentMethod = { id: Date.now().toString(), name };
     const updated = [...paymentMethods, newPM];
     setPaymentMethods(updated);
     await savePaymentMethods(updated);
-  };
+  }, [paymentMethods]);
 
-  const deletePaymentMethod = async (id: string) => {
+  const deletePaymentMethod = useCallback(async (id: string) => {
     const updated = paymentMethods.filter(pm => pm.id !== id);
     setPaymentMethods(updated);
     await savePaymentMethods(updated);
-  };
+  }, [paymentMethods]);
 
   // ─── Categories CRUD ───────────────────────────────────────────────────────
-  const addCategory = async (name: string) => {
+  const addCategory = useCallback(async (name: string) => {
     const newCat: TransactionCategory = { id: Date.now().toString(), name };
     const updated = [...categories, newCat];
     setCategories(updated);
     await saveCategories(updated);
-  };
+  }, [categories]);
 
-  const deleteCategory = async (id: string) => {
+  const deleteCategory = useCallback(async (id: string) => {
     const updated = categories.filter(c => c.id !== id);
     setCategories(updated);
     await saveCategories(updated);
-  };
+  }, [categories]);
 
   // ─── Settings ──────────────────────────────────────────────────────────────
-  const updateSettings = async (updates: Partial<AppSettings>) => {
+  const updateSettings = useCallback(async (updates: Partial<AppSettings>) => {
     const updated = { ...settings, ...updates };
     setSettings(updated);
     await saveSettings(updated);
-  };
+  }, [settings]);
 
   // ─── Import/Export ─────────────────────────────────────────────────────────
-  const importFromBackup = async () => {
+  const importFromBackup = useCallback(async () => {
     try {
       const importResult = await pickAndImportBackup();
       if (!importResult) {
@@ -277,19 +277,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (error) {
       return { success: false, message: `Error: ${error}` };
     }
-  };
+  }, []);
+
+  const value = useMemo(() => ({
+    envelopes, transactions, paymentMethods, categories, settings,
+    addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
+    addTransaction, updateTransaction, deleteTransaction,
+    addPaymentMethod, deletePaymentMethod,
+    addCategory, deleteCategory,
+    updateSettings,
+    importFromBackup,
+    getEnvelopeBalance, getTotalByType, convertToCRC, formatAmount,
+  }), [
+    envelopes, transactions, paymentMethods, categories, settings,
+    addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
+    addTransaction, updateTransaction, deleteTransaction,
+    addPaymentMethod, deletePaymentMethod,
+    addCategory, deleteCategory,
+    updateSettings,
+    importFromBackup,
+    getEnvelopeBalance, getTotalByType, convertToCRC, formatAmount,
+  ]);
 
   return (
-    <AppContext.Provider value={{
-      envelopes, transactions, paymentMethods, categories, settings,
-      addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
-      addTransaction, updateTransaction, deleteTransaction,
-      addPaymentMethod, deletePaymentMethod,
-      addCategory, deleteCategory,
-      updateSettings,
-      importFromBackup,
-      getEnvelopeBalance, getTotalByType, convertToCRC, formatAmount,
-    }}>
+    <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   );

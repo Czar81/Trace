@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { ArrowLeft, RefreshCw, Edit2, Trash2, Calendar, X } from 'lucide-react-native';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Transaction } from '../types';
+import { RootStackParamList } from '../navigation/types';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { COLORS as SHARED } from '../theme/colors';
 
@@ -26,7 +28,9 @@ type DialogState =
   | { type: 'deleteEnvelope' }
   | { type: 'deleteTransaction'; transaction: Transaction };
 
-export const EnvelopeDetailScreen = ({ route, navigation }: any) => {
+type Props = NativeStackScreenProps<RootStackParamList, 'EnvelopeDetail'>;
+
+export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
   const { envelopeId } = route.params;
   const {
     envelopes, transactions,

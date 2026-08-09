@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { ArrowLeft, ChevronRight, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3 } from 'lucide-react-native';
 import { exportDataToCSV } from '../utils/exportData';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { RootStackParamList } from '../navigation/types';
 import { COLORS as SHARED } from '../theme/colors';
 
 const COLORS = {
@@ -17,7 +19,9 @@ const COLORS = {
   divider: SHARED.divider,
 };
 
-export const SettingsScreen = ({ navigation }: any) => {
+type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
+
+export const SettingsScreen = ({ navigation }: Props) => {
   const {
     envelopes, transactions, paymentMethods, categories, settings,
     importFromBackup, resetAllEnvelopes,

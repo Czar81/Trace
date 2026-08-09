@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { ArrowLeft, ChevronRight, RefreshCw } from 'lucide-react-native';
 import { Dropdown } from '../components/Dropdown';
+import { RootStackParamList } from '../navigation/types';
 import { COLORS as SHARED } from '../theme/colors';
 
 const COLORS = {
@@ -15,7 +17,9 @@ const COLORS = {
   divider: SHARED.divider,
 };
 
-export const CutoffSettingsScreen = ({ navigation }: any) => {
+type Props = NativeStackScreenProps<RootStackParamList, 'CutoffSettings'>;
+
+export const CutoffSettingsScreen = ({ navigation }: Props) => {
   const { settings, updateSettings } = useAppData();
 
   const cutoffOptions = Array.from({ length: 31 }, (_, i) => ({

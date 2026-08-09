@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ArrowLeft, Check, PlusCircle, MinusCircle } from 'lucide-react-native';
@@ -8,6 +9,7 @@ import { CurrencyInput } from '../components/CurrencyInput';
 import { Dropdown } from '../components/Dropdown';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar } from 'lucide-react-native';
+import { RootStackParamList } from '../navigation/types';
 import { COLORS as SHARED } from '../theme/colors';
 
 const COLORS = {
@@ -21,7 +23,9 @@ const COLORS = {
   secondaryText: SHARED.secondaryText,
 };
 
-export const CreateTransactionScreen = ({ route, navigation }: any) => {
+type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransaction'>;
+
+export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   const { envelopeId, transaction } = route.params;
   const { envelopes, addTransaction, updateTransaction, paymentMethods, categories } = useAppData();
 

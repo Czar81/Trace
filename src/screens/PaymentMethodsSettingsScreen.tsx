@@ -1,8 +1,12 @@
 import React from 'react';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { SimpleListSettingsScreen } from '../components/SimpleListSettingsScreen';
+import { RootStackParamList } from '../navigation/types';
 
-export const PaymentMethodsSettingsScreen = ({ navigation }: any) => {
+type Props = NativeStackScreenProps<RootStackParamList, 'PaymentMethodsSettings'>;
+
+export const PaymentMethodsSettingsScreen = ({ navigation }: Props) => {
   const { paymentMethods, addPaymentMethod, deletePaymentMethod } = useAppData();
 
   return (

@@ -1,8 +1,12 @@
 import React from 'react';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { SimpleListSettingsScreen } from '../components/SimpleListSettingsScreen';
+import { RootStackParamList } from '../navigation/types';
 
-export const CategoriesSettingsScreen = ({ navigation }: any) => {
+type Props = NativeStackScreenProps<RootStackParamList, 'CategoriesSettings'>;
+
+export const CategoriesSettingsScreen = ({ navigation }: Props) => {
   const { categories, addCategory, deleteCategory } = useAppData();
 
   return (
