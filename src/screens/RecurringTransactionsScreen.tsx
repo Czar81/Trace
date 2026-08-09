@@ -53,7 +53,7 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
             <TouchableOpacity
               style={styles.card}
               activeOpacity={0.8}
-              onPress={() => handleToggleActive(item)}
+              onPress={() => navigation.navigate('CreateRecurringTransaction', { template: item })}
             >
               <View style={styles.cardMain}>
                 <Text style={styles.cardTitle}>{envelope?.name ?? 'Sobre eliminado'}</Text>
