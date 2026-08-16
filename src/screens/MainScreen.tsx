@@ -1,31 +1,24 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Animated, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { EnvelopeType, Currency, Envelope } from '../types';
+import { RootStackParamList } from '../navigation/types';
 import { Settings, MoreVertical, RefreshCw } from 'lucide-react-native';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { COLORS as SHARED } from '../theme/colors';
+import { EmptyState } from '../components/EmptyState';
+import { COLORS } from '../theme/colors';
 import { formatCurrency } from '../utils/formatCurrency';
 
 const { width } = Dimensions.get('window');
 
-const COLORS = {
-  bg: SHARED.bg,
-  cardBg: SHARED.cardBg,
-  green: SHARED.green,
-  redText: SHARED.red,
-  blueText: SHARED.blue,
-  white: SHARED.white,
-  secondaryText: SHARED.secondaryText,
-  tabActive: SHARED.green,
-  tabInactive: SHARED.secondaryText,
-};
-
 const CURRENCY_CYCLE: Currency[] = ['CRC', 'USD', 'EUR'];
 
-export const MainScreen = ({ navigation }: any) => {
+type Props = NativeStackScreenProps<RootStackParamList, 'Main'>;
+
+export const MainScreen = ({ navigation }: Props) => {
   const { envelopes, getTotalByType, getEnvelopeBalance, formatAmount, settings, convertToCRC, resetAllEnvelopes, paymentMethods, categories, transactions } = useAppData();
   const [activeTab, setActiveTab] = useState<EnvelopeType>('gasto');
   const [displayCurrency, setDisplayCurrency] = useState<Currency>(settings.defaultCurrency);
@@ -86,7 +79,7 @@ export const MainScreen = ({ navigation }: any) => {
     // 1. Balance Text Color
     let textColor = COLORS.white;
     if (remaining < 0) {
-      textColor = COLORS.redText;
+      textColor = COLORS.red;
     } else if (isGasto && remaining > 0) {
       textColor = COLORS.green;
     } else {
@@ -96,17 +89,17 @@ export const MainScreen = ({ navigation }: any) => {
     // 2. Progress Circle Logic
     let progress = 0;
     let progressColor = COLORS.green;
-    let iconColor = isGasto ? COLORS.redText : COLORS.blueText;
+    let iconColor = isGasto ? COLORS.red : COLORS.blue;
 
     if (isGasto) {
       if (item.isUnlimited) {
         progress = 1;
-        progressColor = COLORS.blueText;
+        progressColor = COLORS.blue;
       } else {
         // Spent / Limit
         const spent = -balance; 
         progress = Math.max(0, spent / item.limit);
-        progressColor = remaining < 0 ? COLORS.redText : COLORS.green;
+        progressColor = remaining < 0 ? COLORS.red : COLORS.green;
       }
     } else {
       // Savings
@@ -154,9 +147,11 @@ export const MainScreen = ({ navigation }: any) => {
           keyExtractor={item => item.id}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>
-              No hay sobres. Toca "+ Crear Sobre" para comenzar.
-            </Text>
+            <EmptyState
+              message="No hay sobres todavía."
+              ctaLabel="+ Crear Sobre"
+              onPress={() => navigation.navigate('CreateEnvelope', { envelopeType: type })}
+            />
           }
           renderItem={renderEnvelope}
         />
@@ -209,7 +204,7 @@ export const MainScreen = ({ navigation }: any) => {
               ? (totalCRC < 0 ? 'Total excedido' : 'Total disponible')
               : 'Total ahorrado'}
           </Text>
-          <Text style={[styles.summaryTotal, totalCRC < 0 && { color: COLORS.redText }]}>
+          <Text style={[styles.summaryTotal, totalCRC < 0 && { color: COLORS.red }]}>
             {totalDisplay}
           </Text>
         </View>
@@ -246,8 +241,8 @@ const styles = StyleSheet.create({
   iconBtn: { padding: 8 },
   tabContainer: { flexDirection: 'row', marginHorizontal: 20, height: 48, position: 'relative', marginBottom: 16 },
   tab: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  tabIndicator: { position: 'absolute', bottom: 0, height: 2, backgroundColor: COLORS.tabActive, borderRadius: 1 },
-  tabText: { color: COLORS.tabInactive, fontSize: 16, fontWeight: '600' },
+  tabIndicator: { position: 'absolute', bottom: 0, height: 2, backgroundColor: COLORS.green, borderRadius: 1 },
+  tabText: { color: COLORS.secondaryText, fontSize: 16, fontWeight: '600' },
   activeTabText: { color: COLORS.white },
   summaryCard: { backgroundColor: COLORS.cardBg, marginHorizontal: 20, borderRadius: 16, padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   currencyBtn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, backgroundColor: '#142E3D' },

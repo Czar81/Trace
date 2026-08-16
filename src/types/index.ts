@@ -37,6 +37,23 @@ export interface Transaction {
   archivedAt?: string;
 }
 
+export type RecurrenceFrequency = 'monthly';
+
+export interface RecurringTransactionTemplate {
+  id: string;
+  envelopeId: string;
+  type: 'expense' | 'income';
+  amount: number;
+  description: string;
+  paymentMethodId?: string;
+  categoryId?: string;
+  sourceSavingsEnvelopeId?: string;
+  frequency: RecurrenceFrequency;
+  dayOfMonth: number; // 1-31
+  isActive: boolean;
+  lastGeneratedPeriod: string | null; // 'YYYY-MM'
+}
+
 export interface AppSettings {
   defaultCurrency: Currency;
   exchangeRates: {
@@ -45,4 +62,5 @@ export interface AppSettings {
   };
   expenseCutoffEnabled: boolean;
   expenseCutoffDay: number | null;
+  budgetAlertsEnabled: boolean;
 }

@@ -1,5 +1,6 @@
 import React from 'react';
 import { StatusBar } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -16,44 +17,38 @@ import { PaymentMethodsSettingsScreen } from './src/screens/PaymentMethodsSettin
 import { CategoriesSettingsScreen } from './src/screens/CategoriesSettingsScreen';
 import { CutoffSettingsScreen } from './src/screens/CutoffSettingsScreen';
 import { ReportsScreen } from './src/screens/ReportsScreen';
-
-type RootStackParamList = {
-  Main: undefined;
-  EnvelopeDetail: undefined;
-  CreateEnvelope: undefined;
-  CreateTransaction: undefined;
-  Settings: undefined;
-  CurrencySettings: undefined;
-  PaymentMethodsSettings: undefined;
-  CategoriesSettings: undefined;
-  CutoffSettings: undefined;
-  Reports: undefined;
-};
+import { RecurringTransactionsScreen } from './src/screens/RecurringTransactionsScreen';
+import { CreateRecurringTransactionScreen } from './src/screens/CreateRecurringTransactionScreen';
+import { RootStackParamList } from './src/navigation/types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <StatusBar barStyle="light-content" backgroundColor="#092230" />
-      <KeyboardProvider>
-        <AppProvider>
-          <NavigationContainer>
-            <Stack.Navigator id="root" screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#092230' } }}>
-              <Stack.Screen name="Main" component={MainScreen} />
-              <Stack.Screen name="EnvelopeDetail" component={EnvelopeDetailScreen} />
-              <Stack.Screen name="CreateEnvelope" component={CreateEnvelopeScreen} />
-              <Stack.Screen name="CreateTransaction" component={CreateTransactionScreen} />
-              <Stack.Screen name="Settings" component={SettingsScreen} />
-              <Stack.Screen name="CurrencySettings" component={CurrencySettingsScreen} />
-              <Stack.Screen name="PaymentMethodsSettings" component={PaymentMethodsSettingsScreen} />
-              <Stack.Screen name="CategoriesSettings" component={CategoriesSettingsScreen} />
-              <Stack.Screen name="CutoffSettings" component={CutoffSettingsScreen} />
-              <Stack.Screen name="Reports" component={ReportsScreen} />
-            </Stack.Navigator>
-          </NavigationContainer>
-        </AppProvider>
-      </KeyboardProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <StatusBar barStyle="light-content" backgroundColor="#092230" />
+        <KeyboardProvider>
+          <AppProvider>
+            <NavigationContainer>
+              <Stack.Navigator id="root" screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#092230' } }}>
+                <Stack.Screen name="Main" component={MainScreen} />
+                <Stack.Screen name="EnvelopeDetail" component={EnvelopeDetailScreen} />
+                <Stack.Screen name="CreateEnvelope" component={CreateEnvelopeScreen} />
+                <Stack.Screen name="CreateTransaction" component={CreateTransactionScreen} />
+                <Stack.Screen name="Settings" component={SettingsScreen} />
+                <Stack.Screen name="CurrencySettings" component={CurrencySettingsScreen} />
+                <Stack.Screen name="PaymentMethodsSettings" component={PaymentMethodsSettingsScreen} />
+                <Stack.Screen name="CategoriesSettings" component={CategoriesSettingsScreen} />
+                <Stack.Screen name="CutoffSettings" component={CutoffSettingsScreen} />
+                <Stack.Screen name="Reports" component={ReportsScreen} />
+                <Stack.Screen name="Recurring" component={RecurringTransactionsScreen} />
+                <Stack.Screen name="CreateRecurringTransaction" component={CreateRecurringTransactionScreen} />
+              </Stack.Navigator>
+            </NavigationContainer>
+          </AppProvider>
+        </KeyboardProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

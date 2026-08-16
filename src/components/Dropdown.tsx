@@ -4,7 +4,7 @@ import {
   StyleSheet, SafeAreaView, TextInput,
 } from 'react-native';
 import { ChevronDown, Check } from 'lucide-react-native';
-import { COLORS as SHARED } from '../theme/colors';
+import { COLORS } from '../theme/colors';
 
 export interface DropdownOption {
   label: string;
@@ -20,15 +20,7 @@ interface DropdownProps {
   searchable?: boolean;
 }
 
-const COLORS = {
-  bg: SHARED.bg,
-  cardBg: SHARED.cardBg,
-  green: SHARED.green,
-  white: SHARED.white,
-  secondaryText: SHARED.secondaryText,
-  divider: SHARED.divider,
-  overlay: 'rgba(0,0,0,0.6)',
-};
+const OVERLAY = 'rgba(0,0,0,0.6)';
 
 export const Dropdown: React.FC<DropdownProps> = ({
   label,
@@ -108,19 +100,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#1F3A47',
+    backgroundColor: COLORS.cardBg,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
   triggerText: { color: COLORS.white, fontSize: 16, flex: 1 },
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: COLORS.overlay },
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: OVERLAY },
   sheet: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#0d2e42',
+    backgroundColor: COLORS.modalSheet,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
@@ -130,7 +122,7 @@ const styles = StyleSheet.create({
   },
   sheetTitle: { color: COLORS.white, fontSize: 18, fontWeight: '700', marginBottom: 16, textAlign: 'center' },
   searchInput: {
-    backgroundColor: '#1F3A47',
+    backgroundColor: COLORS.cardBg,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { COLORS as SHARED } from '../theme/colors';
+import { COLORS } from '../theme/colors';
 
 export interface ActionMenuItem {
   label: string;
@@ -15,13 +15,7 @@ interface ActionMenuProps {
   onClose: () => void;
 }
 
-const COLORS = {
-  overlay: 'rgba(0,0,0,0.4)',
-  sheet: SHARED.cardBg,
-  white: SHARED.white,
-  red: SHARED.red,
-  divider: SHARED.divider,
-};
+const OVERLAY = 'rgba(0,0,0,0.4)';
 
 export const ActionMenu: React.FC<ActionMenuProps> = ({ visible, items, onClose }) => {
   return (
@@ -51,13 +45,13 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({ visible, items, onClose 
 };
 
 const styles = StyleSheet.create({
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: COLORS.overlay },
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: OVERLAY },
   popup: {
     position: 'absolute',
     top: 60,
     right: 20,
     minWidth: 200,
-    backgroundColor: COLORS.sheet,
+    backgroundColor: COLORS.cardBg,
     borderRadius: 16,
     paddingVertical: 8,
     shadowColor: '#000',
