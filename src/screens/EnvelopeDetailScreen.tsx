@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
-import { ArrowLeft, RefreshCw, Edit2, Trash2, Calendar, X } from 'lucide-react-native';
+import { ArrowLeft, RefreshCw, Edit2, Trash2, Calendar, X, ArrowLeftRight } from 'lucide-react-native';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
 import { RootStackParamList } from '../navigation/types';
@@ -33,7 +33,11 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
 
   const envelope = envelopes.find(e => e.id === envelopeId);
   const envelopeTransactions = transactions.filter(t =>
-    !t.isArchived && (t.envelopeId === envelopeId || t.sourceSavingsEnvelopeId === envelopeId)
+    !t.isArchived && (
+      t.envelopeId === envelopeId ||
+      t.sourceSavingsEnvelopeId === envelopeId ||
+      t.toEnvelopeId === envelopeId
+    )
   );
 
   const periodKey = (dateStr: string) => {
@@ -232,6 +236,12 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={styles.iconBtn}
+            onPress={() => navigation.navigate('CreateTransfer', { envelopeId })}
+          >
+            <ArrowLeftRight color={COLORS.secondaryText} size={20} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.iconBtn}
             onPress={() => navigation.navigate('CreateEnvelope', { envelopeType: envelope.type, envelope })}
           >
             <Edit2 color={COLORS.secondaryText} size={20} />
@@ -387,6 +397,11 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
           renderItem={({ item }) => {
             const pm = paymentMethods.find(p => p.id === item.paymentMethodId);
             const cat = categories.find(c => c.id === item.categoryId);
+            const isTransfer = item.type === 'transfer';
+            const isOutgoingTransfer = isTransfer && item.envelopeId === envelopeId;
+            const otherEnvelopeId = isOutgoingTransfer ? item.toEnvelopeId : item.envelopeId;
+            const otherEnvelopeName = envelopes.find(e => e.id === otherEnvelopeId)?.name ?? 'sobre eliminado';
+
             return (
               <Swipeable
                 renderRightActions={() => (
@@ -400,6 +415,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
               >
                 <TouchableOpacity
                   style={styles.transactionItem}
+                  disabled={isTransfer}
                   onPress={() => navigation.navigate('CreateTransaction', { envelopeId: item.envelopeId, transaction: item })}
                 >
                   <View style={styles.transactionLeft}>
@@ -409,10 +425,14 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                       {cat ? ` · ${cat.name}` : ''}
                       {pm ? ` · ${pm.name}` : ''}
                       {item.sourceSavingsEnvelopeId ? ` · Pago desde ${envelopes.find(e => e.id === item.sourceSavingsEnvelopeId)?.name ?? 'ahorro'}` : ''}
+                      {isTransfer ? (isOutgoingTransfer ? ` · → ${otherEnvelopeName}` : ` · ← ${otherEnvelopeName}`) : ''}
                     </Text>
                   </View>
-                  <Text style={[styles.transactionAmount, { color: item.type === 'expense' ? COLORS.red : (isGasto ? COLORS.green : COLORS.white) }]}>
-                    {formatAmount(item.amount, envelope.currency)}
+                  <Text style={[
+                    styles.transactionAmount,
+                    { color: isTransfer ? COLORS.blue : (item.type === 'expense' ? COLORS.red : (isGasto ? COLORS.green : COLORS.white)) },
+                  ]}>
+                    {isTransfer ? (isOutgoingTransfer ? '→ ' : '← ') : ''}{formatAmount(item.amount, envelope.currency)}
                   </Text>
                 </TouchableOpacity>
               </Swipeable>

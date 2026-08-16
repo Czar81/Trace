@@ -21,7 +21,9 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   const envelope = envelopes.find(e => e.id === envelopeId);
   const isEditing = !!transaction;
 
-  const [type, setType] = useState<'expense' | 'income'>(transaction?.type ?? 'expense');
+  const [type, setType] = useState<'expense' | 'income'>(
+    transaction?.type === 'income' ? 'income' : 'expense'
+  );
   const [amountStr, setAmountStr] = useState(transaction ? String(transaction.amount) : '');
   const [description, setDescription] = useState(transaction?.description ?? '');
   const [paymentMethodId, setPaymentMethodId] = useState(

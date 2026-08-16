@@ -11,6 +11,7 @@ import { MainScreen } from './src/screens/MainScreen';
 import { EnvelopeDetailScreen } from './src/screens/EnvelopeDetailScreen';
 import { CreateEnvelopeScreen } from './src/screens/CreateEnvelopeScreen';
 import { CreateTransactionScreen } from './src/screens/CreateTransactionScreen';
+import { CreateTransferScreen } from './src/screens/CreateTransferScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { CurrencySettingsScreen } from './src/screens/CurrencySettingsScreen';
 import { PaymentMethodsSettingsScreen } from './src/screens/PaymentMethodsSettingsScreen';
@@ -36,6 +37,7 @@ export default function App() {
                 <Stack.Screen name="EnvelopeDetail" component={EnvelopeDetailScreen} />
                 <Stack.Screen name="CreateEnvelope" component={CreateEnvelopeScreen} />
                 <Stack.Screen name="CreateTransaction" component={CreateTransactionScreen} />
+                <Stack.Screen name="CreateTransfer" component={CreateTransferScreen} />
                 <Stack.Screen name="Settings" component={SettingsScreen} />
                 <Stack.Screen name="CurrencySettings" component={CurrencySettingsScreen} />
                 <Stack.Screen name="PaymentMethodsSettings" component={PaymentMethodsSettingsScreen} />
