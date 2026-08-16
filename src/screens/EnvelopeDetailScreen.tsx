@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SectionList, Modal, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -10,6 +10,7 @@ import { EmptyState } from '../components/EmptyState';
 import { RootStackParamList } from '../navigation/types';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { COLORS } from '../theme/colors';
+import { groupTransactionsByDay } from '../utils/transactionGrouping';
 
 const PAGE_SIZE = 10;
 
@@ -138,6 +139,11 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
   const visibleTransactions = useMemo(
     () => periodFiltered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
     [periodFiltered, page]
+  );
+
+  const visibleSections = useMemo(
+    () => groupTransactionsByDay(visibleTransactions),
+    [visibleTransactions]
   );
 
   if (!envelope) return null;
@@ -345,10 +351,13 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
           </SafeAreaView>
         </Modal>
 
-        <FlatList
-          data={visibleTransactions}
+        <SectionList
+          sections={visibleSections}
           keyExtractor={item => item.id}
           contentContainerStyle={{ paddingBottom: 110 }}
+          renderSectionHeader={({ section: { title } }) => (
+            <Text style={styles.sectionHeader}>{title}</Text>
+          )}
           ListEmptyComponent={
             sortedTransactions.length === 0 ? (
               <EmptyState
@@ -447,6 +456,7 @@ const styles = StyleSheet.create({
   availableLabel: { color: COLORS.secondaryText, fontSize: 14 },
   transactionsSection: { flex: 1, marginTop: 28, paddingHorizontal: 20 },
   sectionTitle: { color: COLORS.white, fontSize: 18, fontWeight: '700', marginBottom: 12 },
+  sectionHeader: { color: COLORS.secondaryText, fontSize: 13, fontWeight: '700', backgroundColor: COLORS.bg, paddingTop: 12, paddingBottom: 6 },
   emptyText: { color: COLORS.secondaryText, fontSize: 15, fontStyle: 'italic' },
   transactionItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 },
   transactionLeft: { flex: 1, paddingRight: 12 },

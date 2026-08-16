@@ -52,6 +52,8 @@ export interface RecurringTransactionTemplate {
   dayOfMonth: number; // 1-31
   isActive: boolean;
   lastGeneratedPeriod: string | null; // 'YYYY-MM'
+  reminderNotificationId: string | null;
+  lastReminderScheduledPeriod: string | null; // 'YYYY-MM'
 }
 
 export interface AppSettings {
@@ -63,4 +65,5 @@ export interface AppSettings {
   expenseCutoffEnabled: boolean;
   expenseCutoffDay: number | null;
   budgetAlertsEnabled: boolean;
+  billRemindersEnabled: boolean;
 }
