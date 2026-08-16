@@ -66,6 +66,9 @@ export function calculateEnvelopeBalance(
     if (t.type === 'expense' && t.sourceSavingsEnvelopeId === envelopeId) {
       return sum - t.amount;
     }
+    if (t.type === 'transfer' && t.toEnvelopeId === envelopeId) {
+      return sum + t.amount;
+    }
     return sum;
   }, 0);
 }
@@ -89,6 +92,13 @@ interface AppContextType {
   addTransaction: (transaction: Omit<Transaction, 'id' | 'isArchived'>) => Promise<void>;
   updateTransaction: (id: string, updates: Partial<Omit<Transaction, 'id'>>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
+  addTransfer: (transfer: {
+    envelopeId: string;
+    toEnvelopeId: string;
+    amount: number;
+    description: string;
+    date?: string;
+  }) => Promise<{ success: boolean; error?: string }>;
 
   // Recurring Transaction Template CRUD
   addRecurringTemplate: (template: Omit<RecurringTransactionTemplate, 'id' | 'lastGeneratedPeriod'>) => Promise<void>;
@@ -205,8 +215,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
    * per-envelope lookups (e.g. rendering the envelope list) are O(1) instead of
    * each doing its own O(n) reduce. Mirrors calculateEnvelopeBalance's formula:
    * a transaction affects at most two envelopes (its own envelopeId, and, for
-   * expenses funded from savings, sourceSavingsEnvelopeId), so both effects are
-   * applied per transaction as the map is built.
+   * expenses funded from savings, sourceSavingsEnvelopeId; or for transfers,
+   * toEnvelopeId), so both effects are applied per transaction as the map is built.
    */
   const envelopeBalanceMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -230,6 +240,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (t.type === 'expense' && t.sourceSavingsEnvelopeId) {
         const sourceId = t.sourceSavingsEnvelopeId;
         map.set(sourceId, (map.get(sourceId) ?? 0) - t.amount);
+      }
+      if (t.type === 'transfer' && t.toEnvelopeId) {
+        const destId = t.toEnvelopeId;
+        map.set(destId, (map.get(destId) ?? 0) + t.amount);
       }
     }
 
@@ -395,6 +409,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await saveTransactions(updated);
   }, [transactions]);
 
+  /**
+   * Creates a transfer transaction moving `amount` from `envelopeId` (source)
+   * to `toEnvelopeId` (destination). Validates same-envelope and currency-match
+   * defensively (the UI is expected to validate first, but this guards against
+   * any caller that skips that), and never triggers budget alerts since it
+   * routes through addTransaction with type 'transfer', which addTransaction
+   * only checks alerts for on type === 'expense'.
+   */
+  const addTransfer = useCallback(async (transfer: {
+    envelopeId: string;
+    toEnvelopeId: string;
+    amount: number;
+    description: string;
+    date?: string;
+  }): Promise<{ success: boolean; error?: string }> => {
+    if (transfer.envelopeId === transfer.toEnvelopeId) {
+      return { success: false, error: 'El sobre de origen y destino deben ser diferentes.' };
+    }
+    const source = envelopes.find(e => e.id === transfer.envelopeId);
+    const destination = envelopes.find(e => e.id === transfer.toEnvelopeId);
+    if (!source || !destination) {
+      return { success: false, error: 'Sobre no encontrado.' };
+    }
+    if (source.currency !== destination.currency) {
+      return { success: false, error: 'Los sobres deben tener la misma moneda.' };
+    }
+
+    await addTransaction({
+      envelopeId: transfer.envelopeId,
+      toEnvelopeId: transfer.toEnvelopeId,
+      type: 'transfer',
+      amount: transfer.amount,
+      description: transfer.description,
+      date: transfer.date ?? new Date().toISOString(),
+    });
+    return { success: true };
+  }, [envelopes, addTransaction]);
+
   // ─── Recurring Transaction Template CRUD ───────────────────────────────────
   const addRecurringTemplate = useCallback(async (templateData: Omit<RecurringTransactionTemplate, 'id' | 'lastGeneratedPeriod'>) => {
     const newTemplate: RecurringTransactionTemplate = {
@@ -499,7 +551,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const value = useMemo(() => ({
     envelopes, transactions, paymentMethods, categories, settings, recurringTemplates,
     addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
-    addTransaction, updateTransaction, deleteTransaction,
+    addTransaction, updateTransaction, deleteTransaction, addTransfer,
     addRecurringTemplate, updateRecurringTemplate, deleteRecurringTemplate,
     addPaymentMethod, deletePaymentMethod,
     addCategory, deleteCategory,
@@ -509,7 +561,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }), [
     envelopes, transactions, paymentMethods, categories, settings, recurringTemplates,
     addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
-    addTransaction, updateTransaction, deleteTransaction,
+    addTransaction, updateTransaction, deleteTransaction, addTransfer,
     addRecurringTemplate, updateRecurringTemplate, deleteRecurringTemplate,
     addPaymentMethod, deletePaymentMethod,
     addCategory, deleteCategory,

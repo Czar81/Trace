@@ -211,7 +211,7 @@ export const getMonthlyTrend = (
     const currency = envelopeById.get(t.envelopeId)?.currency ?? 'CRC';
     const amountCRC = convertToCRC(t.amount, currency);
     if (t.type === 'income') bucket.incomeCRC += amountCRC;
-    else bucket.expenseCRC += amountCRC;
+    else if (t.type === 'expense') bucket.expenseCRC += amountCRC;
   }
 
   return buckets;
