@@ -91,7 +91,7 @@ interface AppContextType {
   deleteTransaction: (id: string) => Promise<void>;
 
   // Recurring Transaction Template CRUD
-  addRecurringTemplate: (template: Omit<RecurringTransactionTemplate, 'id' | 'lastGeneratedPeriod'>) => Promise<void>;
+  addRecurringTemplate: (template: Omit<RecurringTransactionTemplate, 'id' | 'lastGeneratedPeriod' | 'reminderNotificationId' | 'lastReminderScheduledPeriod'>) => Promise<void>;
   updateRecurringTemplate: (id: string, updates: Partial<Omit<RecurringTransactionTemplate, 'id'>>) => Promise<void>;
   deleteRecurringTemplate: (id: string) => Promise<void>;
 
@@ -129,16 +129,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     expenseCutoffEnabled: false,
     expenseCutoffDay: null,
     budgetAlertsEnabled: false,
+    billRemindersEnabled: false,
   });
 
   useEffect(() => {
     const initData = async () => {
-      setEnvelopes(await loadEnvelopes());
+      const loadedEnvelopes = await loadEnvelopes();
+      setEnvelopes(loadedEnvelopes);
       const loadedTransactions = await loadTransactions();
       const loadedTemplates = await loadRecurringTemplates();
       setPaymentMethods(await loadPaymentMethods());
       setCategories(await loadCategories());
-      setSettings(await loadSettings());
+      const loadedSettings = await loadSettings();
+      setSettings(loadedSettings);
 
       // ─── Automatic generation of due recurring transactions ──────────────
       const now = new Date();
@@ -173,18 +176,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return { ...template, lastGeneratedPeriod: currentPeriod };
       });
 
+      // ─── Bill reminder scheduling for active templates ────────────────────
+      const templatesWithReminders = await scheduleBillReminders(
+        finalTemplates,
+        loadedEnvelopes,
+        loadedSettings.billRemindersEnabled
+      );
+      await saveRecurringTemplates(templatesWithReminders);
+      setRecurringTemplates(templatesWithReminders);
+
       if (newTransactions.length > 0) {
         const finalTransactions = [...newTransactions, ...loadedTransactions];
         await saveTransactions(finalTransactions);
-        await saveRecurringTemplates(finalTemplates);
         setTransactions(finalTransactions);
-        setRecurringTemplates(finalTemplates);
       } else {
         setTransactions(loadedTransactions);
-        setRecurringTemplates(loadedTemplates);
       }
     };
     initData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ─── Currency helpers ──────────────────────────────────────────────────────
@@ -325,6 +335,74 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [envelopes, settings.budgetAlertsEnabled, computeSpentPercentage]);
 
+  // ─── Bill reminders (scheduled ahead of a recurring template's due date) ───
+  /**
+   * Cancels a template's pending scheduled reminder, if any, and clears the
+   * bookkeeping fields so the next scheduling pass treats it as unscheduled.
+   * Safe to call on a template with no pending reminder (no-op).
+   */
+  const cancelTemplateReminder = useCallback(async (
+    template: RecurringTransactionTemplate
+  ): Promise<RecurringTransactionTemplate> => {
+    if (!template.reminderNotificationId) return template;
+    try {
+      await Notifications.cancelScheduledNotificationAsync(template.reminderNotificationId);
+    } catch (e) {
+      console.error('Error cancelling bill reminder notification', e);
+    }
+    return { ...template, reminderNotificationId: null, lastReminderScheduledPeriod: null };
+  }, []);
+
+  /**
+   * Schedules a local notification 2 days before each active template's
+   * clamped due date for the current period, skipping templates that already
+   * have a reminder scheduled for that occurrence or whose reminder date has
+   * already passed. Takes settings/envelopes explicitly (rather than reading
+   * component state) so it can be called from app-launch code before the
+   * corresponding state has finished updating.
+   */
+  const scheduleBillReminders = useCallback(async (
+    templates: RecurringTransactionTemplate[],
+    envelopesList: Envelope[],
+    billRemindersEnabled: boolean
+  ): Promise<RecurringTransactionTemplate[]> => {
+    if (!billRemindersEnabled) return templates;
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const currentPeriod = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+
+    return Promise.all(templates.map(async (template) => {
+      if (!template.isActive) return template;
+      if (template.lastReminderScheduledPeriod === currentPeriod) return template;
+
+      const clampedDay = clampDayOfMonth(currentYear, currentMonth, template.dayOfMonth);
+      const dueDate = new Date(currentYear, currentMonth, clampedDay, 0, 0, 0, 0);
+      const reminderDate = new Date(dueDate);
+      reminderDate.setDate(reminderDate.getDate() - 2);
+
+      if (reminderDate.getTime() <= now.getTime()) return template;
+
+      const envelope = envelopesList.find(e => e.id === template.envelopeId);
+      const amountLabel = envelope ? formatCurrency(template.amount, envelope.currency) : String(template.amount);
+
+      try {
+        const notificationId = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Factura próxima',
+            body: `"${template.description}" (${amountLabel}) se generará en 2 días.`,
+          },
+          trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: reminderDate },
+        });
+        return { ...template, reminderNotificationId: notificationId, lastReminderScheduledPeriod: currentPeriod };
+      } catch (e) {
+        console.error('Error scheduling bill reminder notification', e);
+        return template;
+      }
+    }));
+  }, []);
+
   // ─── Envelope CRUD ─────────────────────────────────────────────────────────
   const addEnvelope = useCallback(async (envelopeData: Omit<Envelope, 'id'>) => {
     const newEnvelope: Envelope = { ...envelopeData, id: Date.now().toString() };
@@ -396,28 +474,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [transactions]);
 
   // ─── Recurring Transaction Template CRUD ───────────────────────────────────
-  const addRecurringTemplate = useCallback(async (templateData: Omit<RecurringTransactionTemplate, 'id' | 'lastGeneratedPeriod'>) => {
+  const addRecurringTemplate = useCallback(async (
+    templateData: Omit<RecurringTransactionTemplate, 'id' | 'lastGeneratedPeriod' | 'reminderNotificationId' | 'lastReminderScheduledPeriod'>
+  ) => {
     const newTemplate: RecurringTransactionTemplate = {
       ...templateData,
       id: Date.now().toString(),
       lastGeneratedPeriod: null,
+      reminderNotificationId: null,
+      lastReminderScheduledPeriod: null,
     };
     const updated = [newTemplate, ...recurringTemplates];
     setRecurringTemplates(updated);
     await saveRecurringTemplates(updated);
-  }, [recurringTemplates]);
+    const withReminders = await scheduleBillReminders(updated, envelopes, settings.billRemindersEnabled);
+    setRecurringTemplates(withReminders);
+    await saveRecurringTemplates(withReminders);
+  }, [recurringTemplates, envelopes, settings.billRemindersEnabled, scheduleBillReminders]);
 
   const updateRecurringTemplate = useCallback(async (id: string, updates: Partial<Omit<RecurringTransactionTemplate, 'id'>>) => {
-    const updated = recurringTemplates.map(t => (t.id === id ? { ...t, ...updates } : t));
-    setRecurringTemplates(updated);
-    await saveRecurringTemplates(updated);
-  }, [recurringTemplates]);
+    const changesReminderWindow = updates.dayOfMonth !== undefined || updates.isActive === false;
+
+    let workingTemplates = recurringTemplates;
+    if (changesReminderWindow) {
+      const target = recurringTemplates.find(t => t.id === id);
+      if (target) {
+        const cancelled = await cancelTemplateReminder(target);
+        workingTemplates = recurringTemplates.map(t => (t.id === id ? cancelled : t));
+      }
+    }
+
+    const updated = workingTemplates.map(t => (t.id === id ? { ...t, ...updates } : t));
+    const withReminders = await scheduleBillReminders(updated, envelopes, settings.billRemindersEnabled);
+    setRecurringTemplates(withReminders);
+    await saveRecurringTemplates(withReminders);
+  }, [recurringTemplates, envelopes, settings.billRemindersEnabled, cancelTemplateReminder, scheduleBillReminders]);
 
   const deleteRecurringTemplate = useCallback(async (id: string) => {
+    const target = recurringTemplates.find(t => t.id === id);
+    if (target) {
+      await cancelTemplateReminder(target);
+    }
     const updated = recurringTemplates.filter(t => t.id !== id);
     setRecurringTemplates(updated);
     await saveRecurringTemplates(updated);
-  }, [recurringTemplates]);
+  }, [recurringTemplates, cancelTemplateReminder]);
 
   // ─── Payment Methods CRUD ──────────────────────────────────────────────────
   const addPaymentMethod = useCallback(async (name: string) => {
@@ -449,7 +550,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ─── Settings ──────────────────────────────────────────────────────────────
   const updateSettings = useCallback(async (updates: Partial<AppSettings>) => {
-    if (updates.budgetAlertsEnabled === true && !settings.budgetAlertsEnabled) {
+    if (
+      (updates.budgetAlertsEnabled === true && !settings.budgetAlertsEnabled) ||
+      (updates.billRemindersEnabled === true && !settings.billRemindersEnabled)
+    ) {
       try {
         await Notifications.requestPermissionsAsync();
       } catch (e) {
@@ -459,7 +563,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = { ...settings, ...updates };
     setSettings(updated);
     await saveSettings(updated);
-  }, [settings]);
+
+    if (updates.billRemindersEnabled === true && !settings.billRemindersEnabled) {
+      const withReminders = await scheduleBillReminders(recurringTemplates, envelopes, true);
+      setRecurringTemplates(withReminders);
+      await saveRecurringTemplates(withReminders);
+    }
+  }, [settings, recurringTemplates, envelopes, scheduleBillReminders]);
 
   // ─── Import/Export ─────────────────────────────────────────────────────────
   const importFromBackup = useCallback(async () => {

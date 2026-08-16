@@ -148,6 +148,19 @@ export const SettingsScreen = ({ navigation }: Props) => {
           />
         </View>
 
+        <View style={styles.toggleRow}>
+          <View style={styles.toggleTextWrapper}>
+            <Text style={styles.menuTitle}>Recordatorios de facturas</Text>
+            <Text style={styles.menuSubtitle}>Avisa 2 días antes de que se genere una transacción recurrente</Text>
+          </View>
+          <Switch
+            value={settings.billRemindersEnabled}
+            onValueChange={() => updateSettings({ billRemindersEnabled: !settings.billRemindersEnabled })}
+            trackColor={{ false: '#3d4b59', true: COLORS.green }}
+            thumbColor={settings.billRemindersEnabled ? COLORS.green : COLORS.white}
+          />
+        </View>
+
         <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Corte de gastos</Text>
 
         <TouchableOpacity
