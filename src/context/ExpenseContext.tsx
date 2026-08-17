@@ -46,6 +46,8 @@ export function calculateEnvelopeBalance(
   expenseCutoffDay: number | null
 ): number {
   const envelope = envelopes.find(e => e.id === envelopeId);
+  // Explicit equality against 'gasto' (not an else-branch), so this already
+  // correctly excludes 'ahorro' and 'deuda' envelopes from cutoff filtering.
   const isGastoEnvelope = envelope?.type === 'gasto';
   const hasCutoff = isGastoEnvelope && expenseCutoffEnabled && !!expenseCutoffDay;
   const periodStart = hasCutoff ? getCutoffPeriodStart(new Date(), expenseCutoffDay as number) : null;
@@ -65,6 +67,9 @@ export function calculateEnvelopeBalance(
     }
     if (t.type === 'expense' && t.sourceSavingsEnvelopeId === envelopeId) {
       return sum - t.amount;
+    }
+    if (t.type === 'transfer' && t.toEnvelopeId === envelopeId) {
+      return sum + t.amount;
     }
     return sum;
   }, 0);
@@ -89,9 +94,16 @@ interface AppContextType {
   addTransaction: (transaction: Omit<Transaction, 'id' | 'isArchived'>) => Promise<void>;
   updateTransaction: (id: string, updates: Partial<Omit<Transaction, 'id'>>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
+  addTransfer: (transfer: {
+    envelopeId: string;
+    toEnvelopeId: string;
+    amount: number;
+    description: string;
+    date?: string;
+  }) => Promise<{ success: boolean; error?: string }>;
 
   // Recurring Transaction Template CRUD
-  addRecurringTemplate: (template: Omit<RecurringTransactionTemplate, 'id' | 'lastGeneratedPeriod'>) => Promise<void>;
+  addRecurringTemplate: (template: Omit<RecurringTransactionTemplate, 'id' | 'lastGeneratedPeriod' | 'reminderNotificationId' | 'lastReminderScheduledPeriod'>) => Promise<void>;
   updateRecurringTemplate: (id: string, updates: Partial<Omit<RecurringTransactionTemplate, 'id'>>) => Promise<void>;
   deleteRecurringTemplate: (id: string) => Promise<void>;
 
@@ -129,16 +141,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     expenseCutoffEnabled: false,
     expenseCutoffDay: null,
     budgetAlertsEnabled: false,
+    billRemindersEnabled: false,
   });
 
   useEffect(() => {
     const initData = async () => {
-      setEnvelopes(await loadEnvelopes());
+      const loadedEnvelopes = await loadEnvelopes();
+      setEnvelopes(loadedEnvelopes);
       const loadedTransactions = await loadTransactions();
       const loadedTemplates = await loadRecurringTemplates();
       setPaymentMethods(await loadPaymentMethods());
       setCategories(await loadCategories());
-      setSettings(await loadSettings());
+      const loadedSettings = await loadSettings();
+      setSettings(loadedSettings);
 
       // ─── Automatic generation of due recurring transactions ──────────────
       const now = new Date();
@@ -173,18 +188,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return { ...template, lastGeneratedPeriod: currentPeriod };
       });
 
+      // ─── Bill reminder scheduling for active templates ────────────────────
+      const templatesWithReminders = await scheduleBillReminders(
+        finalTemplates,
+        loadedEnvelopes,
+        loadedSettings.billRemindersEnabled
+      );
+      await saveRecurringTemplates(templatesWithReminders);
+      setRecurringTemplates(templatesWithReminders);
+
       if (newTransactions.length > 0) {
         const finalTransactions = [...newTransactions, ...loadedTransactions];
         await saveTransactions(finalTransactions);
-        await saveRecurringTemplates(finalTemplates);
         setTransactions(finalTransactions);
-        setRecurringTemplates(finalTemplates);
       } else {
         setTransactions(loadedTransactions);
-        setRecurringTemplates(loadedTemplates);
       }
     };
     initData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ─── Currency helpers ──────────────────────────────────────────────────────
@@ -205,8 +227,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
    * per-envelope lookups (e.g. rendering the envelope list) are O(1) instead of
    * each doing its own O(n) reduce. Mirrors calculateEnvelopeBalance's formula:
    * a transaction affects at most two envelopes (its own envelopeId, and, for
-   * expenses funded from savings, sourceSavingsEnvelopeId), so both effects are
-   * applied per transaction as the map is built.
+   * expenses funded from savings, sourceSavingsEnvelopeId; or for transfers,
+   * toEnvelopeId), so both effects are applied per transaction as the map is built.
    */
   const envelopeBalanceMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -220,6 +242,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (t.envelopeId) {
         const envelope = envelopeById.get(t.envelopeId);
+        // Explicit 'gasto' check — 'ahorro' and 'deuda' envelopes are never cutoff-filtered.
         const hasCutoff = envelope?.type === 'gasto' && cutoffPeriodStart != null;
         const skip = hasCutoff && t.type === 'expense' && new Date(t.date) < (cutoffPeriodStart as Date);
         if (!skip) {
@@ -230,6 +253,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (t.type === 'expense' && t.sourceSavingsEnvelopeId) {
         const sourceId = t.sourceSavingsEnvelopeId;
         map.set(sourceId, (map.get(sourceId) ?? 0) - t.amount);
+      }
+      if (t.type === 'transfer' && t.toEnvelopeId) {
+        const destId = t.toEnvelopeId;
+        map.set(destId, (map.get(destId) ?? 0) + t.amount);
       }
     }
 
@@ -245,21 +272,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [envelopeBalanceMap, transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay]);
 
   /**
-   * getTotalByType computes the sum of all envelope *available balances* 
+   * getTotalByType computes the sum of all envelope *available balances*
    * converted to CRC for display in the summary card.
    * For 'gasto': sum of (limit + balance) per envelope — total disponible.
    * For 'ahorro': sum of balances — total ahorrado.
+   * For 'deuda': sum of (limit - balance) per non-unlimited envelope — total por pagar.
    */
   const getTotalByType = useCallback((type: EnvelopeType): number => {
     return envelopes
       .filter(e => e.type === type)
       .reduce((total, env) => {
-        // Exclude unlimited expenses from the 'Total Disponible' general
-        if (type === 'gasto' && env.isUnlimited) return total;
+        // Exclude unlimited envelopes from the 'Total Disponible' / 'Total por pagar' totals
+        if ((type === 'gasto' || type === 'deuda') && env.isUnlimited) return total;
 
         const balance = getEnvelopeBalance(env.id);
         const displayValue = type === 'gasto'
           ? env.limit + balance
+          : type === 'deuda'
+          ? env.limit - balance
           : balance;
         return total + convertToCRC(displayValue, env.currency);
       }, 0);
@@ -295,6 +325,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!settings.budgetAlertsEnabled) return;
 
     const envelope = envelopes.find(e => e.id === envelopeId);
+    // Explicit 'gasto' check — already excludes 'ahorro' and 'deuda' envelopes;
+    // a growing debt balance is not "overspending" in the budget-alerts sense.
     if (!envelope || envelope.type !== 'gasto' || envelope.isUnlimited) return;
 
     const before = computeSpentPercentage(envelopeId, beforeTxns);
@@ -324,6 +356,74 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.error('Error scheduling budget alert notification', e);
     }
   }, [envelopes, settings.budgetAlertsEnabled, computeSpentPercentage]);
+
+  // ─── Bill reminders (scheduled ahead of a recurring template's due date) ───
+  /**
+   * Cancels a template's pending scheduled reminder, if any, and clears the
+   * bookkeeping fields so the next scheduling pass treats it as unscheduled.
+   * Safe to call on a template with no pending reminder (no-op).
+   */
+  const cancelTemplateReminder = useCallback(async (
+    template: RecurringTransactionTemplate
+  ): Promise<RecurringTransactionTemplate> => {
+    if (!template.reminderNotificationId) return template;
+    try {
+      await Notifications.cancelScheduledNotificationAsync(template.reminderNotificationId);
+    } catch (e) {
+      console.error('Error cancelling bill reminder notification', e);
+    }
+    return { ...template, reminderNotificationId: null, lastReminderScheduledPeriod: null };
+  }, []);
+
+  /**
+   * Schedules a local notification 2 days before each active template's
+   * clamped due date for the current period, skipping templates that already
+   * have a reminder scheduled for that occurrence or whose reminder date has
+   * already passed. Takes settings/envelopes explicitly (rather than reading
+   * component state) so it can be called from app-launch code before the
+   * corresponding state has finished updating.
+   */
+  const scheduleBillReminders = useCallback(async (
+    templates: RecurringTransactionTemplate[],
+    envelopesList: Envelope[],
+    billRemindersEnabled: boolean
+  ): Promise<RecurringTransactionTemplate[]> => {
+    if (!billRemindersEnabled) return templates;
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const currentPeriod = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+
+    return Promise.all(templates.map(async (template) => {
+      if (!template.isActive) return template;
+      if (template.lastReminderScheduledPeriod === currentPeriod) return template;
+
+      const clampedDay = clampDayOfMonth(currentYear, currentMonth, template.dayOfMonth);
+      const dueDate = new Date(currentYear, currentMonth, clampedDay, 0, 0, 0, 0);
+      const reminderDate = new Date(dueDate);
+      reminderDate.setDate(reminderDate.getDate() - 2);
+
+      if (reminderDate.getTime() <= now.getTime()) return template;
+
+      const envelope = envelopesList.find(e => e.id === template.envelopeId);
+      const amountLabel = envelope ? formatCurrency(template.amount, envelope.currency) : String(template.amount);
+
+      try {
+        const notificationId = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Factura próxima',
+            body: `"${template.description}" (${amountLabel}) se generará en 2 días.`,
+          },
+          trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: reminderDate },
+        });
+        return { ...template, reminderNotificationId: notificationId, lastReminderScheduledPeriod: currentPeriod };
+      } catch (e) {
+        console.error('Error scheduling bill reminder notification', e);
+        return template;
+      }
+    }));
+  }, []);
 
   // ─── Envelope CRUD ─────────────────────────────────────────────────────────
   const addEnvelope = useCallback(async (envelopeData: Omit<Envelope, 'id'>) => {
@@ -395,29 +495,90 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await saveTransactions(updated);
   }, [transactions]);
 
+  /**
+   * Creates a transfer transaction moving `amount` from `envelopeId` (source)
+   * to `toEnvelopeId` (destination). Validates same-envelope and currency-match
+   * defensively (the UI is expected to validate first, but this guards against
+   * any caller that skips that), and never triggers budget alerts since it
+   * routes through addTransaction with type 'transfer', which addTransaction
+   * only checks alerts for on type === 'expense'.
+   */
+  const addTransfer = useCallback(async (transfer: {
+    envelopeId: string;
+    toEnvelopeId: string;
+    amount: number;
+    description: string;
+    date?: string;
+  }): Promise<{ success: boolean; error?: string }> => {
+    if (transfer.envelopeId === transfer.toEnvelopeId) {
+      return { success: false, error: 'El sobre de origen y destino deben ser diferentes.' };
+    }
+    const source = envelopes.find(e => e.id === transfer.envelopeId);
+    const destination = envelopes.find(e => e.id === transfer.toEnvelopeId);
+    if (!source || !destination) {
+      return { success: false, error: 'Sobre no encontrado.' };
+    }
+    if (source.currency !== destination.currency) {
+      return { success: false, error: 'Los sobres deben tener la misma moneda.' };
+    }
+
+    await addTransaction({
+      envelopeId: transfer.envelopeId,
+      toEnvelopeId: transfer.toEnvelopeId,
+      type: 'transfer',
+      amount: transfer.amount,
+      description: transfer.description,
+      date: transfer.date ?? new Date().toISOString(),
+    });
+    return { success: true };
+  }, [envelopes, addTransaction]);
+
   // ─── Recurring Transaction Template CRUD ───────────────────────────────────
-  const addRecurringTemplate = useCallback(async (templateData: Omit<RecurringTransactionTemplate, 'id' | 'lastGeneratedPeriod'>) => {
+  const addRecurringTemplate = useCallback(async (
+    templateData: Omit<RecurringTransactionTemplate, 'id' | 'lastGeneratedPeriod' | 'reminderNotificationId' | 'lastReminderScheduledPeriod'>
+  ) => {
     const newTemplate: RecurringTransactionTemplate = {
       ...templateData,
       id: Date.now().toString(),
       lastGeneratedPeriod: null,
+      reminderNotificationId: null,
+      lastReminderScheduledPeriod: null,
     };
     const updated = [newTemplate, ...recurringTemplates];
     setRecurringTemplates(updated);
     await saveRecurringTemplates(updated);
-  }, [recurringTemplates]);
+    const withReminders = await scheduleBillReminders(updated, envelopes, settings.billRemindersEnabled);
+    setRecurringTemplates(withReminders);
+    await saveRecurringTemplates(withReminders);
+  }, [recurringTemplates, envelopes, settings.billRemindersEnabled, scheduleBillReminders]);
 
   const updateRecurringTemplate = useCallback(async (id: string, updates: Partial<Omit<RecurringTransactionTemplate, 'id'>>) => {
-    const updated = recurringTemplates.map(t => (t.id === id ? { ...t, ...updates } : t));
-    setRecurringTemplates(updated);
-    await saveRecurringTemplates(updated);
-  }, [recurringTemplates]);
+    const changesReminderWindow = updates.dayOfMonth !== undefined || updates.isActive === false;
+
+    let workingTemplates = recurringTemplates;
+    if (changesReminderWindow) {
+      const target = recurringTemplates.find(t => t.id === id);
+      if (target) {
+        const cancelled = await cancelTemplateReminder(target);
+        workingTemplates = recurringTemplates.map(t => (t.id === id ? cancelled : t));
+      }
+    }
+
+    const updated = workingTemplates.map(t => (t.id === id ? { ...t, ...updates } : t));
+    const withReminders = await scheduleBillReminders(updated, envelopes, settings.billRemindersEnabled);
+    setRecurringTemplates(withReminders);
+    await saveRecurringTemplates(withReminders);
+  }, [recurringTemplates, envelopes, settings.billRemindersEnabled, cancelTemplateReminder, scheduleBillReminders]);
 
   const deleteRecurringTemplate = useCallback(async (id: string) => {
+    const target = recurringTemplates.find(t => t.id === id);
+    if (target) {
+      await cancelTemplateReminder(target);
+    }
     const updated = recurringTemplates.filter(t => t.id !== id);
     setRecurringTemplates(updated);
     await saveRecurringTemplates(updated);
-  }, [recurringTemplates]);
+  }, [recurringTemplates, cancelTemplateReminder]);
 
   // ─── Payment Methods CRUD ──────────────────────────────────────────────────
   const addPaymentMethod = useCallback(async (name: string) => {
@@ -449,7 +610,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ─── Settings ──────────────────────────────────────────────────────────────
   const updateSettings = useCallback(async (updates: Partial<AppSettings>) => {
-    if (updates.budgetAlertsEnabled === true && !settings.budgetAlertsEnabled) {
+    if (
+      (updates.budgetAlertsEnabled === true && !settings.budgetAlertsEnabled) ||
+      (updates.billRemindersEnabled === true && !settings.billRemindersEnabled)
+    ) {
       try {
         await Notifications.requestPermissionsAsync();
       } catch (e) {
@@ -459,7 +623,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = { ...settings, ...updates };
     setSettings(updated);
     await saveSettings(updated);
-  }, [settings]);
+
+    if (updates.billRemindersEnabled === true && !settings.billRemindersEnabled) {
+      const withReminders = await scheduleBillReminders(recurringTemplates, envelopes, true);
+      setRecurringTemplates(withReminders);
+      await saveRecurringTemplates(withReminders);
+    }
+  }, [settings, recurringTemplates, envelopes, scheduleBillReminders]);
 
   // ─── Import/Export ─────────────────────────────────────────────────────────
   const importFromBackup = useCallback(async () => {
@@ -499,7 +669,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const value = useMemo(() => ({
     envelopes, transactions, paymentMethods, categories, settings, recurringTemplates,
     addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
-    addTransaction, updateTransaction, deleteTransaction,
+    addTransaction, updateTransaction, deleteTransaction, addTransfer,
     addRecurringTemplate, updateRecurringTemplate, deleteRecurringTemplate,
     addPaymentMethod, deletePaymentMethod,
     addCategory, deleteCategory,
@@ -509,7 +679,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }), [
     envelopes, transactions, paymentMethods, categories, settings, recurringTemplates,
     addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
-    addTransaction, updateTransaction, deleteTransaction,
+    addTransaction, updateTransaction, deleteTransaction, addTransfer,
     addRecurringTemplate, updateRecurringTemplate, deleteRecurringTemplate,
     addPaymentMethod, deletePaymentMethod,
     addCategory, deleteCategory,

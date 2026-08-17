@@ -1,15 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SectionList, Modal, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
-import { ArrowLeft, RefreshCw, Edit2, Trash2, Calendar, X } from 'lucide-react-native';
+import { ArrowLeft, RefreshCw, Edit2, Trash2, Calendar, X, ArrowLeftRight } from 'lucide-react-native';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
 import { RootStackParamList } from '../navigation/types';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { COLORS } from '../theme/colors';
+import { groupTransactionsByDay } from '../utils/transactionGrouping';
 
 const PAGE_SIZE = 10;
 
@@ -32,7 +33,11 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
 
   const envelope = envelopes.find(e => e.id === envelopeId);
   const envelopeTransactions = transactions.filter(t =>
-    !t.isArchived && (t.envelopeId === envelopeId || t.sourceSavingsEnvelopeId === envelopeId)
+    !t.isArchived && (
+      t.envelopeId === envelopeId ||
+      t.sourceSavingsEnvelopeId === envelopeId ||
+      t.toEnvelopeId === envelopeId
+    )
   );
 
   const periodKey = (dateStr: string) => {
@@ -140,24 +145,40 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
     [periodFiltered, page]
   );
 
+  const visibleSections = useMemo(
+    () => groupTransactionsByDay(visibleTransactions),
+    [visibleTransactions]
+  );
+
   if (!envelope) return null;
 
-  const isGasto = envelope.type === 'gasto';
+  const type = envelope.type;
   const balance = getEnvelopeBalance(envelopeId);
-  const remaining = isGasto ? envelope.limit + balance : balance;
-  const isOver = isGasto && !envelope.isUnlimited && remaining < 0;
+  let remaining = balance;
+  if (type === 'gasto') remaining = envelope.limit + balance;
+  else if (type === 'deuda') remaining = envelope.limit - balance;
+  const isOver = (type === 'gasto' || type === 'deuda') && !envelope.isUnlimited && remaining < 0;
 
   // Progress logic
   let progress = 0;
   let progressColor = COLORS.green;
-  let iconColor = envelope.color;
-  if (isGasto) {
+  const iconColor = envelope.color;
+  if (type === 'gasto') {
     if (envelope.isUnlimited) {
       progress = 1;
       progressColor = COLORS.blue;
     } else {
       const spent = -balance;
       progress = Math.max(0, spent / envelope.limit);
+      progressColor = remaining < 0 ? COLORS.red : COLORS.green;
+    }
+  } else if (type === 'deuda') {
+    if (envelope.isUnlimited) {
+      progress = 1;
+      progressColor = COLORS.blue;
+    } else {
+      // Progress fills as the debt is paid down (same direction as ahorro)
+      progress = envelope.limit > 0 ? balance / envelope.limit : 1;
       progressColor = remaining < 0 ? COLORS.red : COLORS.green;
     }
   } else {
@@ -169,7 +190,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
   let textColor = COLORS.white;
   if (remaining < 0) {
     textColor = COLORS.red;
-  } else if (isGasto && remaining > 0) {
+  } else if (type === 'gasto' && remaining > 0) {
     textColor = COLORS.green;
   } else {
     textColor = COLORS.white;
@@ -226,6 +247,12 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={styles.iconBtn}
+            onPress={() => navigation.navigate('CreateTransfer', { envelopeId })}
+          >
+            <ArrowLeftRight color={COLORS.secondaryText} size={20} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.iconBtn}
             onPress={() => navigation.navigate('CreateEnvelope', { envelopeType: envelope.type, envelope })}
           >
             <Edit2 color={COLORS.secondaryText} size={20} />
@@ -264,33 +291,37 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
               <View style={styles.budgetRow}>
                 <Text style={styles.budgetAmount}>{formatAmount(envelope.limit, envelope.currency)}</Text>
                 <Text style={styles.budgetLabel}>
-                  {isGasto ? ' presupuesto' : ' meta'}
+                  {type === 'gasto' ? ' presupuesto' : type === 'deuda' ? ' deuda total' : ' meta'}
                 </Text>
               </View>
               <View style={styles.budgetRow}>
                 <Text style={styles.budgetAmount}>
                   {formatAmount(
-                    Math.abs(isGasto ? remaining : (envelope.limit - balance)),
+                    Math.abs(type === 'gasto' ? remaining : type === 'deuda' ? balance : (envelope.limit - balance)),
                     envelope.currency
                   )}
                 </Text>
                 <Text style={styles.budgetLabel}>
-                  {isGasto ? ' disponibles' : ' falta'}
+                  {type === 'gasto' ? ' disponibles' : type === 'deuda' ? ' pagado' : ' falta'}
                 </Text>
               </View>
             </View>
           ):
           <Text style={styles.budgetLabel}>
-            {isGasto ? 'Presupuesto ilimitado' : 'Meta ilimitada'}
+            {type === 'gasto' ? 'Presupuesto ilimitado' : type === 'deuda' ? 'Deuda sin monto total definido' : 'Meta ilimitada'}
           </Text>
           }
-          
+
           <View style={styles.availableWrapper}>
             <Text style={[styles.availableAmount, { color: textColor }]}>
               {formatAmount(Math.abs(remaining), envelope.currency)}
             </Text>
             <Text style={styles.availableLabel}>
-              {isGasto ? (envelope.isUnlimited ? 'gastados' : (isOver ? 'excedidos' : 'disponibles')) : 'ahorrados'}
+              {type === 'gasto'
+                ? (envelope.isUnlimited ? 'gastados' : (isOver ? 'excedidos' : 'disponibles'))
+                : type === 'deuda'
+                ? (envelope.isUnlimited ? 'adeudado' : (isOver ? 'excedido' : 'falta por pagar'))
+                : 'ahorrados'}
             </Text>
           </View>
         </View>
@@ -345,10 +376,13 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
           </SafeAreaView>
         </Modal>
 
-        <FlatList
-          data={visibleTransactions}
+        <SectionList
+          sections={visibleSections}
           keyExtractor={item => item.id}
           contentContainerStyle={{ paddingBottom: 110 }}
+          renderSectionHeader={({ section: { title } }) => (
+            <Text style={styles.sectionHeader}>{title}</Text>
+          )}
           ListEmptyComponent={
             sortedTransactions.length === 0 ? (
               <EmptyState
@@ -378,6 +412,11 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
           renderItem={({ item }) => {
             const pm = paymentMethods.find(p => p.id === item.paymentMethodId);
             const cat = categories.find(c => c.id === item.categoryId);
+            const isTransfer = item.type === 'transfer';
+            const isOutgoingTransfer = isTransfer && item.envelopeId === envelopeId;
+            const otherEnvelopeId = isOutgoingTransfer ? item.toEnvelopeId : item.envelopeId;
+            const otherEnvelopeName = envelopes.find(e => e.id === otherEnvelopeId)?.name ?? 'sobre eliminado';
+
             return (
               <Swipeable
                 renderRightActions={() => (
@@ -391,6 +430,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
               >
                 <TouchableOpacity
                   style={styles.transactionItem}
+                  disabled={isTransfer}
                   onPress={() => navigation.navigate('CreateTransaction', { envelopeId: item.envelopeId, transaction: item })}
                 >
                   <View style={styles.transactionLeft}>
@@ -400,10 +440,14 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                       {cat ? ` · ${cat.name}` : ''}
                       {pm ? ` · ${pm.name}` : ''}
                       {item.sourceSavingsEnvelopeId ? ` · Pago desde ${envelopes.find(e => e.id === item.sourceSavingsEnvelopeId)?.name ?? 'ahorro'}` : ''}
+                      {isTransfer ? (isOutgoingTransfer ? ` · → ${otherEnvelopeName}` : ` · ← ${otherEnvelopeName}`) : ''}
                     </Text>
                   </View>
-                  <Text style={[styles.transactionAmount, { color: item.type === 'expense' ? COLORS.red : (isGasto ? COLORS.green : COLORS.white) }]}>
-                    {formatAmount(item.amount, envelope.currency)}
+                  <Text style={[
+                    styles.transactionAmount,
+                    { color: isTransfer ? COLORS.blue : (item.type === 'expense' ? COLORS.red : ((type === 'gasto' || type === 'deuda') ? COLORS.green : COLORS.white)) },
+                  ]}>
+                    {isTransfer ? (isOutgoingTransfer ? '→ ' : '← ') : ''}{formatAmount(item.amount, envelope.currency)}
                   </Text>
                 </TouchableOpacity>
               </Swipeable>
@@ -447,6 +491,7 @@ const styles = StyleSheet.create({
   availableLabel: { color: COLORS.secondaryText, fontSize: 14 },
   transactionsSection: { flex: 1, marginTop: 28, paddingHorizontal: 20 },
   sectionTitle: { color: COLORS.white, fontSize: 18, fontWeight: '700', marginBottom: 12 },
+  sectionHeader: { color: COLORS.secondaryText, fontSize: 13, fontWeight: '700', backgroundColor: COLORS.bg, paddingTop: 12, paddingBottom: 6 },
   emptyText: { color: COLORS.secondaryText, fontSize: 15, fontStyle: 'italic' },
   transactionItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 },
   transactionLeft: { flex: 1, paddingRight: 12 },

@@ -4,7 +4,7 @@
 TBD - created by archiving change fix-expense-cutoff-period. Update Purpose after archive.
 ## Requirements
 ### Requirement: Gasto envelope balance only counts expenses from the current cutoff period
-When `settings.expenseCutoffEnabled` is true and `settings.expenseCutoffDay` is set, the system SHALL exclude a `gasto` envelope's expense transactions dated before the start of the current billing period (the most recent date on which the day-of-month equals `expenseCutoffDay`, at or before today) from that envelope's computed balance.
+When `settings.expenseCutoffEnabled` is true and `settings.expenseCutoffDay` is set, the system SHALL exclude a `gasto` envelope's expense transactions dated before the start of the current billing period (the most recent date on which the day-of-month equals `expenseCutoffDay`, at or before today) from that envelope's computed balance. This filtering SHALL apply only to `gasto` envelopes; `ahorro` and `deuda` envelopes are never subject to it, regardless of cutoff settings.
 
 #### Scenario: Expense from before this period's cutoff day is excluded
 - **WHEN** `expenseCutoffDay` is 15, today is any date in the current period (on/after day 15 of this month, or before day 15 meaning the period started on day 15 of last month), and a `gasto` envelope has an expense transaction dated before that period's start date
@@ -29,3 +29,7 @@ When `settings.expenseCutoffEnabled` is true and `settings.expenseCutoffDay` is 
 #### Scenario: Savings envelopes are unaffected
 - **WHEN** an envelope's type is `ahorro`
 - **THEN** the cutoff filter SHALL NOT apply to that envelope's balance computation, regardless of cutoff settings
+
+#### Scenario: Debt envelopes are unaffected
+- **WHEN** an envelope's type is `deuda`
+- **THEN** the cutoff filter SHALL NOT apply to that envelope's balance computation, regardless of cutoff settings — a debt envelope's balance always reflects the full history of payments and charges, not a single billing period

@@ -5,7 +5,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { EnvelopeType, Currency, Envelope } from '../types';
 import { RootStackParamList } from '../navigation/types';
-import { Settings, MoreVertical, RefreshCw } from 'lucide-react-native';
+import { Settings, MoreVertical, RefreshCw, Search } from 'lucide-react-native';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
@@ -15,6 +15,8 @@ import { formatCurrency } from '../utils/formatCurrency';
 const { width } = Dimensions.get('window');
 
 const CURRENCY_CYCLE: Currency[] = ['CRC', 'USD', 'EUR'];
+const TAB_TYPES: EnvelopeType[] = ['gasto', 'ahorro', 'deuda'];
+const TAB_LABELS: Record<EnvelopeType, string> = { gasto: 'Gastos', ahorro: 'Ahorros', deuda: 'Deudas' };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Main'>;
 
@@ -28,7 +30,7 @@ export const MainScreen = ({ navigation }: Props) => {
   const listRef = useRef<FlatList>(null);
 
   const handleTabPress = (tab: EnvelopeType) => {
-    const index = tab === 'gasto' ? 0 : 1;
+    const index = TAB_TYPES.indexOf(tab);
     setActiveTab(tab);
     listRef.current?.scrollToIndex({ index, animated: true });
   };
@@ -41,14 +43,14 @@ export const MainScreen = ({ navigation }: Props) => {
   const onMomentumScrollEnd = (e: any) => {
     const contentOffsetX = e.nativeEvent.contentOffset.x;
     const index = Math.round(contentOffsetX / width);
-    setActiveTab(index === 0 ? 'gasto' : 'ahorro');
+    setActiveTab(TAB_TYPES[index] ?? TAB_TYPES[0]);
   };
 
   const onScrollEndDrag = (e: any) => {
     const contentOffsetX = e.nativeEvent.contentOffset.x;
     const index = Math.round(contentOffsetX / width);
-    if (index !== (activeTab === 'gasto' ? 0 : 1)) {
-      setActiveTab(index === 0 ? 'gasto' : 'ahorro');
+    if (index !== TAB_TYPES.indexOf(activeTab)) {
+      setActiveTab(TAB_TYPES[index] ?? TAB_TYPES[0]);
     }
   };
 
@@ -70,17 +72,19 @@ export const MainScreen = ({ navigation }: Props) => {
 
   const renderEnvelope = ({ item }: { item: Envelope }) => {
     const balance = getEnvelopeBalance(item.id);
-    const isGasto = item.type === 'gasto';
-    
+    const type = item.type;
+
     // Balance available logic
-    const remaining = isGasto ? item.limit + balance : balance;
-    const isOver = isGasto && !item.isUnlimited && remaining < 0;
-    
+    let remaining = balance;
+    if (type === 'gasto') remaining = item.limit + balance;
+    else if (type === 'deuda') remaining = item.limit - balance;
+    const isOver = (type === 'gasto' || type === 'deuda') && !item.isUnlimited && remaining < 0;
+
     // 1. Balance Text Color
     let textColor = COLORS.white;
     if (remaining < 0) {
       textColor = COLORS.red;
-    } else if (isGasto && remaining > 0) {
+    } else if (type === 'gasto' && remaining > 0) {
       textColor = COLORS.green;
     } else {
       textColor = COLORS.white;
@@ -89,16 +93,24 @@ export const MainScreen = ({ navigation }: Props) => {
     // 2. Progress Circle Logic
     let progress = 0;
     let progressColor = COLORS.green;
-    let iconColor = isGasto ? COLORS.red : COLORS.blue;
 
-    if (isGasto) {
+    if (type === 'gasto') {
       if (item.isUnlimited) {
         progress = 1;
         progressColor = COLORS.blue;
       } else {
         // Spent / Limit
-        const spent = -balance; 
+        const spent = -balance;
         progress = Math.max(0, spent / item.limit);
+        progressColor = remaining < 0 ? COLORS.red : COLORS.green;
+      }
+    } else if (type === 'deuda') {
+      if (item.isUnlimited) {
+        progress = 1;
+        progressColor = COLORS.blue;
+      } else {
+        // Progress fills as the debt is paid down (same direction as ahorro)
+        progress = item.limit > 0 ? balance / item.limit : 1;
         progressColor = remaining < 0 ? COLORS.red : COLORS.green;
       }
     } else {
@@ -107,17 +119,24 @@ export const MainScreen = ({ navigation }: Props) => {
       progressColor = COLORS.green;
     }
 
+    const subtext =
+      type === 'gasto'
+        ? (item.isUnlimited ? 'gastados' : (isOver ? 'excedidos' : 'disponibles'))
+        : type === 'deuda'
+        ? (item.isUnlimited ? 'adeudado' : (isOver ? 'excedido' : 'falta por pagar'))
+        : 'ahorrados';
+
     return (
       <TouchableOpacity
         style={styles.envelopeCard}
         onPress={() => navigation.navigate('EnvelopeDetail', { envelopeId: item.id })}
       >
         <View style={{ marginRight: 16 }}>
-          <EnvelopeAvatar 
-            icon={item.icon ?? 'box'} 
-            imageUri={item.imageUri} 
-            color={item.color} 
-            size={52} 
+          <EnvelopeAvatar
+            icon={item.icon ?? 'box'}
+            imageUri={item.imageUri}
+            color={item.color}
+            size={52}
             progress={progress}
             progressColor={progressColor}
             iconColor={item.color}
@@ -128,11 +147,7 @@ export const MainScreen = ({ navigation }: Props) => {
           <Text style={[styles.envelopeAmount, { color: textColor }]}>
             {formatAmount(Math.abs(remaining), item.currency)}
           </Text>
-          <Text style={styles.envelopeSubtext}>
-            {isGasto 
-              ? (item.isUnlimited ? 'gastados' : (isOver ? 'excedidos' : 'disponibles')) 
-              : 'ahorrados'}
-          </Text>
+          <Text style={styles.envelopeSubtext}>{subtext}</Text>
         </View>
       </TouchableOpacity>
     );
@@ -159,9 +174,10 @@ export const MainScreen = ({ navigation }: Props) => {
     );
   };
 
+  const indicatorWidth = (width - 40) / TAB_TYPES.length;
   const translateX = scrollX.interpolate({
-    inputRange: [0, width],
-    outputRange: [0, (width - 40) / 2],
+    inputRange: [0, width * (TAB_TYPES.length - 1)],
+    outputRange: [0, indicatorWidth * (TAB_TYPES.length - 1)],
     extrapolate: 'clamp',
   });
 
@@ -179,19 +195,23 @@ export const MainScreen = ({ navigation }: Props) => {
 
       <View style={styles.header}>
         <Text style={styles.title}>TRACE</Text>
-        <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Settings')}>
-          <MoreVertical color={COLORS.secondaryText} size={24} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row' }}>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Search')}>
+            <Search color={COLORS.secondaryText} size={22} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Settings')}>
+            <MoreVertical color={COLORS.secondaryText} size={24} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.tabContainer}>
-        <Animated.View style={[styles.tabIndicator, { width: (width - 40) / 2, transform: [{ translateX }] }]} />
-        <TouchableOpacity style={styles.tab} onPress={() => handleTabPress('gasto')}>
-          <Text style={[styles.tabText, activeTab === 'gasto' && styles.activeTabText]}>Gastos</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.tab} onPress={() => handleTabPress('ahorro')}>
-          <Text style={[styles.tabText, activeTab === 'ahorro' && styles.activeTabText]}>Ahorros</Text>
-        </TouchableOpacity>
+        <Animated.View style={[styles.tabIndicator, { width: indicatorWidth, transform: [{ translateX }] }]} />
+        {TAB_TYPES.map(tab => (
+          <TouchableOpacity key={tab} style={styles.tab} onPress={() => handleTabPress(tab)}>
+            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{TAB_LABELS[tab]}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       <View style={styles.summaryCard}>
@@ -200,8 +220,10 @@ export const MainScreen = ({ navigation }: Props) => {
         </TouchableOpacity>
         <View style={styles.summaryValues}>
           <Text style={styles.summaryLabel}>
-            {activeTab === 'gasto' 
+            {activeTab === 'gasto'
               ? (totalCRC < 0 ? 'Total excedido' : 'Total disponible')
+              : activeTab === 'deuda'
+              ? 'Total por pagar'
               : 'Total ahorrado'}
           </Text>
           <Text style={[styles.summaryTotal, totalCRC < 0 && { color: COLORS.red }]}>
@@ -212,7 +234,7 @@ export const MainScreen = ({ navigation }: Props) => {
 
       <FlatList
         ref={listRef}
-        data={['gasto', 'ahorro'] as EnvelopeType[]}
+        data={TAB_TYPES}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}

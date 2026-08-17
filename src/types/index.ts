@@ -1,4 +1,4 @@
-export type EnvelopeType = 'gasto' | 'ahorro';
+export type EnvelopeType = 'gasto' | 'ahorro' | 'deuda';
 export type Currency = 'CRC' | 'USD' | 'EUR';
 
 export interface PaymentMethod {
@@ -26,13 +26,15 @@ export interface Envelope {
 export interface Transaction {
   id: string;
   envelopeId: string;
-  type: 'expense' | 'income';
+  type: 'expense' | 'income' | 'transfer';
   amount: number; // Always positive, 'type' determines sign
   description: string;
   date: string; // ISO string
   paymentMethodId?: string;
   categoryId?: string;
   sourceSavingsEnvelopeId?: string;
+  /** Destination envelope id. Only set when type === 'transfer'; envelopeId is the source. */
+  toEnvelopeId?: string;
   isArchived: boolean;
   archivedAt?: string;
 }
@@ -52,6 +54,8 @@ export interface RecurringTransactionTemplate {
   dayOfMonth: number; // 1-31
   isActive: boolean;
   lastGeneratedPeriod: string | null; // 'YYYY-MM'
+  reminderNotificationId: string | null;
+  lastReminderScheduledPeriod: string | null; // 'YYYY-MM'
 }
 
 export interface AppSettings {
@@ -63,4 +67,5 @@ export interface AppSettings {
   expenseCutoffEnabled: boolean;
   expenseCutoffDay: number | null;
   budgetAlertsEnabled: boolean;
+  billRemindersEnabled: boolean;
 }

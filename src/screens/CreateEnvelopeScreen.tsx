@@ -27,12 +27,14 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
   const { addEnvelope, updateEnvelope, settings } = useAppData();
 
   const isEditing = !!envelope;
-  const defaultColor = envelopeType === 'gasto' ? '#E55B5B' : '#52A8D9';
+  const defaultColor =
+    envelopeType === 'gasto' ? '#E55B5B' : envelopeType === 'deuda' ? '#F2A65A' : '#52A8D9';
+  const defaultIcon: IconName = envelopeType === 'deuda' ? 'credit-card' : 'box';
 
   const [name, setName] = useState(envelope?.name ?? '');
   const [limitStr, setLimitStr] = useState(envelope?.limit ? String(envelope.limit) : '');
   const [isUnlimited, setIsUnlimited] = useState(envelope?.isUnlimited ?? false);
-  const [icon, setIcon] = useState<IconName>((envelope?.icon as IconName) ?? 'box');
+  const [icon, setIcon] = useState<IconName>((envelope?.icon as IconName) ?? defaultIcon);
   const [imageUri, setImageUri] = useState<string | undefined>(envelope?.imageUri);
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [limitError, setLimitError] = useState('');
@@ -84,7 +86,9 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
           <ArrowLeft color={COLORS.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {isEditing ? 'Editar Sobre' : `Nuevo Sobre · ${envelopeType === 'gasto' ? 'Gasto' : 'Ahorro'}`}
+          {isEditing
+            ? 'Editar Sobre'
+            : `Nuevo Sobre · ${envelopeType === 'gasto' ? 'Gasto' : envelopeType === 'deuda' ? 'Deuda' : 'Ahorro'}`}
         </Text>
         <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
           <Check color={COLORS.green} size={24} />
@@ -131,7 +135,13 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
         {!isUnlimited && (
           <>
             <CurrencyInput
-              label={envelopeType === 'gasto' ? 'Presupuesto' : 'Meta de ahorro'}
+              label={
+                envelopeType === 'gasto'
+                  ? 'Presupuesto'
+                  : envelopeType === 'deuda'
+                  ? 'Monto total de la deuda'
+                  : 'Meta de ahorro'
+              }
               currency={settings.defaultCurrency}
               value={limitStr}
               onChangeText={(text) => { setLimitStr(text); setLimitError(''); }}
@@ -143,11 +153,17 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
         <View style={styles.switchRow}>
           <View style={{ flex: 1, paddingRight: 20 }}>
             <Text style={styles.label}>
-              {envelopeType === 'gasto' ? 'Sin límite de gasto' : 'Ahorro ilimitado'}
+              {envelopeType === 'gasto'
+                ? 'Sin límite de gasto'
+                : envelopeType === 'deuda'
+                ? 'Deuda sin monto total definido'
+                : 'Ahorro ilimitado'}
             </Text>
             <Text style={styles.hint}>
               {envelopeType === 'gasto'
                 ? 'No habrá un presupuesto máximo.'
+                : envelopeType === 'deuda'
+                ? 'No se calculará cuánto falta por pagar.'
                 : 'La meta de ahorro no tiene límite.'}
             </Text>
           </View>

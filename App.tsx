@@ -11,12 +11,14 @@ import { MainScreen } from './src/screens/MainScreen';
 import { EnvelopeDetailScreen } from './src/screens/EnvelopeDetailScreen';
 import { CreateEnvelopeScreen } from './src/screens/CreateEnvelopeScreen';
 import { CreateTransactionScreen } from './src/screens/CreateTransactionScreen';
+import { CreateTransferScreen } from './src/screens/CreateTransferScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { CurrencySettingsScreen } from './src/screens/CurrencySettingsScreen';
 import { PaymentMethodsSettingsScreen } from './src/screens/PaymentMethodsSettingsScreen';
 import { CategoriesSettingsScreen } from './src/screens/CategoriesSettingsScreen';
 import { CutoffSettingsScreen } from './src/screens/CutoffSettingsScreen';
 import { ReportsScreen } from './src/screens/ReportsScreen';
+import { SearchTransactionsScreen } from './src/screens/SearchTransactionsScreen';
 import { RecurringTransactionsScreen } from './src/screens/RecurringTransactionsScreen';
 import { CreateRecurringTransactionScreen } from './src/screens/CreateRecurringTransactionScreen';
 import { RootStackParamList } from './src/navigation/types';
@@ -36,12 +38,14 @@ export default function App() {
                 <Stack.Screen name="EnvelopeDetail" component={EnvelopeDetailScreen} />
                 <Stack.Screen name="CreateEnvelope" component={CreateEnvelopeScreen} />
                 <Stack.Screen name="CreateTransaction" component={CreateTransactionScreen} />
+                <Stack.Screen name="CreateTransfer" component={CreateTransferScreen} />
                 <Stack.Screen name="Settings" component={SettingsScreen} />
                 <Stack.Screen name="CurrencySettings" component={CurrencySettingsScreen} />
                 <Stack.Screen name="PaymentMethodsSettings" component={PaymentMethodsSettingsScreen} />
                 <Stack.Screen name="CategoriesSettings" component={CategoriesSettingsScreen} />
                 <Stack.Screen name="CutoffSettings" component={CutoffSettingsScreen} />
                 <Stack.Screen name="Reports" component={ReportsScreen} />
+                <Stack.Screen name="Search" component={SearchTransactionsScreen} />
                 <Stack.Screen name="Recurring" component={RecurringTransactionsScreen} />
                 <Stack.Screen name="CreateRecurringTransaction" component={CreateRecurringTransactionScreen} />
               </Stack.Navigator>

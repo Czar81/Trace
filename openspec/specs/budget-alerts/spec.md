@@ -44,8 +44,12 @@ The system SHALL NOT send a repeat 80% or 100% alert for an envelope that is alr
 - **THEN** the system does not send another alert for the 100% (or 80%) threshold for that transaction
 
 ### Requirement: Alerts only apply to limited spending envelopes
-The system SHALL NOT send budget alerts for `ahorro` envelopes or for `gasto` envelopes marked unlimited.
+The system SHALL NOT send budget alerts for `ahorro` envelopes, `deuda` envelopes, or for `gasto` envelopes marked unlimited.
 
 #### Scenario: Expense added to an unlimited gasto envelope
 - **WHEN** an expense transaction is added to a `gasto` envelope with `isUnlimited: true`
 - **THEN** the system does not evaluate or send any budget alert for that transaction
+
+#### Scenario: Charge added to a debt envelope
+- **WHEN** an expense transaction (representing a new charge) is added to a `deuda` envelope
+- **THEN** the system does not evaluate or send any budget alert for that transaction — a growing debt balance is not "overspending" in the budget-alerts sense
