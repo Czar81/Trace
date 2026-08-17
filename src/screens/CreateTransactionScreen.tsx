@@ -67,6 +67,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
 
   const pmOptions = paymentMethods.map(pm => ({ label: pm.name, value: pm.id }));
   const catOptions = categories.map(c => ({ label: c.name, value: c.id }));
+  // Explicit 'ahorro' check — already excludes 'deuda' envelopes as a funding source.
   const savingsEnvelopes = envelopes.filter(e => e.type === 'ahorro');
   const savingsOptions = savingsEnvelopes.map(e => ({ label: e.name, value: e.id }));
 
@@ -183,6 +184,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
               onSelect={setPaymentMethodId}
               placeholder={paymentMethods.length === 0 ? 'Agrega métodos en Configuración' : 'Seleccionar método'}
             />
+            {/* Explicit 'gasto' check — the funding-from-savings toggle is not offered for 'deuda' envelopes either. */}
             {envelope.type === 'gasto' && (
               <>
                 <View style={styles.toggleRow}>

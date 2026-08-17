@@ -1,4 +1,4 @@
-export type EnvelopeType = 'gasto' | 'ahorro';
+export type EnvelopeType = 'gasto' | 'ahorro' | 'deuda';
 export type Currency = 'CRC' | 'USD' | 'EUR';
 
 export interface PaymentMethod {

@@ -152,22 +152,33 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
 
   if (!envelope) return null;
 
-  const isGasto = envelope.type === 'gasto';
+  const type = envelope.type;
   const balance = getEnvelopeBalance(envelopeId);
-  const remaining = isGasto ? envelope.limit + balance : balance;
-  const isOver = isGasto && !envelope.isUnlimited && remaining < 0;
+  let remaining = balance;
+  if (type === 'gasto') remaining = envelope.limit + balance;
+  else if (type === 'deuda') remaining = envelope.limit - balance;
+  const isOver = (type === 'gasto' || type === 'deuda') && !envelope.isUnlimited && remaining < 0;
 
   // Progress logic
   let progress = 0;
   let progressColor = COLORS.green;
-  let iconColor = envelope.color;
-  if (isGasto) {
+  const iconColor = envelope.color;
+  if (type === 'gasto') {
     if (envelope.isUnlimited) {
       progress = 1;
       progressColor = COLORS.blue;
     } else {
       const spent = -balance;
       progress = Math.max(0, spent / envelope.limit);
+      progressColor = remaining < 0 ? COLORS.red : COLORS.green;
+    }
+  } else if (type === 'deuda') {
+    if (envelope.isUnlimited) {
+      progress = 1;
+      progressColor = COLORS.blue;
+    } else {
+      // Progress fills as the debt is paid down (same direction as ahorro)
+      progress = envelope.limit > 0 ? balance / envelope.limit : 1;
       progressColor = remaining < 0 ? COLORS.red : COLORS.green;
     }
   } else {
@@ -179,7 +190,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
   let textColor = COLORS.white;
   if (remaining < 0) {
     textColor = COLORS.red;
-  } else if (isGasto && remaining > 0) {
+  } else if (type === 'gasto' && remaining > 0) {
     textColor = COLORS.green;
   } else {
     textColor = COLORS.white;
@@ -280,33 +291,37 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
               <View style={styles.budgetRow}>
                 <Text style={styles.budgetAmount}>{formatAmount(envelope.limit, envelope.currency)}</Text>
                 <Text style={styles.budgetLabel}>
-                  {isGasto ? ' presupuesto' : ' meta'}
+                  {type === 'gasto' ? ' presupuesto' : type === 'deuda' ? ' deuda total' : ' meta'}
                 </Text>
               </View>
               <View style={styles.budgetRow}>
                 <Text style={styles.budgetAmount}>
                   {formatAmount(
-                    Math.abs(isGasto ? remaining : (envelope.limit - balance)),
+                    Math.abs(type === 'gasto' ? remaining : type === 'deuda' ? balance : (envelope.limit - balance)),
                     envelope.currency
                   )}
                 </Text>
                 <Text style={styles.budgetLabel}>
-                  {isGasto ? ' disponibles' : ' falta'}
+                  {type === 'gasto' ? ' disponibles' : type === 'deuda' ? ' pagado' : ' falta'}
                 </Text>
               </View>
             </View>
           ):
           <Text style={styles.budgetLabel}>
-            {isGasto ? 'Presupuesto ilimitado' : 'Meta ilimitada'}
+            {type === 'gasto' ? 'Presupuesto ilimitado' : type === 'deuda' ? 'Deuda sin monto total definido' : 'Meta ilimitada'}
           </Text>
           }
-          
+
           <View style={styles.availableWrapper}>
             <Text style={[styles.availableAmount, { color: textColor }]}>
               {formatAmount(Math.abs(remaining), envelope.currency)}
             </Text>
             <Text style={styles.availableLabel}>
-              {isGasto ? (envelope.isUnlimited ? 'gastados' : (isOver ? 'excedidos' : 'disponibles')) : 'ahorrados'}
+              {type === 'gasto'
+                ? (envelope.isUnlimited ? 'gastados' : (isOver ? 'excedidos' : 'disponibles'))
+                : type === 'deuda'
+                ? (envelope.isUnlimited ? 'adeudado' : (isOver ? 'excedido' : 'falta por pagar'))
+                : 'ahorrados'}
             </Text>
           </View>
         </View>
@@ -430,7 +445,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                   </View>
                   <Text style={[
                     styles.transactionAmount,
-                    { color: isTransfer ? COLORS.blue : (item.type === 'expense' ? COLORS.red : (isGasto ? COLORS.green : COLORS.white)) },
+                    { color: isTransfer ? COLORS.blue : (item.type === 'expense' ? COLORS.red : ((type === 'gasto' || type === 'deuda') ? COLORS.green : COLORS.white)) },
                   ]}>
                     {isTransfer ? (isOutgoingTransfer ? '→ ' : '← ') : ''}{formatAmount(item.amount, envelope.currency)}
                   </Text>

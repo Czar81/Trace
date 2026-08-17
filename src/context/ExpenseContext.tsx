@@ -46,6 +46,8 @@ export function calculateEnvelopeBalance(
   expenseCutoffDay: number | null
 ): number {
   const envelope = envelopes.find(e => e.id === envelopeId);
+  // Explicit equality against 'gasto' (not an else-branch), so this already
+  // correctly excludes 'ahorro' and 'deuda' envelopes from cutoff filtering.
   const isGastoEnvelope = envelope?.type === 'gasto';
   const hasCutoff = isGastoEnvelope && expenseCutoffEnabled && !!expenseCutoffDay;
   const periodStart = hasCutoff ? getCutoffPeriodStart(new Date(), expenseCutoffDay as number) : null;
@@ -240,6 +242,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (t.envelopeId) {
         const envelope = envelopeById.get(t.envelopeId);
+        // Explicit 'gasto' check — 'ahorro' and 'deuda' envelopes are never cutoff-filtered.
         const hasCutoff = envelope?.type === 'gasto' && cutoffPeriodStart != null;
         const skip = hasCutoff && t.type === 'expense' && new Date(t.date) < (cutoffPeriodStart as Date);
         if (!skip) {
@@ -269,21 +272,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [envelopeBalanceMap, transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay]);
 
   /**
-   * getTotalByType computes the sum of all envelope *available balances* 
+   * getTotalByType computes the sum of all envelope *available balances*
    * converted to CRC for display in the summary card.
    * For 'gasto': sum of (limit + balance) per envelope — total disponible.
    * For 'ahorro': sum of balances — total ahorrado.
+   * For 'deuda': sum of (limit - balance) per non-unlimited envelope — total por pagar.
    */
   const getTotalByType = useCallback((type: EnvelopeType): number => {
     return envelopes
       .filter(e => e.type === type)
       .reduce((total, env) => {
-        // Exclude unlimited expenses from the 'Total Disponible' general
-        if (type === 'gasto' && env.isUnlimited) return total;
+        // Exclude unlimited envelopes from the 'Total Disponible' / 'Total por pagar' totals
+        if ((type === 'gasto' || type === 'deuda') && env.isUnlimited) return total;
 
         const balance = getEnvelopeBalance(env.id);
         const displayValue = type === 'gasto'
           ? env.limit + balance
+          : type === 'deuda'
+          ? env.limit - balance
           : balance;
         return total + convertToCRC(displayValue, env.currency);
       }, 0);
@@ -319,6 +325,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!settings.budgetAlertsEnabled) return;
 
     const envelope = envelopes.find(e => e.id === envelopeId);
+    // Explicit 'gasto' check — already excludes 'ahorro' and 'deuda' envelopes;
+    // a growing debt balance is not "overspending" in the budget-alerts sense.
     if (!envelope || envelope.type !== 'gasto' || envelope.isUnlimited) return;
 
     const before = computeSpentPercentage(envelopeId, beforeTxns);
