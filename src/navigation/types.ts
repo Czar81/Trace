@@ -12,6 +12,7 @@ export type RootStackParamList = {
   CategoriesSettings: undefined;
   CutoffSettings: undefined;
   Reports: undefined;
+  Search: undefined;
   Recurring: undefined;
   CreateRecurringTransaction: { template?: RecurringTransactionTemplate };
 };

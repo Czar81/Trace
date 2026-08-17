@@ -5,7 +5,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { EnvelopeType, Currency, Envelope } from '../types';
 import { RootStackParamList } from '../navigation/types';
-import { Settings, MoreVertical, RefreshCw } from 'lucide-react-native';
+import { Settings, MoreVertical, RefreshCw, Search } from 'lucide-react-native';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
@@ -179,9 +179,14 @@ export const MainScreen = ({ navigation }: Props) => {
 
       <View style={styles.header}>
         <Text style={styles.title}>TRACE</Text>
-        <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Settings')}>
-          <MoreVertical color={COLORS.secondaryText} size={24} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row' }}>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Search')}>
+            <Search color={COLORS.secondaryText} size={22} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Settings')}>
+            <MoreVertical color={COLORS.secondaryText} size={24} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.tabContainer}>
