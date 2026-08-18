@@ -6,6 +6,7 @@ import { useAppData } from '../context/ExpenseContext';
 import { ArrowLeft, ChevronRight, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat } from 'lucide-react-native';
 import { exportDataToCSV } from '../utils/exportData';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { Dropdown } from '../components/Dropdown';
 import { RootStackParamList } from '../navigation/types';
 import { COLORS } from '../theme/colors';
 
@@ -34,6 +35,15 @@ export const SettingsScreen = ({ navigation }: Props) => {
       result.success ? 'Importación exitosa' : 'Error de importación',
       result.message
     );
+  };
+
+  const leadDaysOptions = Array.from({ length: 7 }, (_, i) => ({
+    label: `${i + 1} día${i + 1 > 1 ? 's' : ''}`,
+    value: String(i + 1),
+  }));
+
+  const handleLeadDaysChange = (value: string) => {
+    updateSettings({ billReminderLeadDays: Number(value) });
   };
 
   const handleExport = () => {
@@ -160,6 +170,20 @@ export const SettingsScreen = ({ navigation }: Props) => {
             thumbColor={settings.billRemindersEnabled ? COLORS.green : COLORS.white}
           />
         </View>
+
+        {settings.billRemindersEnabled && (
+          <View style={styles.menuItem}>
+            <View style={styles.menuTextWrapper}>
+              <Dropdown
+                label="Días de anticipación"
+                options={leadDaysOptions}
+                value={String(settings.billReminderLeadDays)}
+                onSelect={handleLeadDaysChange}
+                placeholder="Selecciona los días"
+              />
+            </View>
+          </View>
+        )}
 
         <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Corte de gastos</Text>
 

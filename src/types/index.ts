@@ -68,4 +68,5 @@ export interface AppSettings {
   expenseCutoffDay: number | null;
   budgetAlertsEnabled: boolean;
   billRemindersEnabled: boolean;
+  billReminderLeadDays: number;
 }
