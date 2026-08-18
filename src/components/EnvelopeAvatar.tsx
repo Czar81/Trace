@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { EnvelopeIcon } from './EnvelopeIcon';
+import { COLORS } from '../theme/colors';
 
 interface EnvelopeAvatarProps {
   icon: string;
@@ -21,7 +22,7 @@ export const EnvelopeAvatar: React.FC<EnvelopeAvatarProps> = ({
   size = 48,
   borderRadius = 16,
   progress = 0,
-  progressColor = '#A7E7B4',
+  progressColor = COLORS.green,
   iconColor = color, // Default to envelope color
 }) => {
   const strokeWidth = 3;
@@ -37,7 +38,7 @@ export const EnvelopeAvatar: React.FC<EnvelopeAvatarProps> = ({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#3A5564"
+          stroke={COLORS.progressTrack}
           strokeWidth={strokeWidth}
           fill="transparent"
         />

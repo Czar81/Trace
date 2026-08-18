@@ -41,11 +41,7 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
         keyExtractor={item => item.id}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
-          <EmptyState
-            message="No tienes transacciones recurrentes todavía."
-            ctaLabel="Nueva plantilla"
-            onPress={() => navigation.navigate('CreateRecurringTransaction', {})}
-          />
+          <EmptyState message="No tienes transacciones recurrentes todavía." />
         }
         renderItem={({ item }) => {
           const envelope = envelopes.find(e => e.id === item.envelopeId);

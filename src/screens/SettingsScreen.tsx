@@ -52,7 +52,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
           <ArrowLeft color={COLORS.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Configuración</Text>
-        <View style={{ width: 32 }} />
+        <View style={{ width: 44 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
@@ -143,7 +143,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
           <Switch
             value={settings.budgetAlertsEnabled}
             onValueChange={() => updateSettings({ budgetAlertsEnabled: !settings.budgetAlertsEnabled })}
-            trackColor={{ false: '#3d4b59', true: COLORS.green }}
+            trackColor={{ false: COLORS.cardBg, true: COLORS.green }}
             thumbColor={settings.budgetAlertsEnabled ? COLORS.green : COLORS.white}
           />
         </View>
@@ -156,7 +156,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
           <Switch
             value={settings.billRemindersEnabled}
             onValueChange={() => updateSettings({ billRemindersEnabled: !settings.billRemindersEnabled })}
-            trackColor={{ false: '#3d4b59', true: COLORS.green }}
+            trackColor={{ false: COLORS.cardBg, true: COLORS.green }}
             thumbColor={settings.billRemindersEnabled ? COLORS.green : COLORS.white}
           />
         </View>
@@ -192,7 +192,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <Text style={styles.menuTitle}>Importar backup</Text>
             <Text style={styles.menuSubtitle}>Cargar datos desde backup</Text>
           </View>
-          <ChevronRight color={COLORS.secondaryText} size={20} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -207,7 +206,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <Text style={styles.menuTitle}>Exportar backup</Text>
             <Text style={styles.menuSubtitle}>Guardar copia de seguridad</Text>
           </View>
-          <ChevronRight color={COLORS.secondaryText} size={20} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -222,7 +220,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <Text style={[styles.menuTitle, { color: COLORS.red }]}>Resetear todos los sobres</Text>
             <Text style={styles.menuSubtitle}>Reinicia los saldos y mueve todo al historial</Text>
           </View>
-          <ChevronRight color={COLORS.secondaryText} size={20} />
         </TouchableOpacity>
       </ScrollView>
 
@@ -257,7 +254,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 },
-  headerBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
+  headerBtn: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
   headerTitle: { color: COLORS.white, fontSize: 20, fontWeight: 'bold' },
   scroll: { paddingHorizontal: 20, paddingBottom: 60 },
   sectionTitle: { color: COLORS.white, fontSize: 16, fontWeight: '700', marginBottom: 20 },

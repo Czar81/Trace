@@ -162,11 +162,7 @@ export const MainScreen = ({ navigation }: Props) => {
           keyExtractor={item => item.id}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
-            <EmptyState
-              message="No hay sobres todavía."
-              ctaLabel="+ Crear Sobre"
-              onPress={() => navigation.navigate('CreateEnvelope', { envelopeType: type })}
-            />
+            <EmptyState message="No hay sobres todavía." />
           }
           renderItem={renderEnvelope}
         />
@@ -196,10 +192,10 @@ export const MainScreen = ({ navigation }: Props) => {
       <View style={styles.header}>
         <Text style={styles.title}>TRACE</Text>
         <View style={{ flexDirection: 'row' }}>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Search')}>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Search')}>
             <Search color={COLORS.secondaryText} size={22} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Settings')}>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Settings')}>
             <MoreVertical color={COLORS.secondaryText} size={24} />
           </TouchableOpacity>
         </View>

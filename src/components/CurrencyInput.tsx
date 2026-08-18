@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, StyleSheet, TextInputProps } from 'react-native';
 import { Currency } from '../types';
+import { COLORS } from '../theme/colors';
 
 const SYMBOLS: Record<Currency, string> = { CRC: '₡', USD: '$', EUR: '€' };
 
@@ -62,7 +63,7 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
           onChangeText={handleChange}
           keyboardType="numeric"
           placeholder={placeholder}
-          placeholderTextColor="#A6B9C7"
+          placeholderTextColor={COLORS.secondaryText}
           style={[styles.input, style]}
         />
       </View>
@@ -72,15 +73,15 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
 
 const styles = StyleSheet.create({
   wrapper: { marginBottom: 24 },
-  label: { color: '#FFFFFF', fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  label: { color: COLORS.white, fontSize: 16, fontWeight: '600', marginBottom: 8 },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1F3A47',
+    backgroundColor: COLORS.cardBg,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
-  symbol: { color: '#A6B9C7', fontSize: 20, fontWeight: '700', marginRight: 8 },
-  input: { flex: 1, color: '#FFFFFF', fontSize: 22, fontWeight: '700', padding: 0 },
+  symbol: { color: COLORS.secondaryText, fontSize: 20, fontWeight: '700', marginRight: 8 },
+  input: { flex: 1, color: COLORS.white, fontSize: 22, fontWeight: '700', padding: 0 },
 });

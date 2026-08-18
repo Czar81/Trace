@@ -82,7 +82,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
       />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <ArrowLeft color={COLORS.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
@@ -90,7 +90,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
             ? 'Editar Sobre'
             : `Nuevo Sobre · ${envelopeType === 'gasto' ? 'Gasto' : envelopeType === 'deuda' ? 'Deuda' : 'Ahorro'}`}
         </Text>
-        <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
+        <TouchableOpacity onPress={handleSave} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Check color={COLORS.green} size={24} />
         </TouchableOpacity>
       </View>

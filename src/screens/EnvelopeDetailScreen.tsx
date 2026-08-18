@@ -241,26 +241,29 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
       />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <ArrowLeft color={COLORS.white} size={24} />
         </TouchableOpacity>
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={styles.iconBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             onPress={() => navigation.navigate('CreateTransfer', { envelopeId })}
           >
             <ArrowLeftRight color={COLORS.secondaryText} size={20} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.iconBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             onPress={() => navigation.navigate('CreateEnvelope', { envelopeType: envelope.type, envelope })}
           >
             <Edit2 color={COLORS.secondaryText} size={20} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => setDialog({ type: 'reset' })}>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => setDialog({ type: 'reset' })}>
             <RefreshCw color={COLORS.secondaryText} size={20} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => setDialog({ type: 'deleteEnvelope' })}>
+          <View style={styles.headerDivider} />
+          <TouchableOpacity style={[styles.iconBtn, styles.deleteIconBtn]} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => setDialog({ type: 'deleteEnvelope' })}>
             <Trash2 color={COLORS.red} size={20} />
           </TouchableOpacity>
         </View>
@@ -385,11 +388,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
           )}
           ListEmptyComponent={
             sortedTransactions.length === 0 ? (
-              <EmptyState
-                message="Sin transacciones aún."
-                ctaLabel="Agregar transacción"
-                onPress={() => navigation.navigate('CreateTransaction', { envelopeId })}
-              />
+              <EmptyState message="Sin transacciones aún." />
             ) : (
               <EmptyState message="No hay transacciones en este período." />
             )
@@ -478,6 +477,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   iconBtn: { padding: 8 },
   headerActions: { flexDirection: 'row', alignItems: 'center' },
+  headerDivider: { width: 1, height: 20, backgroundColor: COLORS.divider, marginHorizontal: 6 },
+  deleteIconBtn: { marginLeft: 2 },
   summaryCard: { backgroundColor: COLORS.cardBg, marginHorizontal: 20, borderRadius: 24, padding: 24, marginTop: 8 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   cardTitle: { color: COLORS.white, fontSize: 20, fontWeight: 'bold' },

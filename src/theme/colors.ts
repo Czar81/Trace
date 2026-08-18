@@ -8,4 +8,5 @@ export const COLORS = {
   green: '#A7E7B4',
   blue: '#52A8D9',
   modalSheet: '#0d2e42',
+  progressTrack: '#3A5564',
 };
