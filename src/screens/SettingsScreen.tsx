@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20, paddingBottom: 60 },
   sectionTitle: { color: COLORS.white, fontSize: 16, fontWeight: '700', marginBottom: 20 },
   menuItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.cardBg, borderRadius: 16, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: COLORS.divider },
-  menuIconWrapper: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#0D2E42', justifyContent: 'center', alignItems: 'center', marginRight: 14 },
+  menuIconWrapper: { width: 44, height: 44, borderRadius: 14, backgroundColor: COLORS.cardHighlight, borderWidth: 1, borderColor: COLORS.divider, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
   menuTextWrapper: { flex: 1 },
   menuTitle: { color: COLORS.white, fontSize: 16, fontWeight: '700', marginBottom: 4 },
   menuSubtitle: { color: COLORS.secondaryText, fontSize: 14 },
