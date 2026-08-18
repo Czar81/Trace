@@ -10,6 +10,7 @@ import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
 import { COLORS } from '../theme/colors';
+import { SERIF_FONT } from '../theme/typography';
 import { formatCurrency } from '../utils/formatCurrency';
 
 const { width } = Dimensions.get('window');
@@ -170,7 +171,7 @@ export const MainScreen = ({ navigation }: Props) => {
     );
   };
 
-  const indicatorWidth = (width - 40) / TAB_TYPES.length;
+  const indicatorWidth = (width - 40 - 8) / TAB_TYPES.length;
   const translateX = scrollX.interpolate({
     inputRange: [0, width * (TAB_TYPES.length - 1)],
     outputRange: [0, indicatorWidth * (TAB_TYPES.length - 1)],
@@ -211,6 +212,7 @@ export const MainScreen = ({ navigation }: Props) => {
       </View>
 
       <View style={styles.summaryCard}>
+        <View style={styles.cardFlap} pointerEvents="none" />
         <TouchableOpacity onPress={cycleCurrency} style={styles.currencyBtn} activeOpacity={0.7}>
           <Text style={styles.currencyText}>{displayCurrency}</Text>
         </TouchableOpacity>
@@ -257,23 +259,24 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
   title: { color: COLORS.white, fontSize: 18, fontWeight: 'bold', letterSpacing: 1 },
   iconBtn: { padding: 8 },
-  tabContainer: { flexDirection: 'row', marginHorizontal: 20, height: 48, position: 'relative', marginBottom: 16 },
-  tab: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  tabIndicator: { position: 'absolute', bottom: 0, height: 2, backgroundColor: COLORS.green, borderRadius: 1 },
+  tabContainer: { flexDirection: 'row', marginHorizontal: 20, height: 48, position: 'relative', marginBottom: 16, backgroundColor: COLORS.cardBg, borderRadius: 24, padding: 4 },
+  tab: { flex: 1, justifyContent: 'center', alignItems: 'center', zIndex: 1 },
+  tabIndicator: { position: 'absolute', top: 4, bottom: 4, left: 4, backgroundColor: COLORS.green, borderRadius: 20 },
   tabText: { color: COLORS.secondaryText, fontSize: 16, fontWeight: '600' },
-  activeTabText: { color: COLORS.white },
-  summaryCard: { backgroundColor: COLORS.cardBg, marginHorizontal: 20, borderRadius: 16, padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  activeTabText: { color: COLORS.bg },
+  summaryCard: { backgroundColor: COLORS.cardBg, marginHorizontal: 20, borderRadius: 16, padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, overflow: 'hidden' },
+  cardFlap: { position: 'absolute', top: -20, left: '50%', width: 40, height: 40, marginLeft: -20, backgroundColor: COLORS.cardHighlight, transform: [{ rotate: '45deg' }] },
   currencyBtn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, backgroundColor: '#142E3D' },
   currencyText: { color: COLORS.white, fontSize: 15, fontWeight: '700' },
   summaryValues: { alignItems: 'flex-end' },
   summaryLabel: { color: COLORS.secondaryText, fontSize: 13, marginBottom: 4 },
-  summaryTotal: { color: COLORS.white, fontSize: 22, fontWeight: 'bold' },
+  summaryTotal: { color: COLORS.white, fontSize: 22, fontWeight: 'bold', fontFamily: SERIF_FONT },
   list: { paddingHorizontal: 20, paddingBottom: 120 },
   emptyText: { color: COLORS.secondaryText, fontSize: 15, textAlign: 'center', marginTop: 40, fontStyle: 'italic' },
   envelopeCard: { backgroundColor: COLORS.cardBg, borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  envelopeName: { flex: 1, color: COLORS.white, fontSize: 17, fontWeight: '600' },
+  envelopeName: { flex: 1, color: COLORS.white, fontSize: 17, fontWeight: '600', fontFamily: SERIF_FONT },
   envelopeValues: { alignItems: 'flex-end' },
-  envelopeAmount: { fontSize: 18, fontWeight: 'bold', marginBottom: 2 },
+  envelopeAmount: { fontSize: 18, fontWeight: 'bold', marginBottom: 2, fontFamily: SERIF_FONT },
   envelopeSubtext: { color: COLORS.secondaryText, fontSize: 13 },
   fab: { position: 'absolute', bottom: 30, right: 20, backgroundColor: COLORS.green, paddingVertical: 16, paddingHorizontal: 24, borderRadius: 30 },
   fabText: { color: COLORS.bg, fontSize: 16, fontWeight: 'bold' },

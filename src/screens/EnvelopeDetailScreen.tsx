@@ -10,6 +10,7 @@ import { EmptyState } from '../components/EmptyState';
 import { RootStackParamList } from '../navigation/types';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { COLORS } from '../theme/colors';
+import { SERIF_FONT } from '../theme/typography';
 import { groupTransactionsByDay } from '../utils/transactionGrouping';
 
 const PAGE_SIZE = 10;
@@ -270,6 +271,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
       </View>
 
       <View style={styles.summaryCard}>
+        <View style={styles.cardFlap} pointerEvents="none" />
         <View style={styles.cardHeader}>
           <View style={{ marginRight: 16 }}>
             <EnvelopeAvatar 
@@ -455,7 +457,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
               </Swipeable>
             );
           }}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={() => <View style={styles.perforationDivider} />}
         />
       </View>
 
@@ -482,27 +484,28 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: 'row', alignItems: 'center' },
   headerDivider: { width: 1, height: 20, backgroundColor: COLORS.divider, marginHorizontal: 6 },
   deleteIconBtn: { marginLeft: 2 },
-  summaryCard: { backgroundColor: COLORS.cardBg, marginHorizontal: 20, borderRadius: 24, padding: 24, marginTop: 8 },
+  summaryCard: { backgroundColor: COLORS.cardBg, marginHorizontal: 20, borderRadius: 24, padding: 24, marginTop: 8, overflow: 'hidden' },
+  cardFlap: { position: 'absolute', top: -20, left: '50%', width: 40, height: 40, marginLeft: -20, backgroundColor: COLORS.cardHighlight, transform: [{ rotate: '45deg' }] },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  cardTitle: { color: COLORS.white, fontSize: 20, fontWeight: 'bold' },
+  cardTitle: { color: COLORS.white, fontSize: 20, fontWeight: 'bold', fontFamily: SERIF_FONT },
   cardCurrency: { color: COLORS.secondaryText, fontSize: 14, fontWeight: '600' },
   budgetInfo: {},
   budgetRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 4 },
-  budgetAmount: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' },
+  budgetAmount: { color: COLORS.white, fontSize: 16, fontWeight: 'bold', fontFamily: SERIF_FONT },
   budgetLabel: { color: COLORS.secondaryText, fontSize: 14 },
   availableWrapper: { alignItems: 'flex-end', marginTop: 12 },
-  availableAmount: { fontSize: 32, fontWeight: 'bold', color: COLORS.white },
+  availableAmount: { fontSize: 32, fontWeight: 'bold', color: COLORS.white, fontFamily: SERIF_FONT },
   availableLabel: { color: COLORS.secondaryText, fontSize: 14 },
   transactionsSection: { flex: 1, marginTop: 28, paddingHorizontal: 20 },
-  sectionTitle: { color: COLORS.white, fontSize: 18, fontWeight: '700', marginBottom: 12 },
+  sectionTitle: { color: COLORS.white, fontSize: 18, fontWeight: '700', marginBottom: 12, fontFamily: SERIF_FONT },
   sectionHeader: { color: COLORS.secondaryText, fontSize: 13, fontWeight: '700', backgroundColor: COLORS.bg, paddingTop: 12, paddingBottom: 6 },
   emptyText: { color: COLORS.secondaryText, fontSize: 15, fontStyle: 'italic' },
   transactionItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 },
   transactionLeft: { flex: 1, paddingRight: 12 },
-  transactionDesc: { color: COLORS.white, fontSize: 15, fontWeight: '600', marginBottom: 3 },
+  transactionDesc: { color: COLORS.white, fontSize: 15, fontWeight: '600', marginBottom: 3, fontFamily: SERIF_FONT },
   transactionDate: { color: COLORS.secondaryText, fontSize: 12 },
   transactionAmount: { fontSize: 15, fontWeight: '700' },
-  separator: { height: 1, backgroundColor: COLORS.divider },
+  perforationDivider: { borderTopWidth: 1, borderStyle: 'dotted', borderColor: COLORS.perforation },
   filterRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   filterPill: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
