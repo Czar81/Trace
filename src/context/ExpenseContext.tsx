@@ -149,6 +149,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     expenseCutoffDay: null,
     budgetAlertsEnabled: false,
     billRemindersEnabled: false,
+    billReminderLeadDays: 2,
   });
 
   useEffect(() => {
@@ -199,7 +200,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const templatesWithReminders = await scheduleBillReminders(
         finalTemplates,
         loadedEnvelopes,
-        loadedSettings.billRemindersEnabled
+        loadedSettings.billRemindersEnabled,
+        loadedSettings.billReminderLeadDays
       );
       await saveRecurringTemplates(templatesWithReminders);
       setRecurringTemplates(templatesWithReminders);
@@ -383,7 +385,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   /**
-   * Schedules a local notification 2 days before each active template's
+   * Schedules a local notification `leadDays` days before each active template's
    * clamped due date for the current period, skipping templates that already
    * have a reminder scheduled for that occurrence or whose reminder date has
    * already passed. Takes settings/envelopes explicitly (rather than reading
@@ -393,7 +395,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const scheduleBillReminders = useCallback(async (
     templates: RecurringTransactionTemplate[],
     envelopesList: Envelope[],
-    billRemindersEnabled: boolean
+    billRemindersEnabled: boolean,
+    leadDays: number
   ): Promise<RecurringTransactionTemplate[]> => {
     if (!billRemindersEnabled) return templates;
 
@@ -409,7 +412,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const clampedDay = clampDayOfMonth(currentYear, currentMonth, template.dayOfMonth);
       const dueDate = new Date(currentYear, currentMonth, clampedDay, 0, 0, 0, 0);
       const reminderDate = new Date(dueDate);
-      reminderDate.setDate(reminderDate.getDate() - 2);
+      reminderDate.setDate(reminderDate.getDate() - leadDays);
 
       if (reminderDate.getTime() <= now.getTime()) return template;
 
@@ -420,7 +423,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const notificationId = await Notifications.scheduleNotificationAsync({
           content: {
             title: 'Factura próxima',
-            body: `"${template.description}" (${amountLabel}) se generará en 2 días.`,
+            body: `"${template.description}" (${amountLabel}) se generará en ${leadDays} días.`,
           },
           trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: reminderDate },
         });
@@ -595,10 +598,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = [newTemplate, ...recurringTemplates];
     setRecurringTemplates(updated);
     await saveRecurringTemplates(updated);
-    const withReminders = await scheduleBillReminders(updated, envelopes, settings.billRemindersEnabled);
+    const withReminders = await scheduleBillReminders(updated, envelopes, settings.billRemindersEnabled, settings.billReminderLeadDays);
     setRecurringTemplates(withReminders);
     await saveRecurringTemplates(withReminders);
-  }, [recurringTemplates, envelopes, settings.billRemindersEnabled, scheduleBillReminders]);
+  }, [recurringTemplates, envelopes, settings.billRemindersEnabled, settings.billReminderLeadDays, scheduleBillReminders]);
 
   const updateRecurringTemplate = useCallback(async (id: string, updates: Partial<Omit<RecurringTransactionTemplate, 'id'>>) => {
     const changesReminderWindow = updates.dayOfMonth !== undefined || updates.isActive === false;
@@ -613,10 +616,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const updated = workingTemplates.map(t => (t.id === id ? { ...t, ...updates } : t));
-    const withReminders = await scheduleBillReminders(updated, envelopes, settings.billRemindersEnabled);
+    const withReminders = await scheduleBillReminders(updated, envelopes, settings.billRemindersEnabled, settings.billReminderLeadDays);
     setRecurringTemplates(withReminders);
     await saveRecurringTemplates(withReminders);
-  }, [recurringTemplates, envelopes, settings.billRemindersEnabled, cancelTemplateReminder, scheduleBillReminders]);
+  }, [recurringTemplates, envelopes, settings.billRemindersEnabled, settings.billReminderLeadDays, cancelTemplateReminder, scheduleBillReminders]);
 
   const deleteRecurringTemplate = useCallback(async (id: string) => {
     const target = recurringTemplates.find(t => t.id === id);
@@ -672,12 +675,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSettings(updated);
     await saveSettings(updated);
 
+    const leadDaysChanged = updates.billReminderLeadDays !== undefined
+      && updates.billReminderLeadDays !== settings.billReminderLeadDays;
+
     if (updates.billRemindersEnabled === true && !settings.billRemindersEnabled) {
-      const withReminders = await scheduleBillReminders(recurringTemplates, envelopes, true);
+      const withReminders = await scheduleBillReminders(recurringTemplates, envelopes, true, updated.billReminderLeadDays);
+      setRecurringTemplates(withReminders);
+      await saveRecurringTemplates(withReminders);
+    } else if (leadDaysChanged && updated.billRemindersEnabled) {
+      // Cancel any already-scheduled reminders so they're rescheduled at the new lead time.
+      const cancelled = await Promise.all(recurringTemplates.map(cancelTemplateReminder));
+      const withReminders = await scheduleBillReminders(cancelled, envelopes, true, updated.billReminderLeadDays);
       setRecurringTemplates(withReminders);
       await saveRecurringTemplates(withReminders);
     }
-  }, [settings, recurringTemplates, envelopes, scheduleBillReminders]);
+  }, [settings, recurringTemplates, envelopes, scheduleBillReminders, cancelTemplateReminder]);
 
   // ─── Import/Export ─────────────────────────────────────────────────────────
   const importFromBackup = useCallback(async () => {
