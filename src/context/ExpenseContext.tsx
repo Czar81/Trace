@@ -101,6 +101,13 @@ interface AppContextType {
     description: string;
     date?: string;
   }) => Promise<{ success: boolean; error?: string }>;
+  updateTransfer: (id: string, updates: {
+    envelopeId?: string;
+    toEnvelopeId?: string;
+    amount?: number;
+    description?: string;
+    date?: string;
+  }) => Promise<{ success: boolean; error?: string }>;
 
   // Recurring Transaction Template CRUD
   addRecurringTemplate: (template: Omit<RecurringTransactionTemplate, 'id' | 'lastGeneratedPeriod' | 'reminderNotificationId' | 'lastReminderScheduledPeriod'>) => Promise<void>;
@@ -533,6 +540,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   }, [envelopes, addTransaction]);
 
+  /**
+   * Updates an existing transfer transaction. Mirrors addTransfer's
+   * validate-then-delegate shape: looks up the existing transaction, merges
+   * the given updates, re-validates (same-envelope, currency-match) using the
+   * merged result, and only then delegates to updateTransaction.
+   */
+  const updateTransfer = useCallback(async (id: string, updates: {
+    envelopeId?: string;
+    toEnvelopeId?: string;
+    amount?: number;
+    description?: string;
+    date?: string;
+  }): Promise<{ success: boolean; error?: string }> => {
+    const existing = transactions.find(t => t.id === id);
+    if (!existing) {
+      return { success: false, error: 'Transferencia no encontrada.' };
+    }
+    const merged = { ...existing, ...updates };
+
+    if (merged.envelopeId === merged.toEnvelopeId) {
+      return { success: false, error: 'El sobre de origen y destino deben ser diferentes.' };
+    }
+    const source = envelopes.find(e => e.id === merged.envelopeId);
+    const destination = envelopes.find(e => e.id === merged.toEnvelopeId);
+    if (!source || !destination) {
+      return { success: false, error: 'Sobre no encontrado.' };
+    }
+    if (source.currency !== destination.currency) {
+      return { success: false, error: 'Los sobres deben tener la misma moneda.' };
+    }
+
+    await updateTransaction(id, {
+      envelopeId: merged.envelopeId,
+      toEnvelopeId: merged.toEnvelopeId,
+      amount: merged.amount,
+      description: merged.description,
+      date: merged.date,
+    });
+    return { success: true };
+  }, [transactions, envelopes, updateTransaction]);
+
   // ─── Recurring Transaction Template CRUD ───────────────────────────────────
   const addRecurringTemplate = useCallback(async (
     templateData: Omit<RecurringTransactionTemplate, 'id' | 'lastGeneratedPeriod' | 'reminderNotificationId' | 'lastReminderScheduledPeriod'>
@@ -669,7 +717,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const value = useMemo(() => ({
     envelopes, transactions, paymentMethods, categories, settings, recurringTemplates,
     addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
-    addTransaction, updateTransaction, deleteTransaction, addTransfer,
+    addTransaction, updateTransaction, deleteTransaction, addTransfer, updateTransfer,
     addRecurringTemplate, updateRecurringTemplate, deleteRecurringTemplate,
     addPaymentMethod, deletePaymentMethod,
     addCategory, deleteCategory,
@@ -679,7 +727,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }), [
     envelopes, transactions, paymentMethods, categories, settings, recurringTemplates,
     addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
-    addTransaction, updateTransaction, deleteTransaction, addTransfer,
+    addTransaction, updateTransaction, deleteTransaction, addTransfer, updateTransfer,
     addRecurringTemplate, updateRecurringTemplate, deleteRecurringTemplate,
     addPaymentMethod, deletePaymentMethod,
     addCategory, deleteCategory,

@@ -429,8 +429,11 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
               >
                 <TouchableOpacity
                   style={styles.transactionItem}
-                  disabled={isTransfer}
-                  onPress={() => navigation.navigate('CreateTransaction', { envelopeId: item.envelopeId, transaction: item })}
+                  onPress={() => (
+                    isTransfer
+                      ? navigation.navigate('CreateTransfer', { envelopeId: item.envelopeId, transaction: item })
+                      : navigation.navigate('CreateTransaction', { envelopeId: item.envelopeId, transaction: item })
+                  )}
                 >
                   <View style={styles.transactionLeft}>
                     <Text style={styles.transactionDesc}>{item.description}</Text>
