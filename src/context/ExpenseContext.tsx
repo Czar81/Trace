@@ -11,14 +11,14 @@ import {
 } from '../utils/storage';
 import { pickAndImportBackup } from '../utils/importData';
 import { formatCurrency } from '../utils/formatCurrency';
+import { clampDayOfMonth, getNextDueDate, getOccurrenceKey } from '../utils/recurrence';
 
-/**
- * Clamps `day` to the last valid day of the given year/month (0-indexed month),
- * so values like 31 don't roll over into the next month on shorter months.
- */
-export function clampDayOfMonth(year: number, month: number, day: number): number {
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  return Math.min(day, daysInMonth);
+// Re-exported for backward compatibility — other modules import clampDayOfMonth from here.
+export { clampDayOfMonth };
+
+/** Strips the time component, keeping year/month/day in local time. */
+function dateOnly(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
 }
 
 /**
@@ -165,35 +165,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // ─── Automatic generation of due recurring transactions ──────────────
       const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth();
-      const currentPeriod = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
-      const today = now.getDate();
+      const today = dateOnly(now);
 
       const newTransactions: Transaction[] = [];
       let idOffset = 0;
       const finalTemplates = loadedTemplates.map(template => {
         if (!template.isActive) return template;
-        if (template.lastGeneratedPeriod === currentPeriod) return template;
 
-        const clampedDay = clampDayOfMonth(currentYear, currentMonth, template.dayOfMonth);
-        if (today < clampedDay) return template;
+        const dueDate = getNextDueDate(template, now);
+        if (dueDate.getTime() > today.getTime()) return template;
 
-        const generatedDate = new Date(currentYear, currentMonth, clampedDay, 0, 0, 0, 0);
+        const occurrenceKey = getOccurrenceKey(template, dueDate);
+        if (template.lastGeneratedPeriod === occurrenceKey) return template;
+
         newTransactions.push({
           id: (Date.now() + idOffset++).toString(),
           envelopeId: template.envelopeId,
           type: template.type,
           amount: template.amount,
           description: template.description,
-          date: generatedDate.toISOString(),
+          date: dueDate.toISOString(),
           paymentMethodId: template.paymentMethodId,
           categoryId: template.categoryId,
           sourceSavingsEnvelopeId: template.sourceSavingsEnvelopeId,
           isArchived: false,
         });
 
-        return { ...template, lastGeneratedPeriod: currentPeriod };
+        return { ...template, lastGeneratedPeriod: occurrenceKey };
       });
 
       // ─── Bill reminder scheduling for active templates ────────────────────
@@ -401,16 +399,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!billRemindersEnabled) return templates;
 
     const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-    const currentPeriod = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
 
     return Promise.all(templates.map(async (template) => {
       if (!template.isActive) return template;
-      if (template.lastReminderScheduledPeriod === currentPeriod) return template;
 
-      const clampedDay = clampDayOfMonth(currentYear, currentMonth, template.dayOfMonth);
-      const dueDate = new Date(currentYear, currentMonth, clampedDay, 0, 0, 0, 0);
+      const dueDate = getNextDueDate(template, now);
+      const occurrenceKey = getOccurrenceKey(template, dueDate);
+      if (template.lastReminderScheduledPeriod === occurrenceKey) return template;
+
       const reminderDate = new Date(dueDate);
       reminderDate.setDate(reminderDate.getDate() - leadDays);
 
@@ -427,7 +423,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           },
           trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: reminderDate },
         });
-        return { ...template, reminderNotificationId: notificationId, lastReminderScheduledPeriod: currentPeriod };
+        return { ...template, reminderNotificationId: notificationId, lastReminderScheduledPeriod: occurrenceKey };
       } catch (e) {
         console.error('Error scheduling bill reminder notification', e);
         return template;
@@ -604,7 +600,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [recurringTemplates, envelopes, settings.billRemindersEnabled, settings.billReminderLeadDays, scheduleBillReminders]);
 
   const updateRecurringTemplate = useCallback(async (id: string, updates: Partial<Omit<RecurringTransactionTemplate, 'id'>>) => {
-    const changesReminderWindow = updates.dayOfMonth !== undefined || updates.isActive === false;
+    const changesReminderWindow =
+      updates.dayOfMonth !== undefined ||
+      updates.dayOfWeek !== undefined ||
+      updates.anchorDate !== undefined ||
+      updates.month !== undefined ||
+      updates.frequency !== undefined ||
+      updates.isActive === false;
 
     let workingTemplates = recurringTemplates;
     if (changesReminderWindow) {

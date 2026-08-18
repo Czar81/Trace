@@ -9,6 +9,7 @@ import { EmptyState } from '../components/EmptyState';
 import { RecurringTransactionTemplate } from '../types';
 import { RootStackParamList } from '../navigation/types';
 import { COLORS } from '../theme/colors';
+import { formatCadence } from '../utils/recurrence';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Recurring'>;
 
@@ -54,7 +55,7 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
               <View style={styles.cardMain}>
                 <Text style={styles.cardTitle}>{envelope?.name ?? 'Sobre eliminado'}</Text>
                 <Text style={styles.cardSubtitle}>
-                  {formatAmount(item.amount, envelope?.currency ?? 'CRC')} · Día {item.dayOfMonth}
+                  {formatAmount(item.amount, envelope?.currency ?? 'CRC')} · {formatCadence(item)}
                 </Text>
                 <Text style={[styles.statusText, item.isActive ? styles.statusActive : styles.statusPaused]}>
                   {item.isActive ? 'Activo' : 'Pausado'}
