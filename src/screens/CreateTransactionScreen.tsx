@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Switch, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -10,11 +10,14 @@ import { Dropdown } from '../components/Dropdown';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar } from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/types';
-import { COLORS } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { ThemeColors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransaction'>;
 
 export const CreateTransactionScreen = ({ route, navigation }: Props) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { envelopeId, transaction } = route.params;
   const { envelopes, addTransaction, updateTransaction, paymentMethods, categories, getEnvelopeBalance, formatAmount } = useAppData();
 
@@ -86,13 +89,13 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <ArrowLeft color={COLORS.white} size={24} />
+          <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {isEditing ? 'Editar Transacción' : 'Nueva Transacción'}
         </Text>
         <TouchableOpacity onPress={handleSave} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Check color={COLORS.green} size={24} />
+          <Check color={colors.green} size={24} />
         </TouchableOpacity>
       </View>
 
@@ -112,15 +115,15 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
             style={[styles.typeBtn, type === 'expense' && styles.typeBtnExpense]}
             onPress={() => setType('expense')}
           >
-            <MinusCircle color={type === 'expense' ? COLORS.white : COLORS.secondaryText} size={18} />
-            <Text style={[styles.typeText, type === 'expense' && { color: COLORS.white }]}>Gasto</Text>
+            <MinusCircle color={type === 'expense' ? colors.white : colors.secondaryText} size={18} />
+            <Text style={[styles.typeText, type === 'expense' && { color: colors.white }]}>Gasto</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.typeBtn, type === 'income' && styles.typeBtnIncome]}
             onPress={() => setType('income')}
           >
-            <PlusCircle color={type === 'income' ? COLORS.white : COLORS.secondaryText} size={18} />
-            <Text style={[styles.typeText, type === 'income' && { color: COLORS.white }]}>Ingreso</Text>
+            <PlusCircle color={type === 'income' ? colors.white : colors.secondaryText} size={18} />
+            <Text style={[styles.typeText, type === 'income' && { color: colors.white }]}>Ingreso</Text>
           </TouchableOpacity>
         </View>
 
@@ -133,14 +136,14 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
           autoFocus={!isEditing}
           style={{
             fontSize: 30,
-            color: COLORS.white,
+            color: colors.white,
           }}
         />
 
         {/* ── Date Picker ── */}
         <Text style={styles.label}>Fecha</Text>
         <TouchableOpacity style={styles.datePickerBtn} onPress={() => setShowDatePicker(true)}>
-          <Calendar color={COLORS.secondaryText} size={20} />
+          <Calendar color={colors.secondaryText} size={20} />
           <Text style={styles.dateText}>{date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</Text>
         </TouchableOpacity>
 
@@ -164,7 +167,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
           value={description}
           onChangeText={setDescription}
           placeholder={type === 'expense' ? 'Ej: Supermercado, Almuerzo...' : 'Ej: Salario, Transferencia...'}
-          placeholderTextColor={COLORS.secondaryText}
+          placeholderTextColor={colors.secondaryText}
         />
 
         {/* ── Category & Payment method (expense only) ── */}
@@ -192,8 +195,8 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
                   <Switch
                     value={useSavingsEnvelope}
                     onValueChange={setUseSavingsEnvelope}
-                    trackColor={{ false: COLORS.cardBg, true: COLORS.green }}
-                    thumbColor={COLORS.white}
+                    trackColor={{ false: colors.cardBg, true: colors.green }}
+                    thumbColor={colors.white}
                   />
                 </View>
                 {useSavingsEnvelope && (
@@ -232,34 +235,34 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   keyboardAvoiding: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
   },
   headerBtn: { padding: 4 },
-  headerTitle: { color: COLORS.white, fontSize: 18, fontWeight: 'bold', flex: 1, textAlign: 'center' },
+  headerTitle: { color: colors.white, fontSize: 18, fontWeight: 'bold', flex: 1, textAlign: 'center' },
   form: { paddingHorizontal: 20, paddingBottom: 60 },
-  envelopeContext: { color: COLORS.secondaryText, fontSize: 14, textAlign: 'center', marginBottom: 20 },
+  envelopeContext: { color: colors.secondaryText, fontSize: 14, textAlign: 'center', marginBottom: 20 },
   typeSelector: {
-    flexDirection: 'row', backgroundColor: COLORS.cardBg, borderRadius: 14,
+    flexDirection: 'row', backgroundColor: colors.cardBg, borderRadius: 14,
     padding: 4, marginBottom: 24, gap: 4,
   },
   typeBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     paddingVertical: 12, borderRadius: 10, gap: 8,
   },
-  typeBtnExpense: { backgroundColor: COLORS.red },
-  typeBtnIncome: { backgroundColor: COLORS.blue },
-  typeText: { color: COLORS.secondaryText, fontSize: 15, fontWeight: '700' },
-  label: { color: COLORS.white, fontSize: 16, fontWeight: '600', marginTop: 24, marginBottom: 8 },
+  typeBtnExpense: { backgroundColor: colors.red },
+  typeBtnIncome: { backgroundColor: colors.blue },
+  typeText: { color: colors.secondaryText, fontSize: 15, fontWeight: '700' },
+  label: { color: colors.white, fontSize: 16, fontWeight: '600', marginTop: 24, marginBottom: 8 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20, marginBottom: 16 },
-  toggleLabel: { color: COLORS.white, fontSize: 15, flex: 1, paddingRight: 12 },
-  savingsPreview: { color: COLORS.secondaryText, fontSize: 13, marginTop: -8, marginBottom: 16 },
+  toggleLabel: { color: colors.white, fontSize: 15, flex: 1, paddingRight: 12 },
+  savingsPreview: { color: colors.secondaryText, fontSize: 13, marginTop: -8, marginBottom: 16 },
   datePickerBtn: {
-    backgroundColor: COLORS.cardBg,
+    backgroundColor: colors.cardBg,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -267,9 +270,9 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 8,
   },
-  dateText: { color: COLORS.white, fontSize: 16 },
+  dateText: { color: colors.white, fontSize: 16 },
   input: {
-    backgroundColor: COLORS.cardBg, borderRadius: 12, padding: 16,
-    color: COLORS.white, fontSize: 16, marginBottom: 24,
+    backgroundColor: colors.cardBg, borderRadius: 12, padding: 16,
+    color: colors.white, fontSize: 16, marginBottom: 24,
   },
 });

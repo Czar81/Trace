@@ -5,8 +5,79 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 
-import { AppProvider, useAppData, getCutoffPeriodStart } from '../ExpenseContext';
+import { AppProvider, useAppData, getCutoffPeriodStart, accrueDebtInterest } from '../ExpenseContext';
 import { Envelope, Transaction } from '../../types';
+
+describe('accrueDebtInterest', () => {
+  const baseDebtEnvelope = (overrides: Partial<Envelope> = {}): Envelope => ({
+    id: 'debt-1',
+    name: 'Tarjeta',
+    type: 'deuda',
+    currency: 'CRC',
+    limit: 1000,
+    isUnlimited: false,
+    icon: 'credit-card',
+    color: '#F2A65A',
+    interestRate: 10,
+    interestFrequency: 'mensual',
+    dueDay: 15,
+    lastInterestAccrualPeriod: null,
+    ...overrides,
+  });
+
+  it('charges interest on the amount owed when the cycle is reached', () => {
+    const envelope = baseDebtEnvelope();
+    // limit 1000, no transactions -> balance 0 -> amount owed 1000 -> 10% = 100
+    const now = new Date(2026, 2, 15); // March 15, 2026
+    const { updatedEnvelopes, newTransactions } = accrueDebtInterest([envelope], [], now);
+
+    expect(newTransactions).toHaveLength(1);
+    expect(newTransactions[0]).toMatchObject({ envelopeId: 'debt-1', type: 'expense', amount: 100, description: 'Interés' });
+    expect(updatedEnvelopes[0].lastInterestAccrualPeriod).toBe('2026-03');
+  });
+
+  it('does not charge interest before the cycle is reached', () => {
+    const envelope = baseDebtEnvelope();
+    const now = new Date(2026, 2, 10); // before day 15
+    const { updatedEnvelopes, newTransactions } = accrueDebtInterest([envelope], [], now);
+
+    expect(newTransactions).toHaveLength(0);
+    expect(updatedEnvelopes[0].lastInterestAccrualPeriod).toBeNull();
+  });
+
+  it('does not charge interest twice for the same cycle', () => {
+    const envelope = baseDebtEnvelope({ lastInterestAccrualPeriod: '2026-03' });
+    const now = new Date(2026, 2, 20); // still within the March cycle
+    const { newTransactions } = accrueDebtInterest([envelope], [], now);
+
+    expect(newTransactions).toHaveLength(0);
+  });
+
+  it('does not charge interest when the debt is already paid off (amount owed <= 0)', () => {
+    const envelope = baseDebtEnvelope();
+    const transactions: Transaction[] = [
+      { id: 't1', envelopeId: 'debt-1', type: 'income', amount: 1000, description: 'Pago total', date: new Date(2026, 1, 1).toISOString(), isArchived: false },
+    ];
+    const now = new Date(2026, 2, 15);
+    const { updatedEnvelopes, newTransactions } = accrueDebtInterest([envelope], transactions, now);
+
+    expect(newTransactions).toHaveLength(0);
+    // Cycle is still marked handled so it isn't re-evaluated every app open.
+    expect(updatedEnvelopes[0].lastInterestAccrualPeriod).toBe('2026-03');
+  });
+
+  it('does not accrue interest for unlimited debt envelopes, non-deuda envelopes, or envelopes missing rate/frequency/dueDay', () => {
+    const now = new Date(2026, 2, 15);
+    const envelopes: Envelope[] = [
+      baseDebtEnvelope({ id: 'd1', isUnlimited: true }),
+      baseDebtEnvelope({ id: 'd2', interestRate: 0 }),
+      baseDebtEnvelope({ id: 'd3', dueDay: undefined }),
+      { ...baseDebtEnvelope({ id: 'd4' }), type: 'gasto' },
+    ];
+    const { newTransactions } = accrueDebtInterest(envelopes, [], now);
+    expect(newTransactions).toHaveLength(0);
+  });
+});
 
 describe('getCutoffPeriodStart', () => {
   it('returns this month\'s cutoff day when it falls within the current month and has already passed', () => {

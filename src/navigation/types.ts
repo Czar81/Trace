@@ -7,10 +7,10 @@ export type RootStackParamList = {
   CreateTransaction: { envelopeId: string; transaction?: Transaction };
   CreateTransfer: { envelopeId?: string; transaction?: Transaction } | undefined;
   Settings: undefined;
+  AppearanceSettings: undefined;
   CurrencySettings: undefined;
   PaymentMethodsSettings: undefined;
   CategoriesSettings: undefined;
-  CutoffSettings: undefined;
   Reports: undefined;
   Search: undefined;
   Recurring: undefined;

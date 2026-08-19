@@ -6,7 +6,8 @@ import { useAppData } from '../context/ExpenseContext';
 import { ArrowLeft } from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/types';
 import { EmptyState as SharedEmptyState } from '../components/EmptyState';
-import { COLORS } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { ThemeColors } from '../theme/colors';
 import {
   ReportPeriod,
   getSpendingByCategory,
@@ -32,6 +33,8 @@ const EmptyState = () => <SharedEmptyState message="Sin datos para este período
 type Props = NativeStackScreenProps<RootStackParamList, 'Reports'>;
 
 export const ReportsScreen = ({ navigation }: Props) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { transactions, categories, envelopes, paymentMethods, convertToCRC } = useAppData();
   const [period, setPeriod] = useState<ReportPeriod>('current-month');
 
@@ -70,7 +73,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <ArrowLeft color={COLORS.white} size={24} />
+          <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Reportes</Text>
         <View style={{ width: 32 }} />
@@ -182,13 +185,13 @@ export const ReportsScreen = ({ navigation }: Props) => {
                 <View style={styles.trendLine}>
                   <Text style={styles.trendIncomeLabel}>Ingresos {formatCurrency(t.incomeCRC, 'CRC')}</Text>
                   <View style={styles.barTrack}>
-                    <View style={[styles.barFill, { backgroundColor: COLORS.green, width: `${(t.incomeCRC / maxTrendValue) * 100}%` }]} />
+                    <View style={[styles.barFill, { backgroundColor: colors.green, width: `${(t.incomeCRC / maxTrendValue) * 100}%` }]} />
                   </View>
                 </View>
                 <View style={styles.trendLine}>
                   <Text style={styles.trendExpenseLabel}>Gastos {formatCurrency(t.expenseCRC, 'CRC')}</Text>
                   <View style={styles.barTrack}>
-                    <View style={[styles.barFill, { backgroundColor: COLORS.red, width: `${(t.expenseCRC / maxTrendValue) * 100}%` }]} />
+                    <View style={[styles.barFill, { backgroundColor: colors.red, width: `${(t.expenseCRC / maxTrendValue) * 100}%` }]} />
                   </View>
                 </View>
               </View>
@@ -219,29 +222,29 @@ export const ReportsScreen = ({ navigation }: Props) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 },
   headerBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: COLORS.white, fontSize: 20, fontWeight: 'bold' },
+  headerTitle: { color: colors.white, fontSize: 20, fontWeight: 'bold' },
   scroll: { paddingHorizontal: 20, paddingBottom: 60 },
   periodRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  periodPill: { flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: COLORS.cardBg, alignItems: 'center', borderWidth: 1, borderColor: COLORS.divider },
-  periodPillActive: { backgroundColor: COLORS.green, borderColor: COLORS.green },
-  periodPillText: { color: COLORS.secondaryText, fontSize: 13, fontWeight: '600' },
-  periodPillTextActive: { color: COLORS.bg },
-  sectionTitle: { color: COLORS.white, fontSize: 16, fontWeight: '700', marginTop: 24, marginBottom: 12 },
-  card: { backgroundColor: COLORS.cardBg, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.divider },
-  emptyText: { color: COLORS.secondaryText, fontSize: 14, textAlign: 'center', paddingVertical: 8 },
+  periodPill: { flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: colors.cardBg, alignItems: 'center', borderWidth: 1, borderColor: colors.divider },
+  periodPillActive: { backgroundColor: colors.green, borderColor: colors.green },
+  periodPillText: { color: colors.secondaryText, fontSize: 13, fontWeight: '600' },
+  periodPillTextActive: { color: colors.bg },
+  sectionTitle: { color: colors.white, fontSize: 16, fontWeight: '700', marginTop: 24, marginBottom: 12 },
+  card: { backgroundColor: colors.cardBg, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.divider },
+  emptyText: { color: colors.secondaryText, fontSize: 14, textAlign: 'center', paddingVertical: 8 },
   row: { marginBottom: 14 },
   rowHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  rowLabel: { color: COLORS.white, fontSize: 14, fontWeight: '600', flexShrink: 1 },
-  rowValue: { color: COLORS.secondaryText, fontSize: 13 },
-  barTrack: { height: 6, borderRadius: 3, backgroundColor: COLORS.divider, overflow: 'hidden' },
-  barFill: { height: 6, borderRadius: 3, backgroundColor: COLORS.blue },
+  rowLabel: { color: colors.white, fontSize: 14, fontWeight: '600', flexShrink: 1 },
+  rowValue: { color: colors.secondaryText, fontSize: 13 },
+  barTrack: { height: 6, borderRadius: 3, backgroundColor: colors.divider, overflow: 'hidden' },
+  barFill: { height: 6, borderRadius: 3, backgroundColor: colors.blue },
   trendLine: { marginTop: 4, marginBottom: 4 },
-  trendIncomeLabel: { color: COLORS.green, fontSize: 12, marginBottom: 4 },
-  trendExpenseLabel: { color: COLORS.red, fontSize: 12, marginTop: 6, marginBottom: 4 },
+  trendIncomeLabel: { color: colors.green, fontSize: 12, marginBottom: 4 },
+  trendExpenseLabel: { color: colors.red, fontSize: 12, marginTop: 6, marginBottom: 4 },
   topTxRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  topTxSubtitle: { color: COLORS.secondaryText, fontSize: 12, marginTop: 2 },
+  topTxSubtitle: { color: colors.secondaryText, fontSize: 12, marginTop: 2 },
 });

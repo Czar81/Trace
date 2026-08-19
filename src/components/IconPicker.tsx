@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Modal, View, SectionList, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { EnvelopeIcon, CATEGORIZED_ICONS, IconName } from './EnvelopeIcon';
 import { Check, Image as ImageIcon } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { COLORS } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { ThemeColors } from '../theme/colors';
 
 interface IconPickerProps {
   visible: boolean;
@@ -18,6 +19,9 @@ interface IconPickerProps {
 const OVERLAY = 'rgba(0,0,0,0.65)';
 
 export const IconPicker: React.FC<IconPickerProps> = ({ visible, selectedIcon, selectedImageUri, color, onSelectIcon, onSelectImage, onClose }) => {
+  const { colors, isLight } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -51,9 +55,9 @@ export const IconPicker: React.FC<IconPickerProps> = ({ visible, selectedIcon, s
       <View style={styles.sheet}>
         <View style={styles.handle} />
         <Text style={styles.title}>Iconos</Text>
-        
+
         <TouchableOpacity style={styles.pickImageBtn} onPress={handlePickImage}>
-          <ImageIcon color={COLORS.white} size={20} />
+          <ImageIcon color={colors.white} size={20} />
           <Text style={styles.pickImageText}>Subir imagen propia</Text>
         </TouchableOpacity>
 
@@ -80,12 +84,12 @@ export const IconPicker: React.FC<IconPickerProps> = ({ visible, selectedIcon, s
                       <EnvelopeIcon
                         name={item}
                         size={24}
-                        color={isSelected ? color : COLORS.white}
+                        color={isSelected ? color : colors.white}
                       />
                     </View>
                     {isSelected && (
                       <View style={[styles.checkBadge, { backgroundColor: color }]}>
-                        <Check size={8} color="#092230" />
+                        <Check size={8} color={isLight ? '#FFFFFF' : '#092230'} />
                       </View>
                     )}
                   </TouchableOpacity>
@@ -103,34 +107,34 @@ export const IconPicker: React.FC<IconPickerProps> = ({ visible, selectedIcon, s
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: OVERLAY },
   sheet: {
     position: 'absolute',
     bottom: 0, left: 0, right: 0,
-    backgroundColor: COLORS.modalSheet,
+    backgroundColor: colors.modalSheet,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingBottom: 40,
     maxHeight: '85%',
   },
-  handle: { width: 36, height: 4, backgroundColor: '#2a4a5e', borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
-  title: { color: COLORS.white, fontSize: 17, fontWeight: '700', textAlign: 'center', paddingVertical: 14 },
+  handle: { width: 36, height: 4, backgroundColor: colors.divider, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
+  title: { color: colors.white, fontSize: 17, fontWeight: '700', textAlign: 'center', paddingVertical: 14 },
   listContent: { paddingHorizontal: 16, paddingBottom: 20 },
-  sectionHeader: { color: COLORS.white, fontSize: 16, fontWeight: '600', marginTop: 24, marginBottom: 16 },
+  sectionHeader: { color: colors.white, fontSize: 16, fontWeight: '600', marginTop: 24, marginBottom: 16 },
   iconRow: { flexDirection: 'row', marginBottom: 8 },
   pickImageBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.cardBg,
+    backgroundColor: colors.cardBg,
     marginHorizontal: 20,
     marginBottom: 16,
     paddingVertical: 12,
     borderRadius: 12,
     gap: 8,
   },
-  pickImageText: { color: COLORS.white, fontSize: 16, fontWeight: '600' },
+  pickImageText: { color: colors.white, fontSize: 16, fontWeight: '600' },
   iconBtn: {
     flex: 1,
     aspectRatio: 1,
@@ -142,7 +146,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#264653',
+    backgroundColor: colors.cardHighlight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -157,4 +161,3 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
-

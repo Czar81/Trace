@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { COLORS } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { ThemeColors } from '../theme/colors';
 
 interface EmptyStateProps {
   message: string;
@@ -9,6 +10,9 @@ interface EmptyStateProps {
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({ message, ctaLabel, onPress }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.message}>{message}</Text>
@@ -21,15 +25,15 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ message, ctaLabel, onPre
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { alignItems: 'center', marginTop: 40, paddingHorizontal: 20 },
-  message: { color: COLORS.secondaryText, fontSize: 15, textAlign: 'center', fontStyle: 'italic' },
+  message: { color: colors.secondaryText, fontSize: 15, textAlign: 'center', fontStyle: 'italic' },
   cta: {
     marginTop: 16,
-    backgroundColor: COLORS.green,
+    backgroundColor: colors.green,
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 24,
   },
-  ctaText: { color: COLORS.bg, fontSize: 15, fontWeight: '700' },
+  ctaText: { color: colors.bg, fontSize: 15, fontWeight: '700' },
 });

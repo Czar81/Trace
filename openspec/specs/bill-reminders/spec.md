@@ -1,6 +1,6 @@
 ## Purpose
 
-Warns the user proactively, via a scheduled local device notification, a few days before an active recurring transaction template is about to generate its transaction, so they can make sure funds are available before the charge lands.
+Warns the user proactively, via a scheduled local device notification, a few days before an active recurring transaction template is about to generate its transaction or a debt envelope's due day is reached, so they can make sure funds are available before the charge lands.
 
 ## Requirements
 

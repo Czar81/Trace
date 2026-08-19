@@ -1,3 +1,5 @@
+import { ThemeId } from '../theme/colors';
+
 export type EnvelopeType = 'gasto' | 'ahorro' | 'deuda';
 export type Currency = 'CRC' | 'USD' | 'EUR';
 
@@ -11,6 +13,8 @@ export interface TransactionCategory {
   name: string;
 }
 
+export type DebtInterestFrequency = 'mensual' | 'quincenal' | 'anual';
+
 export interface Envelope {
   id: string;
   name: string;
@@ -21,6 +25,16 @@ export interface Envelope {
   icon: string;
   imageUri?: string;
   color: string;
+  // Debt-only fields (type === 'deuda' && !isUnlimited); undefined/unset otherwise.
+  interestRate?: number; // percentage applied per cycle, e.g. 2.5 = 2.5%
+  interestFrequency?: DebtInterestFrequency;
+  minimumPayment?: number;
+  dueDay?: number; // 1-31, anchors the debt's interest/minimum-payment/reminder cycle
+  dueAnchorMonth?: number | null; // 1-12, fixes which month 'anual' recurs in; set automatically when interestFrequency becomes 'anual'
+  lastInterestAccrualPeriod?: string | null; // occurrence key, same scheme as RecurringTransactionTemplate.lastGeneratedPeriod
+  lastMinPaymentCheckPeriod?: string | null; // occurrence key for the last minimum-payment shortfall check
+  dueReminderNotificationId?: string | null;
+  lastDueReminderScheduledPeriod?: string | null; // occurrence key, same scheme as lastReminderScheduledPeriod
 }
 
 export interface Transaction {
@@ -72,4 +86,5 @@ export interface AppSettings {
   budgetAlertsEnabled: boolean;
   billRemindersEnabled: boolean;
   billReminderLeadDays: number;
+  themeId: ThemeId;
 }

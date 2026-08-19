@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { EnvelopeIcon } from './EnvelopeIcon';
-import { COLORS } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 
 // Darkens a hex color by a fraction (0-1) to build the gradient's deep stop
 // without requiring callers to pass a second color.
@@ -34,9 +34,11 @@ export const EnvelopeAvatar: React.FC<EnvelopeAvatarProps> = ({
   size = 48,
   borderRadius = 16,
   progress = 0,
-  progressColor = COLORS.green,
+  progressColor: progressColorProp,
   iconColor = color, // Default to envelope color
 }) => {
+  const { colors } = useTheme();
+  const progressColor = progressColorProp ?? colors.green;
   const strokeWidth = 3;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -58,7 +60,7 @@ export const EnvelopeAvatar: React.FC<EnvelopeAvatarProps> = ({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={COLORS.progressTrack}
+          stroke={colors.progressTrack}
           strokeWidth={strokeWidth}
           fill="transparent"
         />
@@ -111,4 +113,3 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 });
-
