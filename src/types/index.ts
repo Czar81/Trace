@@ -39,7 +39,7 @@ export interface Transaction {
   archivedAt?: string;
 }
 
-export type RecurrenceFrequency = 'monthly';
+export type RecurrenceFrequency = 'monthly' | 'weekly' | 'biweekly' | 'annual';
 
 export interface RecurringTransactionTemplate {
   id: string;
@@ -51,11 +51,14 @@ export interface RecurringTransactionTemplate {
   categoryId?: string;
   sourceSavingsEnvelopeId?: string;
   frequency: RecurrenceFrequency;
-  dayOfMonth: number; // 1-31
+  dayOfMonth: number; // 1-31, used by 'monthly' and 'annual'
+  dayOfWeek?: number; // 0=Sunday..6=Saturday, used by 'weekly' and 'biweekly'
+  anchorDate?: string; // ISO date, first occurrence for 'biweekly'
+  month?: number; // 1-12, used by 'annual'
   isActive: boolean;
-  lastGeneratedPeriod: string | null; // 'YYYY-MM'
+  lastGeneratedPeriod: string | null; // occurrence key: 'YYYY-MM' (monthly), 'YYYY' (annual), 'YYYY-Www' (weekly), or ISO due date (biweekly)
   reminderNotificationId: string | null;
-  lastReminderScheduledPeriod: string | null; // 'YYYY-MM'
+  lastReminderScheduledPeriod: string | null; // occurrence key, same scheme as lastGeneratedPeriod
 }
 
 export interface AppSettings {
@@ -68,4 +71,5 @@ export interface AppSettings {
   expenseCutoffDay: number | null;
   budgetAlertsEnabled: boolean;
   billRemindersEnabled: boolean;
+  billReminderLeadDays: number;
 }

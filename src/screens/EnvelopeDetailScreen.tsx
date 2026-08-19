@@ -241,32 +241,36 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
       />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <ArrowLeft color={COLORS.white} size={24} />
         </TouchableOpacity>
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={styles.iconBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             onPress={() => navigation.navigate('CreateTransfer', { envelopeId })}
           >
             <ArrowLeftRight color={COLORS.secondaryText} size={20} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.iconBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             onPress={() => navigation.navigate('CreateEnvelope', { envelopeType: envelope.type, envelope })}
           >
             <Edit2 color={COLORS.secondaryText} size={20} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => setDialog({ type: 'reset' })}>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => setDialog({ type: 'reset' })}>
             <RefreshCw color={COLORS.secondaryText} size={20} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => setDialog({ type: 'deleteEnvelope' })}>
+          <View style={styles.headerDivider} />
+          <TouchableOpacity style={[styles.iconBtn, styles.deleteIconBtn]} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => setDialog({ type: 'deleteEnvelope' })}>
             <Trash2 color={COLORS.red} size={20} />
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.summaryCard}>
+        <View style={styles.cardFlap} pointerEvents="none" />
         <View style={styles.cardHeader}>
           <View style={{ marginRight: 16 }}>
             <EnvelopeAvatar 
@@ -385,11 +389,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
           )}
           ListEmptyComponent={
             sortedTransactions.length === 0 ? (
-              <EmptyState
-                message="Sin transacciones aún."
-                ctaLabel="Agregar transacción"
-                onPress={() => navigation.navigate('CreateTransaction', { envelopeId })}
-              />
+              <EmptyState message="Sin transacciones aún." />
             ) : (
               <EmptyState message="No hay transacciones en este período." />
             )
@@ -430,8 +430,11 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
               >
                 <TouchableOpacity
                   style={styles.transactionItem}
-                  disabled={isTransfer}
-                  onPress={() => navigation.navigate('CreateTransaction', { envelopeId: item.envelopeId, transaction: item })}
+                  onPress={() => (
+                    isTransfer
+                      ? navigation.navigate('CreateTransfer', { envelopeId: item.envelopeId, transaction: item })
+                      : navigation.navigate('CreateTransaction', { envelopeId: item.envelopeId, transaction: item })
+                  )}
                 >
                   <View style={styles.transactionLeft}>
                     <Text style={styles.transactionDesc}>{item.description}</Text>
@@ -453,7 +456,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
               </Swipeable>
             );
           }}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={() => <View style={styles.perforationDivider} />}
         />
       </View>
 
@@ -478,7 +481,10 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   iconBtn: { padding: 8 },
   headerActions: { flexDirection: 'row', alignItems: 'center' },
-  summaryCard: { backgroundColor: COLORS.cardBg, marginHorizontal: 20, borderRadius: 24, padding: 24, marginTop: 8 },
+  headerDivider: { width: 1, height: 20, backgroundColor: COLORS.divider, marginHorizontal: 6 },
+  deleteIconBtn: { marginLeft: 2 },
+  summaryCard: { backgroundColor: COLORS.cardBg, marginHorizontal: 20, borderRadius: 24, padding: 24, marginTop: 8, overflow: 'hidden' },
+  cardFlap: { position: 'absolute', top: -20, left: '50%', width: 40, height: 40, marginLeft: -20, backgroundColor: COLORS.cardHighlight, transform: [{ rotate: '45deg' }] },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   cardTitle: { color: COLORS.white, fontSize: 20, fontWeight: 'bold' },
   cardCurrency: { color: COLORS.secondaryText, fontSize: 14, fontWeight: '600' },
@@ -498,7 +504,7 @@ const styles = StyleSheet.create({
   transactionDesc: { color: COLORS.white, fontSize: 15, fontWeight: '600', marginBottom: 3 },
   transactionDate: { color: COLORS.secondaryText, fontSize: 12 },
   transactionAmount: { fontSize: 15, fontWeight: '700' },
-  separator: { height: 1, backgroundColor: COLORS.divider },
+  perforationDivider: { borderTopWidth: 1, borderStyle: 'dotted', borderColor: COLORS.perforation },
   filterRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   filterPill: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,

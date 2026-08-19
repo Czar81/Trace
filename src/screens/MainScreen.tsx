@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Animated, Dimensions } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, FlatList, Animated, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
@@ -17,6 +17,82 @@ const { width } = Dimensions.get('window');
 const CURRENCY_CYCLE: Currency[] = ['CRC', 'USD', 'EUR'];
 const TAB_TYPES: EnvelopeType[] = ['gasto', 'ahorro', 'deuda'];
 const TAB_LABELS: Record<EnvelopeType, string> = { gasto: 'Gastos', ahorro: 'Ahorros', deuda: 'Deudas' };
+
+interface EnvelopeCardProps {
+  envelope: Envelope;
+  remaining: number;
+  textColor: string;
+  progress: number;
+  progressColor: string;
+  subtext: string;
+  index: number;
+  onPress: () => void;
+  formatAmount: (amount: number, currency: Currency) => string;
+}
+
+/** Fades/slides in on mount (staggered by list position) and squishes slightly on press. */
+const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
+  envelope, remaining, textColor, progress, progressColor, subtext, index, onPress, formatAmount,
+}) => {
+  const entrance = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.timing(entrance, {
+      toValue: 1,
+      duration: 280,
+      delay: Math.min(index, 6) * 45,
+      useNativeDriver: true,
+    }).start();
+    // Only animate in once, on mount — not on every re-render (e.g. balance updates).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handlePressIn = () => {
+    Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 40, bounciness: 6 }).start();
+  };
+  const handlePressOut = () => {
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 8 }).start();
+  };
+
+  return (
+    <Animated.View
+      style={{
+        opacity: entrance,
+        transform: [
+          { translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) },
+          { scale },
+        ],
+      }}
+    >
+      <Pressable
+        style={styles.envelopeCard}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        <View style={{ marginRight: 16 }}>
+          <EnvelopeAvatar
+            icon={envelope.icon ?? 'box'}
+            imageUri={envelope.imageUri}
+            color={envelope.color}
+            size={52}
+            progress={progress}
+            progressColor={progressColor}
+            iconColor={envelope.color}
+          />
+        </View>
+        <Text style={styles.envelopeName} numberOfLines={1}>{envelope.name}</Text>
+        <View style={styles.envelopeValues}>
+          <Text style={[styles.envelopeAmount, { color: textColor }]}>
+            {formatAmount(Math.abs(remaining), envelope.currency)}
+          </Text>
+          <Text style={styles.envelopeSubtext}>{subtext}</Text>
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+};
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Main'>;
 
@@ -70,7 +146,7 @@ export const MainScreen = ({ navigation }: Props) => {
   };
 
 
-  const renderEnvelope = ({ item }: { item: Envelope }) => {
+  const renderEnvelope = ({ item, index }: { item: Envelope; index: number }) => {
     const balance = getEnvelopeBalance(item.id);
     const type = item.type;
 
@@ -127,29 +203,17 @@ export const MainScreen = ({ navigation }: Props) => {
         : 'ahorrados';
 
     return (
-      <TouchableOpacity
-        style={styles.envelopeCard}
+      <EnvelopeCard
+        envelope={item}
+        remaining={remaining}
+        textColor={textColor}
+        progress={progress}
+        progressColor={progressColor}
+        subtext={subtext}
+        index={index}
         onPress={() => navigation.navigate('EnvelopeDetail', { envelopeId: item.id })}
-      >
-        <View style={{ marginRight: 16 }}>
-          <EnvelopeAvatar
-            icon={item.icon ?? 'box'}
-            imageUri={item.imageUri}
-            color={item.color}
-            size={52}
-            progress={progress}
-            progressColor={progressColor}
-            iconColor={item.color}
-          />
-        </View>
-        <Text style={styles.envelopeName} numberOfLines={1}>{item.name}</Text>
-        <View style={styles.envelopeValues}>
-          <Text style={[styles.envelopeAmount, { color: textColor }]}>
-            {formatAmount(Math.abs(remaining), item.currency)}
-          </Text>
-          <Text style={styles.envelopeSubtext}>{subtext}</Text>
-        </View>
-      </TouchableOpacity>
+        formatAmount={formatAmount}
+      />
     );
   };
 
@@ -162,11 +226,7 @@ export const MainScreen = ({ navigation }: Props) => {
           keyExtractor={item => item.id}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
-            <EmptyState
-              message="No hay sobres todavía."
-              ctaLabel="+ Crear Sobre"
-              onPress={() => navigation.navigate('CreateEnvelope', { envelopeType: type })}
-            />
+            <EmptyState message="No hay sobres todavía." />
           }
           renderItem={renderEnvelope}
         />
@@ -174,7 +234,7 @@ export const MainScreen = ({ navigation }: Props) => {
     );
   };
 
-  const indicatorWidth = (width - 40) / TAB_TYPES.length;
+  const indicatorWidth = (width - 40 - 8) / TAB_TYPES.length;
   const translateX = scrollX.interpolate({
     inputRange: [0, width * (TAB_TYPES.length - 1)],
     outputRange: [0, indicatorWidth * (TAB_TYPES.length - 1)],
@@ -196,10 +256,10 @@ export const MainScreen = ({ navigation }: Props) => {
       <View style={styles.header}>
         <Text style={styles.title}>TRACE</Text>
         <View style={{ flexDirection: 'row' }}>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Search')}>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Search')}>
             <Search color={COLORS.secondaryText} size={22} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Settings')}>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Settings')}>
             <MoreVertical color={COLORS.secondaryText} size={24} />
           </TouchableOpacity>
         </View>
@@ -207,14 +267,26 @@ export const MainScreen = ({ navigation }: Props) => {
 
       <View style={styles.tabContainer}>
         <Animated.View style={[styles.tabIndicator, { width: indicatorWidth, transform: [{ translateX }] }]} />
-        {TAB_TYPES.map(tab => (
-          <TouchableOpacity key={tab} style={styles.tab} onPress={() => handleTabPress(tab)}>
-            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{TAB_LABELS[tab]}</Text>
-          </TouchableOpacity>
-        ))}
+        {TAB_TYPES.map((tab, index) => {
+          const tabTextColor = scrollX.interpolate({
+            inputRange: [
+              width * (index - 1),
+              width * index,
+              width * (index + 1),
+            ],
+            outputRange: [COLORS.secondaryText, COLORS.bg, COLORS.secondaryText],
+            extrapolate: 'clamp',
+          });
+          return (
+            <TouchableOpacity key={tab} style={styles.tab} onPress={() => handleTabPress(tab)}>
+              <Animated.Text style={[styles.tabText, { color: tabTextColor }]}>{TAB_LABELS[tab]}</Animated.Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       <View style={styles.summaryCard}>
+        <View style={styles.cardFlap} pointerEvents="none" />
         <TouchableOpacity onPress={cycleCurrency} style={styles.currencyBtn} activeOpacity={0.7}>
           <Text style={styles.currencyText}>{displayCurrency}</Text>
         </TouchableOpacity>
@@ -261,12 +333,12 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
   title: { color: COLORS.white, fontSize: 18, fontWeight: 'bold', letterSpacing: 1 },
   iconBtn: { padding: 8 },
-  tabContainer: { flexDirection: 'row', marginHorizontal: 20, height: 48, position: 'relative', marginBottom: 16 },
-  tab: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  tabIndicator: { position: 'absolute', bottom: 0, height: 2, backgroundColor: COLORS.green, borderRadius: 1 },
+  tabContainer: { flexDirection: 'row', marginHorizontal: 20, height: 48, position: 'relative', marginBottom: 16, backgroundColor: COLORS.cardBg, borderRadius: 24, padding: 4 },
+  tab: { flex: 1, justifyContent: 'center', alignItems: 'center', zIndex: 1 },
+  tabIndicator: { position: 'absolute', top: 4, bottom: 4, left: 4, backgroundColor: COLORS.green, borderRadius: 20 },
   tabText: { color: COLORS.secondaryText, fontSize: 16, fontWeight: '600' },
-  activeTabText: { color: COLORS.white },
-  summaryCard: { backgroundColor: COLORS.cardBg, marginHorizontal: 20, borderRadius: 16, padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  summaryCard: { backgroundColor: COLORS.cardBg, marginHorizontal: 20, borderRadius: 16, padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, overflow: 'hidden' },
+  cardFlap: { position: 'absolute', top: -20, left: '50%', width: 40, height: 40, marginLeft: -20, backgroundColor: COLORS.cardHighlight, transform: [{ rotate: '45deg' }] },
   currencyBtn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, backgroundColor: '#142E3D' },
   currencyText: { color: COLORS.white, fontSize: 15, fontWeight: '700' },
   summaryValues: { alignItems: 'flex-end' },

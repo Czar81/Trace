@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   expenseCutoffDay: null,
   budgetAlertsEnabled: false,
   billRemindersEnabled: false,
+  billReminderLeadDays: 2,
 };
 
 const DEFAULT_PAYMENT_METHODS: PaymentMethod[] = [

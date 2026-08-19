@@ -13,13 +13,14 @@ import { COLORS } from '../theme/colors';
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransfer'>;
 
 export const CreateTransferScreen = ({ route, navigation }: Props) => {
-  const { envelopeId } = route.params ?? {};
-  const { envelopes, addTransfer, getEnvelopeBalance, formatAmount } = useAppData();
+  const { envelopeId, transaction } = route.params ?? {};
+  const { envelopes, addTransfer, updateTransfer, getEnvelopeBalance, formatAmount } = useAppData();
+  const isEditing = !!transaction;
 
-  const [sourceId, setSourceId] = useState(envelopeId ?? '');
-  const [destinationId, setDestinationId] = useState('');
-  const [amountStr, setAmountStr] = useState('');
-  const [description, setDescription] = useState('');
+  const [sourceId, setSourceId] = useState(transaction?.envelopeId ?? envelopeId ?? '');
+  const [destinationId, setDestinationId] = useState(transaction?.toEnvelopeId ?? '');
+  const [amountStr, setAmountStr] = useState(transaction ? String(transaction.amount) : '');
+  const [description, setDescription] = useState(transaction?.description ?? '');
   const [error, setError] = useState('');
 
   const source = envelopes.find(e => e.id === sourceId);
@@ -52,15 +53,22 @@ export const CreateTransferScreen = ({ route, navigation }: Props) => {
       return;
     }
 
-    const result = await addTransfer({
-      envelopeId: sourceId,
-      toEnvelopeId: destinationId,
-      amount: parsedAmount,
-      description: description.trim() || 'Transferencia',
-    });
+    const result = isEditing
+      ? await updateTransfer(transaction!.id, {
+          envelopeId: sourceId,
+          toEnvelopeId: destinationId,
+          amount: parsedAmount,
+          description: description.trim() || 'Transferencia',
+        })
+      : await addTransfer({
+          envelopeId: sourceId,
+          toEnvelopeId: destinationId,
+          amount: parsedAmount,
+          description: description.trim() || 'Transferencia',
+        });
 
     if (!result.success) {
-      setError(result.error ?? 'No se pudo crear la transferencia.');
+      setError(result.error ?? (isEditing ? 'No se pudo actualizar la transferencia.' : 'No se pudo crear la transferencia.'));
       return;
     }
     navigation.goBack();
@@ -72,7 +80,7 @@ export const CreateTransferScreen = ({ route, navigation }: Props) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
           <ArrowLeft color={COLORS.white} size={24} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Transferir</Text>
+        <Text style={styles.headerTitle}>{isEditing ? 'Editar Transferencia' : 'Transferir'}</Text>
         <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
           <Check color={COLORS.green} size={24} />
         </TouchableOpacity>

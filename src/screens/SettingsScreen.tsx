@@ -6,6 +6,7 @@ import { useAppData } from '../context/ExpenseContext';
 import { ArrowLeft, ChevronRight, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat } from 'lucide-react-native';
 import { exportDataToCSV } from '../utils/exportData';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { Dropdown } from '../components/Dropdown';
 import { RootStackParamList } from '../navigation/types';
 import { COLORS } from '../theme/colors';
 
@@ -36,6 +37,15 @@ export const SettingsScreen = ({ navigation }: Props) => {
     );
   };
 
+  const leadDaysOptions = Array.from({ length: 7 }, (_, i) => ({
+    label: `${i + 1} día${i + 1 > 1 ? 's' : ''}`,
+    value: String(i + 1),
+  }));
+
+  const handleLeadDaysChange = (value: string) => {
+    updateSettings({ billReminderLeadDays: Number(value) });
+  };
+
   const handleExport = () => {
     exportDataToCSV(envelopes, transactions, paymentMethods, categories, settings);
     showInfo('Exportación', 'Backup exportado correctamente.');
@@ -52,7 +62,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
           <ArrowLeft color={COLORS.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Configuración</Text>
-        <View style={{ width: 32 }} />
+        <View style={{ width: 44 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
@@ -143,7 +153,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
           <Switch
             value={settings.budgetAlertsEnabled}
             onValueChange={() => updateSettings({ budgetAlertsEnabled: !settings.budgetAlertsEnabled })}
-            trackColor={{ false: '#3d4b59', true: COLORS.green }}
+            trackColor={{ false: COLORS.cardBg, true: COLORS.green }}
             thumbColor={settings.budgetAlertsEnabled ? COLORS.green : COLORS.white}
           />
         </View>
@@ -156,10 +166,24 @@ export const SettingsScreen = ({ navigation }: Props) => {
           <Switch
             value={settings.billRemindersEnabled}
             onValueChange={() => updateSettings({ billRemindersEnabled: !settings.billRemindersEnabled })}
-            trackColor={{ false: '#3d4b59', true: COLORS.green }}
+            trackColor={{ false: COLORS.cardBg, true: COLORS.green }}
             thumbColor={settings.billRemindersEnabled ? COLORS.green : COLORS.white}
           />
         </View>
+
+        {settings.billRemindersEnabled && (
+          <View style={styles.menuItem}>
+            <View style={styles.menuTextWrapper}>
+              <Dropdown
+                label="Días de anticipación"
+                options={leadDaysOptions}
+                value={String(settings.billReminderLeadDays)}
+                onSelect={handleLeadDaysChange}
+                placeholder="Selecciona los días"
+              />
+            </View>
+          </View>
+        )}
 
         <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Corte de gastos</Text>
 
@@ -192,7 +216,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <Text style={styles.menuTitle}>Importar backup</Text>
             <Text style={styles.menuSubtitle}>Cargar datos desde backup</Text>
           </View>
-          <ChevronRight color={COLORS.secondaryText} size={20} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -207,7 +230,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <Text style={styles.menuTitle}>Exportar backup</Text>
             <Text style={styles.menuSubtitle}>Guardar copia de seguridad</Text>
           </View>
-          <ChevronRight color={COLORS.secondaryText} size={20} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -222,7 +244,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <Text style={[styles.menuTitle, { color: COLORS.red }]}>Resetear todos los sobres</Text>
             <Text style={styles.menuSubtitle}>Reinicia los saldos y mueve todo al historial</Text>
           </View>
-          <ChevronRight color={COLORS.secondaryText} size={20} />
         </TouchableOpacity>
       </ScrollView>
 
@@ -257,12 +278,12 @@ export const SettingsScreen = ({ navigation }: Props) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 },
-  headerBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
+  headerBtn: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
   headerTitle: { color: COLORS.white, fontSize: 20, fontWeight: 'bold' },
   scroll: { paddingHorizontal: 20, paddingBottom: 60 },
   sectionTitle: { color: COLORS.white, fontSize: 16, fontWeight: '700', marginBottom: 20 },
   menuItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.cardBg, borderRadius: 16, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: COLORS.divider },
-  menuIconWrapper: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#0D2E42', justifyContent: 'center', alignItems: 'center', marginRight: 14 },
+  menuIconWrapper: { width: 44, height: 44, borderRadius: 14, backgroundColor: COLORS.cardHighlight, borderWidth: 1, borderColor: COLORS.divider, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
   menuTextWrapper: { flex: 1 },
   menuTitle: { color: COLORS.white, fontSize: 16, fontWeight: '700', marginBottom: 4 },
   menuSubtitle: { color: COLORS.secondaryText, fontSize: 14 },
