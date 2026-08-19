@@ -203,11 +203,22 @@ export const MainScreen = ({ navigation }: Props) => {
 
       <View style={styles.tabContainer}>
         <Animated.View style={[styles.tabIndicator, { width: indicatorWidth, transform: [{ translateX }] }]} />
-        {TAB_TYPES.map(tab => (
-          <TouchableOpacity key={tab} style={styles.tab} onPress={() => handleTabPress(tab)}>
-            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{TAB_LABELS[tab]}</Text>
-          </TouchableOpacity>
-        ))}
+        {TAB_TYPES.map((tab, index) => {
+          const tabTextColor = scrollX.interpolate({
+            inputRange: [
+              width * (index - 1),
+              width * index,
+              width * (index + 1),
+            ],
+            outputRange: [COLORS.secondaryText, COLORS.bg, COLORS.secondaryText],
+            extrapolate: 'clamp',
+          });
+          return (
+            <TouchableOpacity key={tab} style={styles.tab} onPress={() => handleTabPress(tab)}>
+              <Animated.Text style={[styles.tabText, { color: tabTextColor }]}>{TAB_LABELS[tab]}</Animated.Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       <View style={styles.summaryCard}>
@@ -262,7 +273,6 @@ const styles = StyleSheet.create({
   tab: { flex: 1, justifyContent: 'center', alignItems: 'center', zIndex: 1 },
   tabIndicator: { position: 'absolute', top: 4, bottom: 4, left: 4, backgroundColor: COLORS.green, borderRadius: 20 },
   tabText: { color: COLORS.secondaryText, fontSize: 16, fontWeight: '600' },
-  activeTabText: { color: COLORS.bg },
   summaryCard: { backgroundColor: COLORS.cardBg, marginHorizontal: 20, borderRadius: 16, padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, overflow: 'hidden' },
   cardFlap: { position: 'absolute', top: -20, left: '50%', width: 40, height: 40, marginLeft: -20, backgroundColor: COLORS.cardHighlight, transform: [{ rotate: '45deg' }] },
   currencyBtn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, backgroundColor: '#142E3D' },
