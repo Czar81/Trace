@@ -10,7 +10,6 @@ import { EmptyState } from '../components/EmptyState';
 import { RootStackParamList } from '../navigation/types';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { COLORS } from '../theme/colors';
-import { SERIF_FONT } from '../theme/typography';
 import { groupTransactionsByDay } from '../utils/transactionGrouping';
 
 const PAGE_SIZE = 10;
@@ -487,22 +486,22 @@ const styles = StyleSheet.create({
   summaryCard: { backgroundColor: COLORS.cardBg, marginHorizontal: 20, borderRadius: 24, padding: 24, marginTop: 8, overflow: 'hidden' },
   cardFlap: { position: 'absolute', top: -20, left: '50%', width: 40, height: 40, marginLeft: -20, backgroundColor: COLORS.cardHighlight, transform: [{ rotate: '45deg' }] },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  cardTitle: { color: COLORS.white, fontSize: 20, fontWeight: 'bold', fontFamily: SERIF_FONT },
+  cardTitle: { color: COLORS.white, fontSize: 20, fontWeight: 'bold' },
   cardCurrency: { color: COLORS.secondaryText, fontSize: 14, fontWeight: '600' },
   budgetInfo: {},
   budgetRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 4 },
-  budgetAmount: { color: COLORS.white, fontSize: 16, fontWeight: 'bold', fontFamily: SERIF_FONT },
+  budgetAmount: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' },
   budgetLabel: { color: COLORS.secondaryText, fontSize: 14 },
   availableWrapper: { alignItems: 'flex-end', marginTop: 12 },
-  availableAmount: { fontSize: 32, fontWeight: 'bold', color: COLORS.white, fontFamily: SERIF_FONT },
+  availableAmount: { fontSize: 32, fontWeight: 'bold', color: COLORS.white },
   availableLabel: { color: COLORS.secondaryText, fontSize: 14 },
   transactionsSection: { flex: 1, marginTop: 28, paddingHorizontal: 20 },
-  sectionTitle: { color: COLORS.white, fontSize: 18, fontWeight: '700', marginBottom: 12, fontFamily: SERIF_FONT },
+  sectionTitle: { color: COLORS.white, fontSize: 18, fontWeight: '700', marginBottom: 12 },
   sectionHeader: { color: COLORS.secondaryText, fontSize: 13, fontWeight: '700', backgroundColor: COLORS.bg, paddingTop: 12, paddingBottom: 6 },
   emptyText: { color: COLORS.secondaryText, fontSize: 15, fontStyle: 'italic' },
   transactionItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 },
   transactionLeft: { flex: 1, paddingRight: 12 },
-  transactionDesc: { color: COLORS.white, fontSize: 15, fontWeight: '600', marginBottom: 3, fontFamily: SERIF_FONT },
+  transactionDesc: { color: COLORS.white, fontSize: 15, fontWeight: '600', marginBottom: 3 },
   transactionDate: { color: COLORS.secondaryText, fontSize: 12 },
   transactionAmount: { fontSize: 15, fontWeight: '700' },
   perforationDivider: { borderTopWidth: 1, borderStyle: 'dotted', borderColor: COLORS.perforation },

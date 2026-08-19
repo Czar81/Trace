@@ -10,7 +10,6 @@ import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
 import { COLORS } from '../theme/colors';
-import { SERIF_FONT } from '../theme/typography';
 import { formatCurrency } from '../utils/formatCurrency';
 
 const { width } = Dimensions.get('window');
@@ -270,13 +269,13 @@ const styles = StyleSheet.create({
   currencyText: { color: COLORS.white, fontSize: 15, fontWeight: '700' },
   summaryValues: { alignItems: 'flex-end' },
   summaryLabel: { color: COLORS.secondaryText, fontSize: 13, marginBottom: 4 },
-  summaryTotal: { color: COLORS.white, fontSize: 22, fontWeight: 'bold', fontFamily: SERIF_FONT },
+  summaryTotal: { color: COLORS.white, fontSize: 22, fontWeight: 'bold' },
   list: { paddingHorizontal: 20, paddingBottom: 120 },
   emptyText: { color: COLORS.secondaryText, fontSize: 15, textAlign: 'center', marginTop: 40, fontStyle: 'italic' },
   envelopeCard: { backgroundColor: COLORS.cardBg, borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  envelopeName: { flex: 1, color: COLORS.white, fontSize: 17, fontWeight: '600', fontFamily: SERIF_FONT },
+  envelopeName: { flex: 1, color: COLORS.white, fontSize: 17, fontWeight: '600' },
   envelopeValues: { alignItems: 'flex-end' },
-  envelopeAmount: { fontSize: 18, fontWeight: 'bold', marginBottom: 2, fontFamily: SERIF_FONT },
+  envelopeAmount: { fontSize: 18, fontWeight: 'bold', marginBottom: 2 },
   envelopeSubtext: { color: COLORS.secondaryText, fontSize: 13 },
   fab: { position: 'absolute', bottom: 30, right: 20, backgroundColor: COLORS.green, paddingVertical: 16, paddingHorizontal: 24, borderRadius: 30 },
   fabText: { color: COLORS.bg, fontSize: 16, fontWeight: 'bold' },
