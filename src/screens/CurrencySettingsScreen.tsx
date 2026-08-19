@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -8,11 +8,14 @@ import { ArrowLeft } from 'lucide-react-native';
 import { Dropdown } from '../components/Dropdown';
 import { Currency } from '../types';
 import { RootStackParamList } from '../navigation/types';
-import { COLORS } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { ThemeColors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CurrencySettings'>;
 
 export const CurrencySettingsScreen = ({ navigation }: Props) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { settings, updateSettings } = useAppData();
   const [usdRate, setUsdRate] = useState(settings.exchangeRates.USD_TO_CRC.toString());
   const [eurRate, setEurRate] = useState(settings.exchangeRates.EUR_TO_CRC.toString());
@@ -36,7 +39,7 @@ export const CurrencySettingsScreen = ({ navigation }: Props) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <ArrowLeft color={COLORS.white} size={24} />
+          <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Monedas</Text>
         <View style={{ width: 32 }} />
@@ -67,7 +70,7 @@ export const CurrencySettingsScreen = ({ navigation }: Props) => {
               value={usdRate}
               onChangeText={setUsdRate}
               keyboardType="numeric"
-              placeholderTextColor={COLORS.secondaryText}
+              placeholderTextColor={colors.secondaryText}
             />
             <Text style={styles.rateSuffix}>CRC</Text>
           </View>
@@ -78,7 +81,7 @@ export const CurrencySettingsScreen = ({ navigation }: Props) => {
               value={eurRate}
               onChangeText={setEurRate}
               keyboardType="numeric"
-              placeholderTextColor={COLORS.secondaryText}
+              placeholderTextColor={colors.secondaryText}
             />
             <Text style={styles.rateSuffix}>CRC</Text>
           </View>
@@ -91,19 +94,19 @@ export const CurrencySettingsScreen = ({ navigation }: Props) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 },
   headerBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: COLORS.white, fontSize: 20, fontWeight: 'bold' },
+  headerTitle: { color: colors.white, fontSize: 20, fontWeight: 'bold' },
   keyboardAvoiding: { flex: 1 },
   scroll: { paddingHorizontal: 20, paddingBottom: 60 },
-  sectionTitle: { color: COLORS.white, fontSize: 16, fontWeight: '700', marginTop: 28, marginBottom: 12 },
+  sectionTitle: { color: colors.white, fontSize: 16, fontWeight: '700', marginTop: 28, marginBottom: 12 },
   rateRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  rateLabel: { color: COLORS.secondaryText, fontSize: 15, width: 60 },
-  rateInput: { flex: 1, backgroundColor: COLORS.cardBg, borderRadius: 10, padding: 12, color: COLORS.white, fontSize: 16 },
-  rateSuffix: { color: COLORS.secondaryText, fontSize: 15, marginLeft: 10, width: 36 },
-  saveBtn: { backgroundColor: COLORS.green, borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 8, marginBottom: 4 },
+  rateLabel: { color: colors.secondaryText, fontSize: 15, width: 60 },
+  rateInput: { flex: 1, backgroundColor: colors.cardBg, borderRadius: 10, padding: 12, color: colors.white, fontSize: 16 },
+  rateSuffix: { color: colors.secondaryText, fontSize: 15, marginLeft: 10, width: 36 },
+  saveBtn: { backgroundColor: colors.green, borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 8, marginBottom: 4 },
   saveBtnSuccess: { backgroundColor: '#4ADE80' },
-  saveBtnText: { color: COLORS.bg, fontSize: 16, fontWeight: '700' },
+  saveBtnText: { color: colors.bg, fontSize: 16, fontWeight: '700' },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -8,11 +8,18 @@ import { ArrowLeft, Check } from 'lucide-react-native';
 import { CurrencyInput } from '../components/CurrencyInput';
 import { Dropdown } from '../components/Dropdown';
 import { RootStackParamList } from '../navigation/types';
-import { COLORS } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { ThemeColors } from '../theme/colors';
+import { EnvelopeType } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransfer'>;
 
+const TYPE_ORDER: EnvelopeType[] = ['gasto', 'ahorro', 'deuda'];
+const TYPE_GROUP_LABELS: Record<EnvelopeType, string> = { gasto: 'Gastos', ahorro: 'Ahorros', deuda: 'Deudas' };
+
 export const CreateTransferScreen = ({ route, navigation }: Props) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { envelopeId, transaction } = route.params ?? {};
   const { envelopes, addTransfer, updateTransfer, getEnvelopeBalance, formatAmount } = useAppData();
   const isEditing = !!transaction;
@@ -26,10 +33,15 @@ export const CreateTransferScreen = ({ route, navigation }: Props) => {
   const source = envelopes.find(e => e.id === sourceId);
   const destination = envelopes.find(e => e.id === destinationId);
 
-  const sourceOptions = envelopes.map(e => ({ label: `${e.name} (${e.currency})`, value: e.id }));
-  const destinationOptions = envelopes
-    .filter(e => e.id !== sourceId)
-    .map(e => ({ label: `${e.name} (${e.currency})`, value: e.id }));
+  const toGroupedOptions = (list: typeof envelopes) =>
+    TYPE_ORDER.flatMap(type =>
+      list
+        .filter(e => e.type === type)
+        .map(e => ({ label: `${e.name} (${e.currency})`, value: e.id, group: TYPE_GROUP_LABELS[type] }))
+    );
+
+  const sourceOptions = toGroupedOptions(envelopes);
+  const destinationOptions = toGroupedOptions(envelopes.filter(e => e.id !== sourceId));
 
   const parsedAmount = parseFloat(amountStr);
   const hasValidAmount = amountStr !== '' && !isNaN(parsedAmount) && parsedAmount > 0;
@@ -78,11 +90,11 @@ export const CreateTransferScreen = ({ route, navigation }: Props) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <ArrowLeft color={COLORS.white} size={24} />
+          <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{isEditing ? 'Editar Transferencia' : 'Transferir'}</Text>
         <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
-          <Check color={COLORS.green} size={24} />
+          <Check color={colors.green} size={24} />
         </TouchableOpacity>
       </View>
 
@@ -116,7 +128,7 @@ export const CreateTransferScreen = ({ route, navigation }: Props) => {
             currency={source?.currency ?? 'CRC'}
             value={amountStr}
             onChangeText={setAmountStr}
-            style={{ fontSize: 30, color: COLORS.white }}
+            style={{ fontSize: 30, color: colors.white }}
           />
 
           <Text style={styles.label}>Nota (opcional)</Text>
@@ -125,7 +137,7 @@ export const CreateTransferScreen = ({ route, navigation }: Props) => {
             value={description}
             onChangeText={setDescription}
             placeholder="Ej: Cubrir gasto de Comida"
-            placeholderTextColor={COLORS.secondaryText}
+            placeholderTextColor={colors.secondaryText}
           />
 
           {source && destination && source.currency === destination.currency && (
@@ -154,24 +166,24 @@ export const CreateTransferScreen = ({ route, navigation }: Props) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   keyboardAvoiding: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
   },
   headerBtn: { padding: 4 },
-  headerTitle: { color: COLORS.white, fontSize: 18, fontWeight: 'bold', flex: 1, textAlign: 'center' },
+  headerTitle: { color: colors.white, fontSize: 18, fontWeight: 'bold', flex: 1, textAlign: 'center' },
   form: { paddingHorizontal: 20, paddingBottom: 60 },
-  label: { color: COLORS.white, fontSize: 16, fontWeight: '600', marginTop: 0, marginBottom: 8 },
+  label: { color: colors.white, fontSize: 16, fontWeight: '600', marginTop: 0, marginBottom: 8 },
   input: {
-    backgroundColor: COLORS.cardBg, borderRadius: 12, padding: 16,
-    color: COLORS.white, fontSize: 16, marginBottom: 24,
+    backgroundColor: colors.cardBg, borderRadius: 12, padding: 16,
+    color: colors.white, fontSize: 16, marginBottom: 24,
   },
   preview: {
-    backgroundColor: COLORS.cardBg, borderRadius: 12, padding: 16, marginBottom: 24, gap: 6,
+    backgroundColor: colors.cardBg, borderRadius: 12, padding: 16, marginBottom: 24, gap: 6,
   },
-  previewText: { color: COLORS.secondaryText, fontSize: 14 },
-  errorText: { color: COLORS.red, fontSize: 14, marginBottom: 16 },
+  previewText: { color: colors.secondaryText, fontSize: 14 },
+  errorText: { color: colors.red, fontSize: 14, marginBottom: 16 },
 });

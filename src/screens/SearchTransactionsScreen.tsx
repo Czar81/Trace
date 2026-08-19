@@ -8,7 +8,8 @@ import { Dropdown } from '../components/Dropdown';
 import { EmptyState } from '../components/EmptyState';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { RootStackParamList } from '../navigation/types';
-import { COLORS } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { ThemeColors } from '../theme/colors';
 import { filterTransactions, hasActiveSearch, SearchFilters } from '../utils/transactionSearch';
 import { groupTransactionsByDay } from '../utils/transactionGrouping';
 import { Transaction } from '../types';
@@ -18,6 +19,8 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Search'>;
 const NONE_OPTION = { label: 'Todas', value: '' };
 
 export const SearchTransactionsScreen = ({ navigation }: Props) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { transactions, envelopes, categories, paymentMethods, formatAmount } = useAppData();
 
   const [text, setText] = useState('');
@@ -74,24 +77,24 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <ArrowLeft color={COLORS.white} size={24} />
+          <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Buscar</Text>
         <View style={{ width: 32 }} />
       </View>
 
       <View style={styles.searchRow}>
-        <Search color={COLORS.secondaryText} size={18} />
+        <Search color={colors.secondaryText} size={18} />
         <TextInput
           style={styles.searchInput}
           value={text}
           onChangeText={setText}
           placeholder="Buscar por descripción..."
-          placeholderTextColor={COLORS.secondaryText}
+          placeholderTextColor={colors.secondaryText}
         />
         {text !== '' && (
           <TouchableOpacity onPress={() => setText('')}>
-            <X color={COLORS.secondaryText} size={18} />
+            <X color={colors.secondaryText} size={18} />
           </TouchableOpacity>
         )}
       </View>
@@ -107,11 +110,11 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
 
       <View style={styles.filtersRow}>
         <TouchableOpacity style={[styles.dateBtn, styles.filterHalf]} onPress={() => setShowFromPicker(true)}>
-          <Calendar color={COLORS.secondaryText} size={16} />
+          <Calendar color={colors.secondaryText} size={16} />
           <Text style={styles.dateBtnText}>{dateLabel(dateFrom) ?? 'Desde'}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.dateBtn, styles.filterHalf]} onPress={() => setShowToPicker(true)}>
-          <Calendar color={COLORS.secondaryText} size={16} />
+          <Calendar color={colors.secondaryText} size={16} />
           <Text style={styles.dateBtnText}>{dateLabel(dateTo) ?? 'Hasta'}</Text>
         </TouchableOpacity>
       </View>
@@ -145,7 +148,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
           value={minAmountStr}
           onChangeText={setMinAmountStr}
           placeholder="Monto mín."
-          placeholderTextColor={COLORS.secondaryText}
+          placeholderTextColor={colors.secondaryText}
           keyboardType="numeric"
         />
         <TextInput
@@ -153,7 +156,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
           value={maxAmountStr}
           onChangeText={setMaxAmountStr}
           placeholder="Monto máx."
-          placeholderTextColor={COLORS.secondaryText}
+          placeholderTextColor={colors.secondaryText}
           keyboardType="numeric"
         />
       </View>
@@ -206,8 +209,10 @@ const TransactionResultRow: React.FC<{
   formatAmount: (amount: number, currency: 'CRC' | 'USD' | 'EUR') => string;
   onPress: () => void;
 }> = ({ item, envelopeName, categoryName, paymentMethodName, currency, formatAmount, onPress }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const isTransfer = item.type === 'transfer';
-  const color = isTransfer ? COLORS.blue : item.type === 'expense' ? COLORS.red : COLORS.green;
+  const color = isTransfer ? colors.blue : item.type === 'expense' ? colors.red : colors.green;
 
   return (
     <TouchableOpacity style={styles.resultItem} onPress={onPress} disabled={isTransfer} activeOpacity={0.7}>
@@ -226,37 +231,37 @@ const TransactionResultRow: React.FC<{
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 },
   headerBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: COLORS.white, fontSize: 20, fontWeight: 'bold' },
+  headerTitle: { color: colors.white, fontSize: 20, fontWeight: 'bold' },
   searchRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: COLORS.cardBg, borderRadius: 12, marginHorizontal: 20,
+    backgroundColor: colors.cardBg, borderRadius: 12, marginHorizontal: 20,
     paddingHorizontal: 14, paddingVertical: 12, marginBottom: 12,
   },
-  searchInput: { flex: 1, color: COLORS.white, fontSize: 15, padding: 0 },
+  searchInput: { flex: 1, color: colors.white, fontSize: 15, padding: 0 },
   filtersRow: { flexDirection: 'row', gap: 10, marginHorizontal: 20, marginBottom: 12 },
   filterHalf: { flex: 1 },
   dateBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: COLORS.cardBg, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14,
+    backgroundColor: colors.cardBg, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14,
   },
-  dateBtnText: { color: COLORS.white, fontSize: 14 },
+  dateBtnText: { color: colors.white, fontSize: 14 },
   amountInput: {
-    backgroundColor: COLORS.cardBg, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14,
-    color: COLORS.white, fontSize: 14,
+    backgroundColor: colors.cardBg, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14,
+    color: colors.white, fontSize: 14,
   },
   clearBtn: { alignSelf: 'flex-start', marginHorizontal: 20, marginBottom: 12 },
-  clearBtnText: { color: COLORS.green, fontSize: 14, fontWeight: '600' },
+  clearBtnText: { color: colors.green, fontSize: 14, fontWeight: '600' },
   resultsList: { paddingHorizontal: 20, paddingBottom: 60 },
-  sectionHeader: { color: COLORS.secondaryText, fontSize: 13, fontWeight: '700', marginTop: 16, marginBottom: 6 },
+  sectionHeader: { color: colors.secondaryText, fontSize: 13, fontWeight: '700', marginTop: 16, marginBottom: 6 },
   resultItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
   resultLeft: { flex: 1, paddingRight: 12 },
-  resultDesc: { color: COLORS.white, fontSize: 15, fontWeight: '600', marginBottom: 2 },
-  resultMeta: { color: COLORS.secondaryText, fontSize: 12, marginBottom: 2 },
-  resultDate: { color: COLORS.secondaryText, fontSize: 12 },
+  resultDesc: { color: colors.white, fontSize: 15, fontWeight: '600', marginBottom: 2 },
+  resultMeta: { color: colors.secondaryText, fontSize: 12, marginBottom: 2 },
+  resultDate: { color: colors.secondaryText, fontSize: 12 },
   resultAmount: { fontSize: 15, fontWeight: '700' },
-  separator: { height: 1, backgroundColor: COLORS.divider },
+  separator: { height: 1, backgroundColor: colors.divider },
 });

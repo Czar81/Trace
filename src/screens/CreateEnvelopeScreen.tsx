@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Switch, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -12,7 +12,8 @@ import { EnvelopeIcon, IconName } from '../components/EnvelopeIcon';
 import { IconPicker } from '../components/IconPicker';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { Dropdown } from '../components/Dropdown';
-import { COLORS } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { ThemeColors } from '../theme/colors';
 
 const CURRENCY_OPTIONS = [
   { label: 'CRC', value: 'CRC' },
@@ -31,6 +32,8 @@ const DUE_DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => ({ label: String(i 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateEnvelope'>;
 
 export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { envelopeType, envelope } = route.params;
   const { addEnvelope, updateEnvelope, settings } = useAppData();
 
@@ -120,7 +123,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
 
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <ArrowLeft color={COLORS.white} size={24} />
+          <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {isEditing
@@ -128,7 +131,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
             : `Nuevo Sobre · ${envelopeType === 'gasto' ? 'Gasto' : envelopeType === 'deuda' ? 'Deuda' : 'Ahorro'}`}
         </Text>
         <TouchableOpacity onPress={handleSave} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Check color={COLORS.green} size={24} />
+          <Check color={colors.green} size={24} />
         </TouchableOpacity>
       </View>
 
@@ -158,7 +161,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
           value={name}
           onChangeText={setName}
           placeholder="Nombre del sobre"
-          placeholderTextColor={COLORS.secondaryText}
+          placeholderTextColor={colors.secondaryText}
           autoFocus={!isEditing}
         />
 
@@ -207,8 +210,8 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
           <Switch
             value={isUnlimited}
             onValueChange={(value) => { setIsUnlimited(value); if (value) setLimitError(''); }}
-            trackColor={{ false: COLORS.cardBg, true: COLORS.green }}
-            thumbColor={COLORS.white}
+            trackColor={{ false: colors.cardBg, true: colors.green }}
+            thumbColor={colors.white}
           />
         </View>
 
@@ -223,7 +226,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
                 value={interestRateStr}
                 onChangeText={setInterestRateStr}
                 placeholder="0"
-                placeholderTextColor={COLORS.secondaryText}
+                placeholderTextColor={colors.secondaryText}
                 keyboardType="numeric"
               />
               <Text style={styles.percentSign}>%</Text>
@@ -258,23 +261,23 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   keyboardAvoiding: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 20 },
   headerBtn: { padding: 4 },
-  headerTitle: { color: COLORS.white, fontSize: 17, fontWeight: 'bold', flex: 1, textAlign: 'center' },
+  headerTitle: { color: colors.white, fontSize: 17, fontWeight: 'bold', flex: 1, textAlign: 'center' },
   form: { paddingHorizontal: 20, paddingBottom: 60 },
   iconSection: { alignItems: 'center', marginBottom: 28, marginTop: 8 },
   iconPreviewWrap: { marginBottom: 10 },
-  changeIconText: { color: COLORS.secondaryText, fontSize: 14, fontWeight: '600' },
-  label: { color: COLORS.white, fontSize: 16, fontWeight: '600', marginBottom: 8 },
-  hint: { color: COLORS.secondaryText, fontSize: 13, marginBottom: 16 },
-  input: { backgroundColor: COLORS.cardBg, borderRadius: 12, padding: 16, color: COLORS.white, fontSize: 16, marginBottom: 24 },
-  errorText: { color: COLORS.red, fontSize: 13, marginTop: -20, marginBottom: 20 },
+  changeIconText: { color: colors.secondaryText, fontSize: 14, fontWeight: '600' },
+  label: { color: colors.white, fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  hint: { color: colors.secondaryText, fontSize: 13, marginBottom: 16 },
+  input: { backgroundColor: colors.cardBg, borderRadius: 12, padding: 16, color: colors.white, fontSize: 16, marginBottom: 24 },
+  errorText: { color: colors.red, fontSize: 13, marginTop: -20, marginBottom: 20 },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
-  sectionLabel: { color: COLORS.white, fontSize: 15, fontWeight: '700', marginTop: 28, marginBottom: 12 },
+  sectionLabel: { color: colors.white, fontSize: 15, fontWeight: '700', marginTop: 28, marginBottom: 12 },
   percentRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 24 },
   percentInput: { flex: 1, marginBottom: 0 },
-  percentSign: { color: COLORS.secondaryText, fontSize: 18, fontWeight: '700' },
+  percentSign: { color: colors.secondaryText, fontSize: 18, fontWeight: '700' },
 });

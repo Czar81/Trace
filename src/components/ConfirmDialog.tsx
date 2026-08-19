@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSequence, withTiming } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { ThemeColors } from '../theme/colors';
 
 interface ConfirmDialogProps {
   visible: boolean;
@@ -27,6 +28,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const confirmScale = useSharedValue(1);
   const confirmAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: confirmScale.value }],
@@ -86,7 +89,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   overlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: OVERLAY,
@@ -99,12 +102,12 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
-    backgroundColor: COLORS.cardBg,
+    backgroundColor: colors.cardBg,
     borderRadius: 20,
     overflow: 'hidden',
   },
   title: {
-    color: COLORS.white,
+    color: colors.white,
     fontSize: 17,
     fontWeight: '700',
     textAlign: 'center',
@@ -113,7 +116,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   message: {
-    color: COLORS.secondaryText,
+    color: colors.secondaryText,
     fontSize: 14,
     textAlign: 'center',
     paddingHorizontal: 20,
@@ -122,7 +125,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: COLORS.divider,
+    backgroundColor: colors.divider,
   },
   actions: {
     flexDirection: 'row',
@@ -133,13 +136,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelText: {
-    color: COLORS.secondaryText,
+    color: colors.secondaryText,
     fontSize: 16,
     fontWeight: '600',
   },
   actionDivider: {
     width: 1,
-    backgroundColor: COLORS.divider,
+    backgroundColor: colors.divider,
   },
   confirmBtn: {
     flex: 1,
@@ -153,11 +156,11 @@ const styles = StyleSheet.create({
   },
   confirmBtnDestructive: {},
   confirmText: {
-    color: COLORS.green,
+    color: colors.green,
     fontSize: 16,
     fontWeight: '700',
   },
   confirmTextDestructive: {
-    color: COLORS.red,
+    color: colors.red,
   },
 });

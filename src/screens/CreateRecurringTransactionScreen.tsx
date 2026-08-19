@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -9,7 +9,8 @@ import { ArrowLeft, Check, PlusCircle, MinusCircle, Calendar } from 'lucide-reac
 import { CurrencyInput } from '../components/CurrencyInput';
 import { Dropdown } from '../components/Dropdown';
 import { RootStackParamList } from '../navigation/types';
-import { COLORS } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { ThemeColors } from '../theme/colors';
 import { RecurrenceFrequency } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateRecurringTransaction'>;
@@ -37,6 +38,8 @@ function nextDateForDayOfWeek(dayOfWeek: number): Date {
 }
 
 export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { template } = route.params;
   const { envelopes, paymentMethods, categories, addRecurringTemplate, updateRecurringTemplate } = useAppData();
 
@@ -133,13 +136,13 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <ArrowLeft color={COLORS.white} size={24} />
+          <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {isEditing ? 'Editar Recurrente' : 'Nueva Recurrente'}
         </Text>
         <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
-          <Check color={COLORS.green} size={24} />
+          <Check color={colors.green} size={24} />
         </TouchableOpacity>
       </View>
 
@@ -163,15 +166,15 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
               style={[styles.typeBtn, type === 'expense' && styles.typeBtnExpense]}
               onPress={() => setType('expense')}
             >
-              <MinusCircle color={type === 'expense' ? COLORS.white : COLORS.secondaryText} size={18} />
-              <Text style={[styles.typeText, type === 'expense' && { color: COLORS.white }]}>Gasto</Text>
+              <MinusCircle color={type === 'expense' ? colors.white : colors.secondaryText} size={18} />
+              <Text style={[styles.typeText, type === 'expense' && { color: colors.white }]}>Gasto</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.typeBtn, type === 'income' && styles.typeBtnIncome]}
               onPress={() => setType('income')}
             >
-              <PlusCircle color={type === 'income' ? COLORS.white : COLORS.secondaryText} size={18} />
-              <Text style={[styles.typeText, type === 'income' && { color: COLORS.white }]}>Ingreso</Text>
+              <PlusCircle color={type === 'income' ? colors.white : colors.secondaryText} size={18} />
+              <Text style={[styles.typeText, type === 'income' && { color: colors.white }]}>Ingreso</Text>
             </TouchableOpacity>
           </View>
 
@@ -183,7 +186,7 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
             onChangeText={setAmountStr}
             style={{
               fontSize: 30,
-              color: COLORS.white,
+              color: colors.white,
             }}
           />
 
@@ -224,7 +227,7 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
             <>
               <Text style={styles.label}>Primera ocurrencia</Text>
               <TouchableOpacity style={styles.datePickerBtn} onPress={() => setShowOccurrenceDatePicker(true)}>
-                <Calendar color={COLORS.secondaryText} size={20} />
+                <Calendar color={colors.secondaryText} size={20} />
                 <Text style={styles.dateText}>
                   {occurrenceDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                 </Text>
@@ -250,7 +253,7 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
             value={description}
             onChangeText={setDescription}
             placeholder={type === 'expense' ? 'Ej: Netflix, Alquiler...' : 'Ej: Salario, Renta...'}
-            placeholderTextColor={COLORS.secondaryText}
+            placeholderTextColor={colors.secondaryText}
           />
 
           {/* ── Category & Payment method (expense only) ── */}
@@ -279,7 +282,7 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
                       onPress={() => setUseSavingsEnvelope(prev => !prev)}
                       activeOpacity={0.8}
                     >
-                      {useSavingsEnvelope && <Check color={COLORS.green} size={16} />}
+                      {useSavingsEnvelope && <Check color={colors.green} size={16} />}
                     </TouchableOpacity>
                     <Text style={styles.toggleLabel}>Este gasto sale de un sobre de ahorro</Text>
                   </View>
@@ -302,43 +305,43 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   keyboardAvoiding: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
   },
   headerBtn: { padding: 4 },
-  headerTitle: { color: COLORS.white, fontSize: 18, fontWeight: 'bold', flex: 1, textAlign: 'center' },
+  headerTitle: { color: colors.white, fontSize: 18, fontWeight: 'bold', flex: 1, textAlign: 'center' },
   form: { paddingHorizontal: 20, paddingBottom: 60 },
   typeSelector: {
-    flexDirection: 'row', backgroundColor: COLORS.cardBg, borderRadius: 14,
+    flexDirection: 'row', backgroundColor: colors.cardBg, borderRadius: 14,
     padding: 4, marginBottom: 24, gap: 4,
   },
   typeBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     paddingVertical: 12, borderRadius: 10, gap: 8,
   },
-  typeBtnExpense: { backgroundColor: COLORS.red },
-  typeBtnIncome: { backgroundColor: COLORS.blue },
-  typeText: { color: COLORS.secondaryText, fontSize: 15, fontWeight: '700' },
-  label: { color: COLORS.white, fontSize: 16, fontWeight: '600', marginTop: 24, marginBottom: 8 },
+  typeBtnExpense: { backgroundColor: colors.red },
+  typeBtnIncome: { backgroundColor: colors.blue },
+  typeText: { color: colors.secondaryText, fontSize: 15, fontWeight: '700' },
+  label: { color: colors.white, fontSize: 16, fontWeight: '600', marginTop: 24, marginBottom: 8 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20, marginBottom: 16 },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: COLORS.secondaryText,
+    borderColor: colors.secondaryText,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  toggleLabel: { color: COLORS.white, fontSize: 15, flex: 1 },
-  errorText: { color: COLORS.red, fontSize: 13, marginTop: -20, marginBottom: 20 },
+  toggleLabel: { color: colors.white, fontSize: 15, flex: 1 },
+  errorText: { color: colors.red, fontSize: 13, marginTop: -20, marginBottom: 20 },
   datePickerBtn: {
-    backgroundColor: COLORS.cardBg,
+    backgroundColor: colors.cardBg,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -346,9 +349,9 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 24,
   },
-  dateText: { color: COLORS.white, fontSize: 16 },
+  dateText: { color: colors.white, fontSize: 16 },
   input: {
-    backgroundColor: COLORS.cardBg, borderRadius: 12, padding: 16,
-    color: COLORS.white, fontSize: 16, marginBottom: 24,
+    backgroundColor: colors.cardBg, borderRadius: 12, padding: 16,
+    color: colors.white, fontSize: 16, marginBottom: 24,
   },
 });

@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings, RecurringTransactionTemplate } from '../types';
+import { DEFAULT_THEME_ID } from '../theme/colors';
 
 const KEYS = {
   ENVELOPES: '@trace_envelopes',
@@ -18,6 +19,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   budgetAlertsEnabled: false,
   billRemindersEnabled: false,
   billReminderLeadDays: 2,
+  themeId: DEFAULT_THEME_ID,
 };
 
 const DEFAULT_PAYMENT_METHODS: PaymentMethod[] = [

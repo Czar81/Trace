@@ -1,7 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, Text, TextInput, StyleSheet, TextInputProps } from 'react-native';
 import { Currency } from '../types';
-import { COLORS } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { ThemeColors } from '../theme/colors';
 
 const SYMBOLS: Record<Currency, string> = { CRC: '₡', USD: '$', EUR: '€' };
 
@@ -45,6 +46,8 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
   placeholder = '0.00',
   ...rest
 }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const symbol = SYMBOLS[currency] ?? '₡';
   const display = formatDisplay(value);
 
@@ -63,7 +66,7 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
           onChangeText={handleChange}
           keyboardType="numeric"
           placeholder={placeholder}
-          placeholderTextColor={COLORS.secondaryText}
+          placeholderTextColor={colors.secondaryText}
           style={[styles.input, style]}
         />
       </View>
@@ -71,17 +74,17 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   wrapper: { marginBottom: 24 },
-  label: { color: COLORS.white, fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  label: { color: colors.white, fontSize: 16, fontWeight: '600', marginBottom: 8 },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.cardBg,
+    backgroundColor: colors.cardBg,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
-  symbol: { color: COLORS.secondaryText, fontSize: 20, fontWeight: '700', marginRight: 8 },
-  input: { flex: 1, color: COLORS.white, fontSize: 22, fontWeight: '700', padding: 0 },
+  symbol: { color: colors.secondaryText, fontSize: 20, fontWeight: '700', marginRight: 8 },
+  input: { flex: 1, color: colors.white, fontSize: 22, fontWeight: '700', padding: 0 },
 });

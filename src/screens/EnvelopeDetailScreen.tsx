@@ -9,7 +9,8 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
 import { RootStackParamList } from '../navigation/types';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
-import { COLORS } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { ThemeColors } from '../theme/colors';
 import { groupTransactionsByDay } from '../utils/transactionGrouping';
 import { formatDebtCycle } from '../utils/recurrence';
 
@@ -22,6 +23,8 @@ type DialogState =
 type Props = NativeStackScreenProps<RootStackParamList, 'EnvelopeDetail'>;
 
 export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { envelopeId } = route.params;
   const {
     envelopes, transactions,
@@ -162,39 +165,39 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
 
   // Progress logic
   let progress = 0;
-  let progressColor = COLORS.green;
+  let progressColor = colors.green;
   const iconColor = envelope.color;
   if (type === 'gasto') {
     if (envelope.isUnlimited) {
       progress = 1;
-      progressColor = COLORS.blue;
+      progressColor = colors.blue;
     } else {
       const spent = -balance;
       progress = Math.max(0, spent / envelope.limit);
-      progressColor = remaining < 0 ? COLORS.red : COLORS.green;
+      progressColor = remaining < 0 ? colors.red : colors.green;
     }
   } else if (type === 'deuda') {
     if (envelope.isUnlimited) {
       progress = 1;
-      progressColor = COLORS.blue;
+      progressColor = colors.blue;
     } else {
       // Progress fills as the debt is paid down (same direction as ahorro)
       progress = envelope.limit > 0 ? balance / envelope.limit : 1;
-      progressColor = remaining < 0 ? COLORS.red : COLORS.green;
+      progressColor = remaining < 0 ? colors.red : colors.green;
     }
   } else {
     progress = envelope.limit > 0 ? balance / envelope.limit : 1;
-    progressColor = COLORS.green;
+    progressColor = colors.green;
   }
 
   // Text Color
-  let textColor = COLORS.white;
+  let textColor = colors.white;
   if (remaining < 0) {
-    textColor = COLORS.red;
+    textColor = colors.red;
   } else if (type === 'gasto' && remaining > 0) {
-    textColor = COLORS.green;
+    textColor = colors.green;
   } else {
-    textColor = COLORS.white;
+    textColor = colors.white;
   }
 
   const handleConfirm = async () => {
@@ -243,7 +246,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
 
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <ArrowLeft color={COLORS.white} size={24} />
+          <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <View style={styles.headerActions}>
           <TouchableOpacity
@@ -251,21 +254,21 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             onPress={() => navigation.navigate('CreateTransfer', { envelopeId })}
           >
-            <ArrowLeftRight color={COLORS.secondaryText} size={20} />
+            <ArrowLeftRight color={colors.secondaryText} size={20} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.iconBtn}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             onPress={() => navigation.navigate('CreateEnvelope', { envelopeType: envelope.type, envelope })}
           >
-            <Edit2 color={COLORS.secondaryText} size={20} />
+            <Edit2 color={colors.secondaryText} size={20} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => setDialog({ type: 'reset' })}>
-            <RefreshCw color={COLORS.secondaryText} size={20} />
+            <RefreshCw color={colors.secondaryText} size={20} />
           </TouchableOpacity>
           <View style={styles.headerDivider} />
           <TouchableOpacity style={[styles.iconBtn, styles.deleteIconBtn]} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => setDialog({ type: 'deleteEnvelope' })}>
-            <Trash2 color={COLORS.red} size={20} />
+            <Trash2 color={colors.red} size={20} />
           </TouchableOpacity>
         </View>
       </View>
@@ -361,7 +364,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
             style={[styles.filterPill, styles.filterPillActive]}
             onPress={() => setMonthPickerOpen(true)}
           >
-            <Calendar color={COLORS.bg} size={16} />
+            <Calendar color={colors.bg} size={16} />
             <Text style={[styles.filterPillText, styles.filterPillTextActive]}>
               {periodLabel(selectedPeriod)}
             </Text>
@@ -373,7 +376,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
             <View style={styles.monthPickerHeader}>
               <Text style={styles.monthPickerTitle}>Seleccione el mes que desea visualizar</Text>
               <TouchableOpacity onPress={() => setMonthPickerOpen(false)} style={styles.monthPickerClose}>
-                <X color={COLORS.white} size={22} />
+                <X color={colors.white} size={22} />
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
@@ -447,7 +450,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                     style={styles.deleteAction}
                     onPress={() => handleSwipeDelete(item.id)}
                   >
-                    <Trash2 color={COLORS.white} size={20} />
+                    <Trash2 color={colors.white} size={20} />
                   </TouchableOpacity>
                 )}
               >
@@ -471,7 +474,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                   </View>
                   <Text style={[
                     styles.transactionAmount,
-                    { color: isTransfer ? COLORS.blue : (item.type === 'expense' ? COLORS.red : ((type === 'gasto' || type === 'deuda') ? COLORS.green : COLORS.white)) },
+                    { color: isTransfer ? colors.blue : (item.type === 'expense' ? colors.red : ((type === 'gasto' || type === 'deuda') ? colors.green : colors.white)) },
                   ]}>
                     {isTransfer ? (isOutgoingTransfer ? '→ ' : '← ') : ''}{formatAmount(item.amount, envelope.currency)}
                   </Text>
@@ -499,75 +502,75 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   iconBtn: { padding: 8 },
   headerActions: { flexDirection: 'row', alignItems: 'center' },
-  headerDivider: { width: 1, height: 20, backgroundColor: COLORS.divider, marginHorizontal: 6 },
+  headerDivider: { width: 1, height: 20, backgroundColor: colors.divider, marginHorizontal: 6 },
   deleteIconBtn: { marginLeft: 2 },
-  summaryCard: { backgroundColor: COLORS.cardBg, marginHorizontal: 20, borderRadius: 24, padding: 24, marginTop: 8, overflow: 'hidden' },
-  cardFlap: { position: 'absolute', top: -20, left: '50%', width: 40, height: 40, marginLeft: -20, backgroundColor: COLORS.cardHighlight, transform: [{ rotate: '45deg' }] },
+  summaryCard: { backgroundColor: colors.cardBg, marginHorizontal: 20, borderRadius: 24, padding: 24, marginTop: 8, overflow: 'hidden' },
+  cardFlap: { position: 'absolute', top: -20, left: '50%', width: 40, height: 40, marginLeft: -20, backgroundColor: colors.cardHighlight, transform: [{ rotate: '45deg' }] },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  cardTitle: { color: COLORS.white, fontSize: 20, fontWeight: 'bold' },
-  cardCurrency: { color: COLORS.secondaryText, fontSize: 14, fontWeight: '600' },
+  cardTitle: { color: colors.white, fontSize: 20, fontWeight: 'bold' },
+  cardCurrency: { color: colors.secondaryText, fontSize: 14, fontWeight: '600' },
   budgetInfo: {},
   budgetRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 4 },
-  budgetAmount: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' },
-  budgetLabel: { color: COLORS.secondaryText, fontSize: 14 },
+  budgetAmount: { color: colors.white, fontSize: 16, fontWeight: 'bold' },
+  budgetLabel: { color: colors.secondaryText, fontSize: 14 },
   availableWrapper: { alignItems: 'flex-end', marginTop: 12 },
-  availableAmount: { fontSize: 32, fontWeight: 'bold', color: COLORS.white },
-  availableLabel: { color: COLORS.secondaryText, fontSize: 14 },
-  debtDetails: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: COLORS.divider, gap: 4 },
-  debtDetailText: { color: COLORS.secondaryText, fontSize: 13 },
+  availableAmount: { fontSize: 32, fontWeight: 'bold', color: colors.white },
+  availableLabel: { color: colors.secondaryText, fontSize: 14 },
+  debtDetails: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.divider, gap: 4 },
+  debtDetailText: { color: colors.secondaryText, fontSize: 13 },
   transactionsSection: { flex: 1, marginTop: 28, paddingHorizontal: 20 },
-  sectionTitle: { color: COLORS.white, fontSize: 18, fontWeight: '700', marginBottom: 12 },
-  sectionHeader: { color: COLORS.secondaryText, fontSize: 13, fontWeight: '700', backgroundColor: COLORS.bg, paddingTop: 12, paddingBottom: 6 },
-  emptyText: { color: COLORS.secondaryText, fontSize: 15, fontStyle: 'italic' },
+  sectionTitle: { color: colors.white, fontSize: 18, fontWeight: '700', marginBottom: 12 },
+  sectionHeader: { color: colors.secondaryText, fontSize: 13, fontWeight: '700', backgroundColor: colors.bg, paddingTop: 12, paddingBottom: 6 },
+  emptyText: { color: colors.secondaryText, fontSize: 15, fontStyle: 'italic' },
   transactionItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 },
   transactionLeft: { flex: 1, paddingRight: 12 },
-  transactionDesc: { color: COLORS.white, fontSize: 15, fontWeight: '600', marginBottom: 3 },
-  transactionDate: { color: COLORS.secondaryText, fontSize: 12 },
+  transactionDesc: { color: colors.white, fontSize: 15, fontWeight: '600', marginBottom: 3 },
+  transactionDate: { color: colors.secondaryText, fontSize: 12 },
   transactionAmount: { fontSize: 15, fontWeight: '700' },
-  perforationDivider: { borderTopWidth: 1, borderStyle: 'dotted', borderColor: COLORS.perforation },
+  perforationDivider: { borderTopWidth: 1, borderStyle: 'dotted', borderColor: colors.perforation },
   filterRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   filterPill: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: COLORS.cardBg, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 12,
+    backgroundColor: colors.cardBg, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 12,
   },
-  filterPillActive: { backgroundColor: COLORS.green },
-  filterPillText: { color: COLORS.white, fontSize: 14, fontWeight: '600' },
-  filterPillTextActive: { color: COLORS.bg },
-  monthPickerContainer: { flex: 1, backgroundColor: COLORS.bg },
+  filterPillActive: { backgroundColor: colors.green },
+  filterPillText: { color: colors.white, fontSize: 14, fontWeight: '600' },
+  filterPillTextActive: { color: colors.bg },
+  monthPickerContainer: { flex: 1, backgroundColor: colors.bg },
   monthPickerHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', padding: 20 },
-  monthPickerTitle: { flex: 1, color: COLORS.white, fontSize: 20, fontWeight: '700', marginRight: 12 },
+  monthPickerTitle: { flex: 1, color: colors.white, fontSize: 20, fontWeight: '700', marginRight: 12 },
   monthPickerClose: { padding: 4 },
   yearGroup: { paddingHorizontal: 20, marginBottom: 20 },
-  yearLabel: { color: COLORS.white, fontSize: 17, fontWeight: '700', marginBottom: 12 },
+  yearLabel: { color: colors.white, fontSize: 17, fontWeight: '700', marginBottom: 12 },
   monthGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   monthCell: {
-    width: '47%', borderWidth: 1, borderColor: COLORS.divider, borderRadius: 12,
-    paddingVertical: 18, alignItems: 'center', backgroundColor: COLORS.cardBg,
+    width: '47%', borderWidth: 1, borderColor: colors.divider, borderRadius: 12,
+    paddingVertical: 18, alignItems: 'center', backgroundColor: colors.cardBg,
   },
-  monthCellActive: { borderColor: COLORS.green, backgroundColor: COLORS.green },
-  monthCellText: { color: COLORS.secondaryText, fontSize: 16 },
-  monthCellTextActive: { color: COLORS.bg, fontWeight: '700' },
+  monthCellActive: { borderColor: colors.green, backgroundColor: colors.green },
+  monthCellText: { color: colors.secondaryText, fontSize: 16 },
+  monthCellTextActive: { color: colors.bg, fontWeight: '700' },
   pagination: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, paddingVertical: 14 },
-  pageBtn: { minWidth: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.cardBg },
-  pageBtnActive: { backgroundColor: COLORS.green },
-  pageBtnText: { color: COLORS.secondaryText, fontSize: 14, fontWeight: '600' },
-  pageBtnTextActive: { color: COLORS.bg },
-  fab: { position: 'absolute', bottom: 30, right: 20, backgroundColor: COLORS.green, paddingVertical: 16, paddingHorizontal: 24, borderRadius: 30 },
-  fabText: { color: COLORS.bg, fontSize: 16, fontWeight: 'bold' },
+  pageBtn: { minWidth: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cardBg },
+  pageBtnActive: { backgroundColor: colors.green },
+  pageBtnText: { color: colors.secondaryText, fontSize: 14, fontWeight: '600' },
+  pageBtnTextActive: { color: colors.bg },
+  fab: { position: 'absolute', bottom: 30, right: 20, backgroundColor: colors.green, paddingVertical: 16, paddingHorizontal: 24, borderRadius: 30 },
+  fabText: { color: colors.bg, fontSize: 16, fontWeight: 'bold' },
   deleteAction: {
-    backgroundColor: COLORS.red, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: colors.red, justifyContent: 'center', alignItems: 'center',
     width: 72, height: '100%',
   },
   undoBanner: {
     position: 'absolute', left: 20, right: 20, bottom: 96,
-    backgroundColor: '#1a3a4a', borderRadius: 14, paddingVertical: 14, paddingHorizontal: 18,
+    backgroundColor: colors.modalSheet, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 18,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
   },
-  undoText: { color: COLORS.white, fontSize: 14, fontWeight: '600' },
-  undoBtnText: { color: COLORS.green, fontSize: 14, fontWeight: '700' },
+  undoText: { color: colors.white, fontSize: 14, fontWeight: '600' },
+  undoBtnText: { color: colors.green, fontSize: 14, fontWeight: '700' },
 });

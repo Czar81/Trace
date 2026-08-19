@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ArrowLeft, Trash2, Plus } from 'lucide-react-native';
 import { ConfirmDialog } from './ConfirmDialog';
-import { COLORS } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { ThemeColors } from '../theme/colors';
 
 interface ListItem {
   id: string;
@@ -34,6 +35,8 @@ export const SimpleListSettingsScreen: React.FC<SimpleListSettingsScreenProps> =
   onAdd,
   onDelete,
 }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [newItemName, setNewItemName] = useState('');
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
@@ -63,7 +66,7 @@ export const SimpleListSettingsScreen: React.FC<SimpleListSettingsScreenProps> =
 
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <ArrowLeft color={COLORS.white} size={24} />
+          <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{title}</Text>
         <View style={{ width: 32 }} />
@@ -83,7 +86,7 @@ export const SimpleListSettingsScreen: React.FC<SimpleListSettingsScreenProps> =
                 hitSlop={{ top: 10, bottom: 10, left: 16, right: 10 }}
                 onPress={() => setPendingDelete({ id: item.id, name: item.name })}
               >
-                <Trash2 color={COLORS.red} size={20} />
+                <Trash2 color={colors.red} size={20} />
               </TouchableOpacity>
             </View>
           ))}
@@ -95,12 +98,12 @@ export const SimpleListSettingsScreen: React.FC<SimpleListSettingsScreenProps> =
               value={newItemName}
               onChangeText={setNewItemName}
               placeholder={addPlaceholder}
-              placeholderTextColor={COLORS.secondaryText}
+              placeholderTextColor={colors.secondaryText}
               onSubmitEditing={handleAdd}
               returnKeyType="done"
             />
             <TouchableOpacity style={styles.addBtn} onPress={handleAdd}>
-              <Plus color={COLORS.bg} size={22} />
+              <Plus color={colors.bg} size={22} />
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -109,17 +112,17 @@ export const SimpleListSettingsScreen: React.FC<SimpleListSettingsScreenProps> =
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 },
   headerBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: COLORS.white, fontSize: 20, fontWeight: 'bold' },
+  headerTitle: { color: colors.white, fontSize: 20, fontWeight: 'bold' },
   keyboardAvoiding: { flex: 1 },
   scroll: { paddingHorizontal: 20, paddingBottom: 60 },
-  sectionTitle: { color: COLORS.white, fontSize: 16, fontWeight: '700', marginTop: 28, marginBottom: 12 },
-  listItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.divider },
-  listItemText: { color: COLORS.white, fontSize: 16, flex: 1, paddingRight: 12 },
+  sectionTitle: { color: colors.white, fontSize: 16, fontWeight: '700', marginTop: 28, marginBottom: 12 },
+  listItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.divider },
+  listItemText: { color: colors.white, fontSize: 16, flex: 1, paddingRight: 12 },
   addRow: { flexDirection: 'row', alignItems: 'center', marginTop: 14 },
-  input: { backgroundColor: COLORS.cardBg, borderRadius: 12, padding: 14, color: COLORS.white, fontSize: 16, marginBottom: 12 },
-  addBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: COLORS.green, justifyContent: 'center', alignItems: 'center' },
+  input: { backgroundColor: colors.cardBg, borderRadius: 12, padding: 14, color: colors.white, fontSize: 16, marginBottom: 12 },
+  addBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.green, justifyContent: 'center', alignItems: 'center' },
 });

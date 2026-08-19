@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Pressable, FlatList, Animated, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -9,7 +9,8 @@ import { Settings, MoreVertical, RefreshCw, Search } from 'lucide-react-native';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
-import { COLORS } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { ThemeColors } from '../theme/colors';
 import { formatCurrency } from '../utils/formatCurrency';
 
 const { width } = Dimensions.get('window');
@@ -34,6 +35,8 @@ interface EnvelopeCardProps {
 const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
   envelope, remaining, textColor, progress, progressColor, subtext, index, onPress, formatAmount,
 }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const entrance = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -97,6 +100,8 @@ const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
 type Props = NativeStackScreenProps<RootStackParamList, 'Main'>;
 
 export const MainScreen = ({ navigation }: Props) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { envelopes, getTotalByType, getEnvelopeBalance, formatAmount, settings, convertToCRC, resetAllEnvelopes, paymentMethods, categories, transactions } = useAppData();
   const [activeTab, setActiveTab] = useState<EnvelopeType>('gasto');
   const [displayCurrency, setDisplayCurrency] = useState<Currency>(settings.defaultCurrency);
@@ -157,42 +162,42 @@ export const MainScreen = ({ navigation }: Props) => {
     const isOver = (type === 'gasto' || type === 'deuda') && !item.isUnlimited && remaining < 0;
 
     // 1. Balance Text Color
-    let textColor = COLORS.white;
+    let textColor = colors.white;
     if (remaining < 0) {
-      textColor = COLORS.red;
+      textColor = colors.red;
     } else if (type === 'gasto' && remaining > 0) {
-      textColor = COLORS.green;
+      textColor = colors.green;
     } else {
-      textColor = COLORS.white;
+      textColor = colors.white;
     }
 
     // 2. Progress Circle Logic
     let progress = 0;
-    let progressColor = COLORS.green;
+    let progressColor = colors.green;
 
     if (type === 'gasto') {
       if (item.isUnlimited) {
         progress = 1;
-        progressColor = COLORS.blue;
+        progressColor = colors.blue;
       } else {
         // Spent / Limit
         const spent = -balance;
         progress = Math.max(0, spent / item.limit);
-        progressColor = remaining < 0 ? COLORS.red : COLORS.green;
+        progressColor = remaining < 0 ? colors.red : colors.green;
       }
     } else if (type === 'deuda') {
       if (item.isUnlimited) {
         progress = 1;
-        progressColor = COLORS.blue;
+        progressColor = colors.blue;
       } else {
         // Progress fills as the debt is paid down (same direction as ahorro)
         progress = item.limit > 0 ? balance / item.limit : 1;
-        progressColor = remaining < 0 ? COLORS.red : COLORS.green;
+        progressColor = remaining < 0 ? colors.red : colors.green;
       }
     } else {
       // Savings
       progress = item.limit > 0 ? balance / item.limit : 1;
-      progressColor = COLORS.green;
+      progressColor = colors.green;
     }
 
     const subtext =
@@ -257,10 +262,10 @@ export const MainScreen = ({ navigation }: Props) => {
         <Text style={styles.title}>TRACE</Text>
         <View style={{ flexDirection: 'row' }}>
           <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Search')}>
-            <Search color={COLORS.secondaryText} size={22} />
+            <Search color={colors.secondaryText} size={22} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Settings')}>
-            <MoreVertical color={COLORS.secondaryText} size={24} />
+            <MoreVertical color={colors.secondaryText} size={24} />
           </TouchableOpacity>
         </View>
       </View>
@@ -274,7 +279,7 @@ export const MainScreen = ({ navigation }: Props) => {
               width * index,
               width * (index + 1),
             ],
-            outputRange: [COLORS.secondaryText, COLORS.bg, COLORS.secondaryText],
+            outputRange: [colors.secondaryText, colors.bg, colors.secondaryText],
             extrapolate: 'clamp',
           });
           return (
@@ -298,7 +303,7 @@ export const MainScreen = ({ navigation }: Props) => {
               ? 'Total por pagar'
               : 'Total ahorrado'}
           </Text>
-          <Text style={[styles.summaryTotal, totalCRC < 0 && { color: COLORS.red }]}>
+          <Text style={[styles.summaryTotal, totalCRC < 0 && { color: colors.red }]}>
             {totalDisplay}
           </Text>
         </View>
@@ -328,29 +333,29 @@ export const MainScreen = ({ navigation }: Props) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
-  title: { color: COLORS.white, fontSize: 18, fontWeight: 'bold', letterSpacing: 1 },
+  title: { color: colors.white, fontSize: 18, fontWeight: 'bold', letterSpacing: 1 },
   iconBtn: { padding: 8 },
-  tabContainer: { flexDirection: 'row', marginHorizontal: 20, height: 48, position: 'relative', marginBottom: 16, backgroundColor: COLORS.cardBg, borderRadius: 24, padding: 4 },
+  tabContainer: { flexDirection: 'row', marginHorizontal: 20, height: 48, position: 'relative', marginBottom: 16, backgroundColor: colors.cardBg, borderRadius: 24, padding: 4 },
   tab: { flex: 1, justifyContent: 'center', alignItems: 'center', zIndex: 1 },
-  tabIndicator: { position: 'absolute', top: 4, bottom: 4, left: 4, backgroundColor: COLORS.green, borderRadius: 20 },
-  tabText: { color: COLORS.secondaryText, fontSize: 16, fontWeight: '600' },
-  summaryCard: { backgroundColor: COLORS.cardBg, marginHorizontal: 20, borderRadius: 16, padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, overflow: 'hidden' },
-  cardFlap: { position: 'absolute', top: -20, left: '50%', width: 40, height: 40, marginLeft: -20, backgroundColor: COLORS.cardHighlight, transform: [{ rotate: '45deg' }] },
-  currencyBtn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, backgroundColor: '#142E3D' },
-  currencyText: { color: COLORS.white, fontSize: 15, fontWeight: '700' },
+  tabIndicator: { position: 'absolute', top: 4, bottom: 4, left: 4, backgroundColor: colors.green, borderRadius: 20 },
+  tabText: { color: colors.secondaryText, fontSize: 16, fontWeight: '600' },
+  summaryCard: { backgroundColor: colors.cardBg, marginHorizontal: 20, borderRadius: 16, padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, overflow: 'hidden' },
+  cardFlap: { position: 'absolute', top: -20, left: '50%', width: 40, height: 40, marginLeft: -20, backgroundColor: colors.cardHighlight, transform: [{ rotate: '45deg' }] },
+  currencyBtn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, backgroundColor: colors.divider },
+  currencyText: { color: colors.white, fontSize: 15, fontWeight: '700' },
   summaryValues: { alignItems: 'flex-end' },
-  summaryLabel: { color: COLORS.secondaryText, fontSize: 13, marginBottom: 4 },
-  summaryTotal: { color: COLORS.white, fontSize: 22, fontWeight: 'bold' },
+  summaryLabel: { color: colors.secondaryText, fontSize: 13, marginBottom: 4 },
+  summaryTotal: { color: colors.white, fontSize: 22, fontWeight: 'bold' },
   list: { paddingHorizontal: 20, paddingBottom: 120 },
-  emptyText: { color: COLORS.secondaryText, fontSize: 15, textAlign: 'center', marginTop: 40, fontStyle: 'italic' },
-  envelopeCard: { backgroundColor: COLORS.cardBg, borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  envelopeName: { flex: 1, color: COLORS.white, fontSize: 17, fontWeight: '600' },
+  emptyText: { color: colors.secondaryText, fontSize: 15, textAlign: 'center', marginTop: 40, fontStyle: 'italic' },
+  envelopeCard: { backgroundColor: colors.cardBg, borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  envelopeName: { flex: 1, color: colors.white, fontSize: 17, fontWeight: '600' },
   envelopeValues: { alignItems: 'flex-end' },
   envelopeAmount: { fontSize: 18, fontWeight: 'bold', marginBottom: 2 },
-  envelopeSubtext: { color: COLORS.secondaryText, fontSize: 13 },
-  fab: { position: 'absolute', bottom: 30, right: 20, backgroundColor: COLORS.green, paddingVertical: 16, paddingHorizontal: 24, borderRadius: 30 },
-  fabText: { color: COLORS.bg, fontSize: 16, fontWeight: 'bold' },
+  envelopeSubtext: { color: colors.secondaryText, fontSize: 13 },
+  fab: { position: 'absolute', bottom: 30, right: 20, backgroundColor: colors.green, paddingVertical: 16, paddingHorizontal: 24, borderRadius: 30 },
+  fabText: { color: colors.bg, fontSize: 16, fontWeight: 'bold' },
 });

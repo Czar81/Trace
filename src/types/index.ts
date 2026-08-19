@@ -1,3 +1,5 @@
+import { ThemeId } from '../theme/colors';
+
 export type EnvelopeType = 'gasto' | 'ahorro' | 'deuda';
 export type Currency = 'CRC' | 'USD' | 'EUR';
 
@@ -84,4 +86,5 @@ export interface AppSettings {
   budgetAlertsEnabled: boolean;
   billRemindersEnabled: boolean;
   billReminderLeadDays: number;
+  themeId: ThemeId;
 }

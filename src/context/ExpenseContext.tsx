@@ -6,7 +6,7 @@ import {
   loadTransactions, saveTransactions,
   loadPaymentMethods, savePaymentMethods,
   loadCategories, saveCategories,
-  loadSettings, saveSettings,
+  loadSettings, saveSettings, DEFAULT_SETTINGS,
   loadRecurringTemplates, saveRecurringTemplates
 } from '../utils/storage';
 import { pickAndImportBackup } from '../utils/importData';
@@ -208,15 +208,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [categories, setCategories] = useState<TransactionCategory[]>([]);
   const [recurringTemplates, setRecurringTemplates] = useState<RecurringTransactionTemplate[]>([]);
-  const [settings, setSettings] = useState<AppSettings>({
-    defaultCurrency: 'CRC',
-    exchangeRates: { USD_TO_CRC: 510, EUR_TO_CRC: 550 },
-    expenseCutoffEnabled: false,
-    expenseCutoffDay: null,
-    budgetAlertsEnabled: false,
-    billRemindersEnabled: false,
-    billReminderLeadDays: 2,
-  });
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
 
   useEffect(() => {
     const initData = async () => {
