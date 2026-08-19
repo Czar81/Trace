@@ -10,7 +10,6 @@ export type RootStackParamList = {
   CurrencySettings: undefined;
   PaymentMethodsSettings: undefined;
   CategoriesSettings: undefined;
-  CutoffSettings: undefined;
   Reports: undefined;
   Search: undefined;
   Recurring: undefined;

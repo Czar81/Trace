@@ -16,7 +16,6 @@ import { SettingsScreen } from './src/screens/SettingsScreen';
 import { CurrencySettingsScreen } from './src/screens/CurrencySettingsScreen';
 import { PaymentMethodsSettingsScreen } from './src/screens/PaymentMethodsSettingsScreen';
 import { CategoriesSettingsScreen } from './src/screens/CategoriesSettingsScreen';
-import { CutoffSettingsScreen } from './src/screens/CutoffSettingsScreen';
 import { ReportsScreen } from './src/screens/ReportsScreen';
 import { SearchTransactionsScreen } from './src/screens/SearchTransactionsScreen';
 import { RecurringTransactionsScreen } from './src/screens/RecurringTransactionsScreen';
@@ -43,7 +42,6 @@ export default function App() {
                 <Stack.Screen name="CurrencySettings" component={CurrencySettingsScreen} />
                 <Stack.Screen name="PaymentMethodsSettings" component={PaymentMethodsSettingsScreen} />
                 <Stack.Screen name="CategoriesSettings" component={CategoriesSettingsScreen} />
-                <Stack.Screen name="CutoffSettings" component={CutoffSettingsScreen} />
                 <Stack.Screen name="Reports" component={ReportsScreen} />
                 <Stack.Screen name="Search" component={SearchTransactionsScreen} />
                 <Stack.Screen name="Recurring" component={RecurringTransactionsScreen} />

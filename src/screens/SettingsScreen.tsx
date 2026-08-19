@@ -43,6 +43,21 @@ export const SettingsScreen = ({ navigation }: Props) => {
     }
   };
 
+  const handleCutoffToggle = (value: boolean) => {
+    updateSettings({
+      expenseCutoffEnabled: value,
+      expenseCutoffDay: value ? (settings.expenseCutoffDay ?? 1) : settings.expenseCutoffDay,
+    });
+  };
+
+  const changeCutoffDay = (delta: number) => {
+    const current = settings.expenseCutoffDay ?? 1;
+    const next = Math.min(31, Math.max(1, current + delta));
+    if (next !== current) {
+      updateSettings({ expenseCutoffDay: next });
+    }
+  };
+
   const handleExport = () => {
     exportDataToCSV(envelopes, transactions, paymentMethods, categories, settings);
     showInfo('Exportación', 'Backup exportado correctamente.');
@@ -204,20 +219,52 @@ export const SettingsScreen = ({ navigation }: Props) => {
 
         <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Corte de gastos</Text>
 
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('CutoffSettings')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.menuIconWrapper}>
-            <RefreshCw color={COLORS.white} size={18} />
+        <View style={styles.reminderCard}>
+          <View style={styles.reminderRow}>
+            <View style={styles.toggleTextWrapper}>
+              <Text style={styles.menuTitle}>Corte mensual</Text>
+              <Text style={styles.menuSubtitle}>
+                {settings.expenseCutoffEnabled
+                  ? `Ignora gastos previos al día ${settings.expenseCutoffDay ?? 1} de cada mes`
+                  : 'Ignora gastos previos al día de corte en sobres de gasto'}
+              </Text>
+            </View>
+            <Switch
+              value={settings.expenseCutoffEnabled}
+              onValueChange={handleCutoffToggle}
+              trackColor={{ false: COLORS.cardBg, true: COLORS.green }}
+              thumbColor={settings.expenseCutoffEnabled ? COLORS.green : COLORS.white}
+            />
           </View>
-          <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>Corte mensual</Text>
-            <Text style={styles.menuSubtitle}>Configura el día de corte</Text>
-          </View>
-          <ChevronRight color={COLORS.secondaryText} size={20} />
-        </TouchableOpacity>
+
+          {settings.expenseCutoffEnabled && (
+            <>
+              <View style={styles.reminderDivider} />
+              <View style={styles.reminderRow}>
+                <Text style={styles.leadDaysLabel}>Día de corte</Text>
+                <View style={styles.stepper}>
+                  <TouchableOpacity
+                    style={[styles.stepperBtn, (settings.expenseCutoffDay ?? 1) <= 1 && styles.stepperBtnDisabled]}
+                    disabled={(settings.expenseCutoffDay ?? 1) <= 1}
+                    onPress={() => changeCutoffDay(-1)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Minus color={(settings.expenseCutoffDay ?? 1) <= 1 ? COLORS.secondaryText : COLORS.white} size={16} />
+                  </TouchableOpacity>
+                  <Text style={styles.stepperValue}>{settings.expenseCutoffDay ?? 1}</Text>
+                  <TouchableOpacity
+                    style={[styles.stepperBtn, (settings.expenseCutoffDay ?? 1) >= 31 && styles.stepperBtnDisabled]}
+                    disabled={(settings.expenseCutoffDay ?? 1) >= 31}
+                    onPress={() => changeCutoffDay(1)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Plus color={(settings.expenseCutoffDay ?? 1) >= 31 ? COLORS.secondaryText : COLORS.white} size={16} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </>
+          )}
+        </View>
 
         <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Backup y restauración</Text>
 

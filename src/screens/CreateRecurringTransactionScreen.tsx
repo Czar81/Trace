@@ -21,6 +21,8 @@ const FREQUENCY_OPTIONS: { label: string; value: RecurrenceFrequency }[] = [
   { label: 'Anual', value: 'annual' },
 ];
 
+const DAY_OF_MONTH_OPTIONS = Array.from({ length: 31 }, (_, i) => ({ label: String(i + 1), value: String(i + 1) }));
+
 const MONTH_OPTIONS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
@@ -206,15 +208,12 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
           {/* ── Day of month (monthly & annual) ── */}
           {(frequency === 'monthly' || frequency === 'annual') && (
             <>
-              <Text style={styles.label}>Día del mes</Text>
-              <TextInput
-                style={styles.input}
+              <Dropdown
+                label="Día del mes"
+                options={DAY_OF_MONTH_OPTIONS}
                 value={dayOfMonthStr}
-                onChangeText={(text) => { setDayOfMonthStr(text.replace(/[^0-9]/g, '')); setDayError(''); }}
-                placeholder="Ej: 15"
-                placeholderTextColor={COLORS.secondaryText}
-                keyboardType="numeric"
-                maxLength={2}
+                onSelect={(value) => { setDayOfMonthStr(value); setDayError(''); }}
+                placeholder="Selecciona un día"
               />
               {dayError ? <Text style={styles.errorText}>{dayError}</Text> : null}
             </>
