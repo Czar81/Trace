@@ -3,10 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
-import { ArrowLeft, ChevronRight, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat } from 'lucide-react-native';
+import { ArrowLeft, ChevronRight, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat, Minus, Plus } from 'lucide-react-native';
 import { exportDataToCSV } from '../utils/exportData';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { Dropdown } from '../components/Dropdown';
 import { RootStackParamList } from '../navigation/types';
 import { COLORS } from '../theme/colors';
 
@@ -37,13 +36,11 @@ export const SettingsScreen = ({ navigation }: Props) => {
     );
   };
 
-  const leadDaysOptions = Array.from({ length: 7 }, (_, i) => ({
-    label: `${i + 1} día${i + 1 > 1 ? 's' : ''}`,
-    value: String(i + 1),
-  }));
-
-  const handleLeadDaysChange = (value: string) => {
-    updateSettings({ billReminderLeadDays: Number(value) });
+  const changeLeadDays = (delta: number) => {
+    const next = Math.min(7, Math.max(1, settings.billReminderLeadDays + delta));
+    if (next !== settings.billReminderLeadDays) {
+      updateSettings({ billReminderLeadDays: next });
+    }
   };
 
   const handleExport = () => {
@@ -158,32 +155,52 @@ export const SettingsScreen = ({ navigation }: Props) => {
           />
         </View>
 
-        <View style={styles.toggleRow}>
-          <View style={styles.toggleTextWrapper}>
-            <Text style={styles.menuTitle}>Recordatorios de facturas</Text>
-            <Text style={styles.menuSubtitle}>Avisa 2 días antes de que se genere una transacción recurrente</Text>
-          </View>
-          <Switch
-            value={settings.billRemindersEnabled}
-            onValueChange={() => updateSettings({ billRemindersEnabled: !settings.billRemindersEnabled })}
-            trackColor={{ false: COLORS.cardBg, true: COLORS.green }}
-            thumbColor={settings.billRemindersEnabled ? COLORS.green : COLORS.white}
-          />
-        </View>
-
-        {settings.billRemindersEnabled && (
-          <View style={styles.menuItem}>
-            <View style={styles.menuTextWrapper}>
-              <Dropdown
-                label="Días de anticipación"
-                options={leadDaysOptions}
-                value={String(settings.billReminderLeadDays)}
-                onSelect={handleLeadDaysChange}
-                placeholder="Selecciona los días"
-              />
+        <View style={styles.reminderCard}>
+          <View style={styles.reminderRow}>
+            <View style={styles.toggleTextWrapper}>
+              <Text style={styles.menuTitle}>Recordatorios de facturas</Text>
+              <Text style={styles.menuSubtitle}>
+                {settings.billRemindersEnabled
+                  ? `Avisa ${settings.billReminderLeadDays} día${settings.billReminderLeadDays > 1 ? 's' : ''} antes de que se genere una transacción recurrente`
+                  : 'Avisa antes de que se genere una transacción recurrente'}
+              </Text>
             </View>
+            <Switch
+              value={settings.billRemindersEnabled}
+              onValueChange={() => updateSettings({ billRemindersEnabled: !settings.billRemindersEnabled })}
+              trackColor={{ false: COLORS.cardBg, true: COLORS.green }}
+              thumbColor={settings.billRemindersEnabled ? COLORS.green : COLORS.white}
+            />
           </View>
-        )}
+
+          {settings.billRemindersEnabled && (
+            <>
+              <View style={styles.reminderDivider} />
+              <View style={styles.reminderRow}>
+                <Text style={styles.leadDaysLabel}>Días de anticipación</Text>
+                <View style={styles.stepper}>
+                  <TouchableOpacity
+                    style={[styles.stepperBtn, settings.billReminderLeadDays <= 1 && styles.stepperBtnDisabled]}
+                    disabled={settings.billReminderLeadDays <= 1}
+                    onPress={() => changeLeadDays(-1)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Minus color={settings.billReminderLeadDays <= 1 ? COLORS.secondaryText : COLORS.white} size={16} />
+                  </TouchableOpacity>
+                  <Text style={styles.stepperValue}>{settings.billReminderLeadDays}</Text>
+                  <TouchableOpacity
+                    style={[styles.stepperBtn, settings.billReminderLeadDays >= 7 && styles.stepperBtnDisabled]}
+                    disabled={settings.billReminderLeadDays >= 7}
+                    onPress={() => changeLeadDays(1)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Plus color={settings.billReminderLeadDays >= 7 ? COLORS.secondaryText : COLORS.white} size={16} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </>
+          )}
+        </View>
 
         <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Corte de gastos</Text>
 
@@ -289,4 +306,12 @@ const styles = StyleSheet.create({
   menuSubtitle: { color: COLORS.secondaryText, fontSize: 14 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: COLORS.cardBg, borderRadius: 16, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: COLORS.divider },
   toggleTextWrapper: { flex: 1, paddingRight: 12 },
+  reminderCard: { backgroundColor: COLORS.cardBg, borderRadius: 16, marginBottom: 14, borderWidth: 1, borderColor: COLORS.divider, overflow: 'hidden' },
+  reminderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
+  reminderDivider: { height: 1, backgroundColor: COLORS.divider },
+  leadDaysLabel: { color: COLORS.white, fontSize: 15, fontWeight: '600' },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: COLORS.bg, borderRadius: 20, padding: 4 },
+  stepperBtn: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.cardHighlight },
+  stepperBtnDisabled: { opacity: 0.35 },
+  stepperValue: { color: COLORS.white, fontSize: 15, fontWeight: '700', minWidth: 26, textAlign: 'center' },
 });
