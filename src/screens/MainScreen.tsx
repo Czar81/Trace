@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Animated, Dimensions } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, FlatList, Animated, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
@@ -17,6 +17,82 @@ const { width } = Dimensions.get('window');
 const CURRENCY_CYCLE: Currency[] = ['CRC', 'USD', 'EUR'];
 const TAB_TYPES: EnvelopeType[] = ['gasto', 'ahorro', 'deuda'];
 const TAB_LABELS: Record<EnvelopeType, string> = { gasto: 'Gastos', ahorro: 'Ahorros', deuda: 'Deudas' };
+
+interface EnvelopeCardProps {
+  envelope: Envelope;
+  remaining: number;
+  textColor: string;
+  progress: number;
+  progressColor: string;
+  subtext: string;
+  index: number;
+  onPress: () => void;
+  formatAmount: (amount: number, currency: Currency) => string;
+}
+
+/** Fades/slides in on mount (staggered by list position) and squishes slightly on press. */
+const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
+  envelope, remaining, textColor, progress, progressColor, subtext, index, onPress, formatAmount,
+}) => {
+  const entrance = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.timing(entrance, {
+      toValue: 1,
+      duration: 280,
+      delay: Math.min(index, 6) * 45,
+      useNativeDriver: true,
+    }).start();
+    // Only animate in once, on mount — not on every re-render (e.g. balance updates).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handlePressIn = () => {
+    Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 40, bounciness: 6 }).start();
+  };
+  const handlePressOut = () => {
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 8 }).start();
+  };
+
+  return (
+    <Animated.View
+      style={{
+        opacity: entrance,
+        transform: [
+          { translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) },
+          { scale },
+        ],
+      }}
+    >
+      <Pressable
+        style={styles.envelopeCard}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        <View style={{ marginRight: 16 }}>
+          <EnvelopeAvatar
+            icon={envelope.icon ?? 'box'}
+            imageUri={envelope.imageUri}
+            color={envelope.color}
+            size={52}
+            progress={progress}
+            progressColor={progressColor}
+            iconColor={envelope.color}
+          />
+        </View>
+        <Text style={styles.envelopeName} numberOfLines={1}>{envelope.name}</Text>
+        <View style={styles.envelopeValues}>
+          <Text style={[styles.envelopeAmount, { color: textColor }]}>
+            {formatAmount(Math.abs(remaining), envelope.currency)}
+          </Text>
+          <Text style={styles.envelopeSubtext}>{subtext}</Text>
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+};
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Main'>;
 
@@ -70,7 +146,7 @@ export const MainScreen = ({ navigation }: Props) => {
   };
 
 
-  const renderEnvelope = ({ item }: { item: Envelope }) => {
+  const renderEnvelope = ({ item, index }: { item: Envelope; index: number }) => {
     const balance = getEnvelopeBalance(item.id);
     const type = item.type;
 
@@ -127,29 +203,17 @@ export const MainScreen = ({ navigation }: Props) => {
         : 'ahorrados';
 
     return (
-      <TouchableOpacity
-        style={styles.envelopeCard}
+      <EnvelopeCard
+        envelope={item}
+        remaining={remaining}
+        textColor={textColor}
+        progress={progress}
+        progressColor={progressColor}
+        subtext={subtext}
+        index={index}
         onPress={() => navigation.navigate('EnvelopeDetail', { envelopeId: item.id })}
-      >
-        <View style={{ marginRight: 16 }}>
-          <EnvelopeAvatar
-            icon={item.icon ?? 'box'}
-            imageUri={item.imageUri}
-            color={item.color}
-            size={52}
-            progress={progress}
-            progressColor={progressColor}
-            iconColor={item.color}
-          />
-        </View>
-        <Text style={styles.envelopeName} numberOfLines={1}>{item.name}</Text>
-        <View style={styles.envelopeValues}>
-          <Text style={[styles.envelopeAmount, { color: textColor }]}>
-            {formatAmount(Math.abs(remaining), item.currency)}
-          </Text>
-          <Text style={styles.envelopeSubtext}>{subtext}</Text>
-        </View>
-      </TouchableOpacity>
+        formatAmount={formatAmount}
+      />
     );
   };
 
