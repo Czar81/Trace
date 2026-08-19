@@ -11,6 +11,7 @@ import { RootStackParamList } from '../navigation/types';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { COLORS } from '../theme/colors';
 import { groupTransactionsByDay } from '../utils/transactionGrouping';
+import { formatDebtCycle } from '../utils/recurrence';
 
 const PAGE_SIZE = 10;
 
@@ -329,6 +330,28 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
             </Text>
           </View>
         </View>
+
+        {type === 'deuda' && !envelope.isUnlimited && (envelope.interestRate || envelope.minimumPayment || envelope.dueDay) ? (
+          <View style={styles.debtDetails}>
+            {envelope.interestRate && envelope.interestFrequency ? (
+              <Text style={styles.debtDetailText}>
+                Interés {envelope.interestRate}% · {formatDebtCycle({
+                  interestFrequency: envelope.interestFrequency,
+                  dueDay: envelope.dueDay ?? 1,
+                  dueAnchorMonth: envelope.dueAnchorMonth,
+                })}
+              </Text>
+            ) : null}
+            {envelope.minimumPayment ? (
+              <Text style={styles.debtDetailText}>
+                Pago mínimo: {formatAmount(envelope.minimumPayment, envelope.currency)}
+              </Text>
+            ) : null}
+            {envelope.dueDay && !envelope.interestRate ? (
+              <Text style={styles.debtDetailText}>Vence el día {envelope.dueDay}</Text>
+            ) : null}
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.transactionsSection}>
@@ -495,6 +518,8 @@ const styles = StyleSheet.create({
   availableWrapper: { alignItems: 'flex-end', marginTop: 12 },
   availableAmount: { fontSize: 32, fontWeight: 'bold', color: COLORS.white },
   availableLabel: { color: COLORS.secondaryText, fontSize: 14 },
+  debtDetails: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: COLORS.divider, gap: 4 },
+  debtDetailText: { color: COLORS.secondaryText, fontSize: 13 },
   transactionsSection: { flex: 1, marginTop: 28, paddingHorizontal: 20 },
   sectionTitle: { color: COLORS.white, fontSize: 18, fontWeight: '700', marginBottom: 12 },
   sectionHeader: { color: COLORS.secondaryText, fontSize: 13, fontWeight: '700', backgroundColor: COLORS.bg, paddingTop: 12, paddingBottom: 6 },

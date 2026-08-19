@@ -1,6 +1,6 @@
 ## Purpose
 
-Lets users track a debt (a credit card balance, a personal loan) using the same envelope mental model already used for spending and savings — payments and new charges as ordinary transactions, a limit representing the total debt amount, and a balance that reflects progress toward paying it off — without introducing interest rates, minimum payments, or due dates.
+Lets users track a debt (a credit card balance, a personal loan) using the same envelope mental model already used for spending and savings — payments and new charges as ordinary transactions, a limit representing the total debt amount, and a balance that reflects progress toward paying it off — with optional interest rate, minimum payment, and due day fields for debts that carry them.
 
 ## Requirements
 

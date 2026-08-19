@@ -1,4 +1,7 @@
-import { getNextDueDate, getOccurrenceKey, clampDayOfMonth, formatCadence } from './recurrence';
+import {
+  getNextDueDate, getOccurrenceKey, clampDayOfMonth, formatCadence,
+  getDebtCycleDate, getDebtCycleOccurrenceKey, getPreviousDebtCycleDate, formatDebtCycle, DebtCycleAnchor,
+} from './recurrence';
 import { RecurringTransactionTemplate } from '../types';
 
 const makeTemplate = (overrides: Partial<RecurringTransactionTemplate>): RecurringTransactionTemplate => ({
@@ -135,5 +138,106 @@ describe('formatCadence', () => {
 
   it('describes an annual template', () => {
     expect(formatCadence(makeTemplate({ frequency: 'annual', month: 3, dayOfMonth: 12 }))).toBe('Cada 12 de marzo');
+  });
+});
+
+describe('getDebtCycleDate', () => {
+  it('mensual: clamps day 31 to the last day of February in a non-leap year', () => {
+    const envelope: DebtCycleAnchor = { interestFrequency: 'mensual', dueDay: 31 };
+    expect(getDebtCycleDate(envelope, new Date(2026, 1, 1))).toEqual(new Date(2026, 1, 28, 0, 0, 0, 0));
+  });
+
+  it('mensual: returns the current month\'s day whether or not it has passed', () => {
+    const envelope: DebtCycleAnchor = { interestFrequency: 'mensual', dueDay: 10 };
+    expect(getDebtCycleDate(envelope, new Date(2026, 2, 20))).toEqual(new Date(2026, 2, 10, 0, 0, 0, 0));
+  });
+
+  it('quincenal: returns the first-half date before it arrives', () => {
+    const envelope: DebtCycleAnchor = { interestFrequency: 'quincenal', dueDay: 5 };
+    expect(getDebtCycleDate(envelope, new Date(2026, 2, 3))).toEqual(new Date(2026, 2, 5, 0, 0, 0, 0));
+  });
+
+  it('quincenal: returns the second-half date once the first half has passed', () => {
+    const envelope: DebtCycleAnchor = { interestFrequency: 'quincenal', dueDay: 5 };
+    expect(getDebtCycleDate(envelope, new Date(2026, 2, 10))).toEqual(new Date(2026, 2, 20, 0, 0, 0, 0));
+  });
+
+  it('quincenal: clamps the second occurrence at month end (dueDay 20 -> 35 clamped)', () => {
+    const envelope: DebtCycleAnchor = { interestFrequency: 'quincenal', dueDay: 20 };
+    // April has 30 days, so day 35 clamps to 30.
+    expect(getDebtCycleDate(envelope, new Date(2026, 3, 25))).toEqual(new Date(2026, 3, 30, 0, 0, 0, 0));
+  });
+
+  it('anual: uses dueAnchorMonth when set, regardless of the reference month', () => {
+    const envelope: DebtCycleAnchor = { interestFrequency: 'anual', dueDay: 15, dueAnchorMonth: 6 };
+    expect(getDebtCycleDate(envelope, new Date(2026, 2, 1))).toEqual(new Date(2026, 5, 15, 0, 0, 0, 0));
+  });
+
+  it('anual: falls back to the reference month when dueAnchorMonth is unset', () => {
+    const envelope: DebtCycleAnchor = { interestFrequency: 'anual', dueDay: 15 };
+    expect(getDebtCycleDate(envelope, new Date(2026, 8, 1))).toEqual(new Date(2026, 8, 15, 0, 0, 0, 0));
+  });
+});
+
+describe('getDebtCycleOccurrenceKey', () => {
+  it('mensual: YYYY-MM', () => {
+    const envelope: DebtCycleAnchor = { interestFrequency: 'mensual', dueDay: 10 };
+    expect(getDebtCycleOccurrenceKey(envelope, new Date(2026, 2, 10))).toBe('2026-03');
+  });
+
+  it('anual: YYYY', () => {
+    const envelope: DebtCycleAnchor = { interestFrequency: 'anual', dueDay: 15, dueAnchorMonth: 6 };
+    expect(getDebtCycleOccurrenceKey(envelope, new Date(2026, 5, 15))).toBe('2026');
+  });
+
+  it('quincenal: distinguishes first and second half occurrences', () => {
+    const envelope: DebtCycleAnchor = { interestFrequency: 'quincenal', dueDay: 5 };
+    expect(getDebtCycleOccurrenceKey(envelope, new Date(2026, 2, 5))).toBe('2026-03-a');
+    expect(getDebtCycleOccurrenceKey(envelope, new Date(2026, 2, 20))).toBe('2026-03-b');
+  });
+
+  it('quincenal occurrence keys stay stable across repeated calls within the same cycle', () => {
+    const envelope: DebtCycleAnchor = { interestFrequency: 'quincenal', dueDay: 5 };
+    const cycleDate = getDebtCycleDate(envelope, new Date(2026, 2, 10));
+    const key1 = getDebtCycleOccurrenceKey(envelope, cycleDate);
+    const key2 = getDebtCycleOccurrenceKey(envelope, getDebtCycleDate(envelope, new Date(2026, 2, 18)));
+    expect(key1).toBe(key2);
+  });
+});
+
+describe('getPreviousDebtCycleDate', () => {
+  it('mensual: one month before, clamped', () => {
+    const envelope: DebtCycleAnchor = { interestFrequency: 'mensual', dueDay: 31 };
+    // March 31 -> previous is Feb clamped to 28 (2026 non-leap).
+    expect(getPreviousDebtCycleDate(envelope, new Date(2026, 2, 31))).toEqual(new Date(2026, 1, 28, 0, 0, 0, 0));
+  });
+
+  it('quincenal: from second half, previous is this month\'s first half', () => {
+    const envelope: DebtCycleAnchor = { interestFrequency: 'quincenal', dueDay: 5 };
+    expect(getPreviousDebtCycleDate(envelope, new Date(2026, 2, 20))).toEqual(new Date(2026, 2, 5, 0, 0, 0, 0));
+  });
+
+  it('quincenal: from first half, previous is last month\'s second half', () => {
+    const envelope: DebtCycleAnchor = { interestFrequency: 'quincenal', dueDay: 5 };
+    expect(getPreviousDebtCycleDate(envelope, new Date(2026, 2, 5))).toEqual(new Date(2026, 1, 20, 0, 0, 0, 0));
+  });
+
+  it('anual: one year before', () => {
+    const envelope: DebtCycleAnchor = { interestFrequency: 'anual', dueDay: 15, dueAnchorMonth: 6 };
+    expect(getPreviousDebtCycleDate(envelope, new Date(2026, 5, 15))).toEqual(new Date(2025, 5, 15, 0, 0, 0, 0));
+  });
+});
+
+describe('formatDebtCycle', () => {
+  it('describes a mensual cycle', () => {
+    expect(formatDebtCycle({ interestFrequency: 'mensual', dueDay: 15 })).toBe('Día 15 de cada mes');
+  });
+
+  it('describes a quincenal cycle', () => {
+    expect(formatDebtCycle({ interestFrequency: 'quincenal', dueDay: 5 })).toBe('Días 5 y 20 de cada mes');
+  });
+
+  it('describes an anual cycle', () => {
+    expect(formatDebtCycle({ interestFrequency: 'anual', dueDay: 12, dueAnchorMonth: 3 })).toBe('Cada 12 de marzo');
   });
 });

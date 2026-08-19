@@ -1,4 +1,4 @@
-import { RecurringTransactionTemplate } from '../types';
+import { RecurringTransactionTemplate, DebtInterestFrequency } from '../types';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -121,6 +121,128 @@ const MONTH_NAMES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 ];
+
+/**
+ * Minimal shape a debt envelope needs to expose to compute its interest/
+ * minimum-payment/reminder cycle. `quincenal` is deliberately NOT
+ * `RecurrenceFrequency`'s `biweekly` — it means two fixed dates per month
+ * (`dueDay` and `dueDay + 15`, both clamped), not "every 14 days from an
+ * anchor". `anual` needs a fixed month, which `dueDay` alone can't express,
+ * hence `dueAnchorMonth`.
+ */
+export interface DebtCycleAnchor {
+  interestFrequency: DebtInterestFrequency;
+  dueDay: number;
+  dueAnchorMonth?: number | null; // 1-12, only meaningful for 'anual'
+}
+
+/**
+ * Computes a debt envelope's *current* cycle occurrence date — the same
+ * "this period's date, regardless of whether it's already passed" convention
+ * `getNextDueDate` uses for `monthly`/`annual` templates, so callers apply the
+ * same "is it due yet" / occurrence-key dedup pattern already used for
+ * recurring transactions and bill reminders.
+ */
+export function getDebtCycleDate(envelope: DebtCycleAnchor, referenceDate: Date): Date {
+  const refStart = dateOnly(referenceDate);
+  const year = refStart.getFullYear();
+  const month = refStart.getMonth();
+
+  switch (envelope.interestFrequency) {
+    case 'mensual': {
+      const day = clampDayOfMonth(year, month, envelope.dueDay);
+      return new Date(year, month, day, 0, 0, 0, 0);
+    }
+    case 'quincenal': {
+      const day1 = clampDayOfMonth(year, month, envelope.dueDay);
+      const day2 = clampDayOfMonth(year, month, envelope.dueDay + 15);
+      // Before day1: still targeting the first-half occurrence. From day1 onward
+      // (including after day2 has passed): targeting the second-half occurrence,
+      // mirroring 'mensual'/'annual' not rolling over to the next period on their own.
+      const targetDay = refStart.getDate() < day1 ? day1 : day2;
+      return new Date(year, month, targetDay, 0, 0, 0, 0);
+    }
+    case 'anual': {
+      const anchorMonth = (envelope.dueAnchorMonth ?? (month + 1)) - 1;
+      const day = clampDayOfMonth(year, anchorMonth, envelope.dueDay);
+      return new Date(year, anchorMonth, day, 0, 0, 0, 0);
+    }
+    default:
+      return refStart;
+  }
+}
+
+/**
+ * Occurrence key identifying "this specific debt cycle", for the
+ * `lastInterestAccrualPeriod` / `lastMinPaymentCheckPeriod` /
+ * `lastDueReminderScheduledPeriod` bookkeeping fields:
+ * - mensual: `YYYY-MM`
+ * - anual: `YYYY`
+ * - quincenal: `YYYY-MM-a` (first half) or `YYYY-MM-b` (second half)
+ */
+export function getDebtCycleOccurrenceKey(envelope: DebtCycleAnchor, cycleDate: Date): string {
+  switch (envelope.interestFrequency) {
+    case 'mensual':
+      return `${cycleDate.getFullYear()}-${pad2(cycleDate.getMonth() + 1)}`;
+    case 'anual':
+      return `${cycleDate.getFullYear()}`;
+    case 'quincenal': {
+      const day1 = clampDayOfMonth(cycleDate.getFullYear(), cycleDate.getMonth(), envelope.dueDay);
+      const half = cycleDate.getDate() <= day1 ? 'a' : 'b';
+      return `${cycleDate.getFullYear()}-${pad2(cycleDate.getMonth() + 1)}-${half}`;
+    }
+    default:
+      return toISODateOnly(cycleDate);
+  }
+}
+
+/**
+ * Computes the debt cycle occurrence immediately before `cycleDate` — the start
+ * of the window whose payments are checked against `minimumPayment`.
+ */
+export function getPreviousDebtCycleDate(envelope: DebtCycleAnchor, cycleDate: Date): Date {
+  const year = cycleDate.getFullYear();
+  const month = cycleDate.getMonth();
+
+  switch (envelope.interestFrequency) {
+    case 'mensual': {
+      const day = clampDayOfMonth(year, month - 1, envelope.dueDay);
+      return new Date(year, month - 1, day, 0, 0, 0, 0);
+    }
+    case 'quincenal': {
+      const day1 = clampDayOfMonth(year, month, envelope.dueDay);
+      if (cycleDate.getDate() === day1) {
+        // cycleDate is the first-half occurrence; previous was last month's second half.
+        const prevDay2 = clampDayOfMonth(year, month - 1, envelope.dueDay + 15);
+        return new Date(year, month - 1, prevDay2, 0, 0, 0, 0);
+      }
+      // cycleDate is the second-half occurrence; previous was this month's first half.
+      return new Date(year, month, day1, 0, 0, 0, 0);
+    }
+    case 'anual': {
+      const day = clampDayOfMonth(year - 1, month, envelope.dueDay);
+      return new Date(year - 1, month, day, 0, 0, 0, 0);
+    }
+    default:
+      return cycleDate;
+  }
+}
+
+/** Human-readable (Spanish) cadence description for a debt envelope's cycle. */
+export function formatDebtCycle(envelope: DebtCycleAnchor): string {
+  switch (envelope.interestFrequency) {
+    case 'mensual':
+      return `Día ${envelope.dueDay} de cada mes`;
+    case 'quincenal':
+      return `Días ${envelope.dueDay} y ${envelope.dueDay + 15 > 31 ? 31 : envelope.dueDay + 15} de cada mes`;
+    case 'anual': {
+      const monthIdx = (envelope.dueAnchorMonth ?? 1) - 1;
+      return `Cada ${envelope.dueDay} de ${MONTH_NAMES[monthIdx]}`;
+    }
+    default:
+      return '';
+  }
+}
 
 /**
  * Human-readable (Spanish) cadence description for a template, matching its actual

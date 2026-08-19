@@ -5,7 +5,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ArrowLeft, Check } from 'lucide-react-native';
-import { EnvelopeType, Currency } from '../types';
+import { EnvelopeType, Currency, DebtInterestFrequency } from '../types';
 import { RootStackParamList } from '../navigation/types';
 import { CurrencyInput } from '../components/CurrencyInput';
 import { EnvelopeIcon, IconName } from '../components/EnvelopeIcon';
@@ -19,6 +19,14 @@ const CURRENCY_OPTIONS = [
   { label: 'USD', value: 'USD' },
   { label: 'EUR', value: 'EUR' },
 ];
+
+const INTEREST_FREQUENCY_OPTIONS = [
+  { label: 'Mensual', value: 'mensual' },
+  { label: 'Quincenal', value: 'quincenal' },
+  { label: 'Anual', value: 'anual' },
+];
+
+const DUE_DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => ({ label: String(i + 1), value: String(i + 1) }));
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateEnvelope'>;
 
@@ -40,7 +48,13 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
   const [limitError, setLimitError] = useState('');
   const [currency, setCurrency] = useState<Currency>(envelope?.currency ?? settings.defaultCurrency);
 
+  const [interestRateStr, setInterestRateStr] = useState(envelope?.interestRate ? String(envelope.interestRate) : '');
+  const [interestFrequency, setInterestFrequency] = useState<DebtInterestFrequency>(envelope?.interestFrequency ?? 'mensual');
+  const [minimumPaymentStr, setMinimumPaymentStr] = useState(envelope?.minimumPayment ? String(envelope.minimumPayment) : '');
+  const [dueDay, setDueDay] = useState<string>(envelope?.dueDay ? String(envelope.dueDay) : '');
+
   const color = envelope?.color ?? defaultColor;
+  const isDebtDetailsVisible = envelopeType === 'deuda' && !isUnlimited;
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -52,8 +66,30 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
     }
     setLimitError('');
 
+    const parsedInterestRate = parseFloat(interestRateStr);
+    const parsedMinimumPayment = parseFloat(minimumPaymentStr);
+    const parsedDueDay = parseInt(dueDay, 10);
+
+    const debtFields = isDebtDetailsVisible
+      ? {
+          interestRate: !isNaN(parsedInterestRate) && parsedInterestRate > 0 ? parsedInterestRate : undefined,
+          interestFrequency,
+          minimumPayment: !isNaN(parsedMinimumPayment) && parsedMinimumPayment > 0 ? parsedMinimumPayment : undefined,
+          dueDay: !isNaN(parsedDueDay) ? parsedDueDay : undefined,
+          dueAnchorMonth: interestFrequency === 'anual'
+            ? (envelope?.dueAnchorMonth ?? new Date().getMonth() + 1)
+            : undefined,
+        }
+      : {
+          interestRate: undefined,
+          interestFrequency: undefined,
+          minimumPayment: undefined,
+          dueDay: undefined,
+          dueAnchorMonth: undefined,
+        };
+
     if (isEditing && envelope) {
-      await updateEnvelope(envelope.id, { name: name.trim(), currency, limit, isUnlimited, icon, imageUri });
+      await updateEnvelope(envelope.id, { name: name.trim(), currency, limit, isUnlimited, icon, imageUri, ...debtFields });
     } else {
       await addEnvelope({
         name: name.trim(),
@@ -64,6 +100,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
         color,
         icon,
         imageUri,
+        ...debtFields,
       });
     }
     navigation.goBack();
@@ -174,6 +211,47 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
             thumbColor={COLORS.white}
           />
         </View>
+
+        {isDebtDetailsVisible && (
+          <>
+            <Text style={styles.sectionLabel}>Detalles de la deuda</Text>
+
+            <Text style={styles.label}>Tasa de interés (opcional)</Text>
+            <View style={styles.percentRow}>
+              <TextInput
+                style={[styles.input, styles.percentInput]}
+                value={interestRateStr}
+                onChangeText={setInterestRateStr}
+                placeholder="0"
+                placeholderTextColor={COLORS.secondaryText}
+                keyboardType="numeric"
+              />
+              <Text style={styles.percentSign}>%</Text>
+            </View>
+
+            <Dropdown
+              label="Frecuencia del interés"
+              options={INTEREST_FREQUENCY_OPTIONS}
+              value={interestFrequency}
+              onSelect={(value) => setInterestFrequency(value as DebtInterestFrequency)}
+            />
+
+            <CurrencyInput
+              label="Pago mínimo (opcional)"
+              currency={settings.defaultCurrency}
+              value={minimumPaymentStr}
+              onChangeText={setMinimumPaymentStr}
+            />
+
+            <Dropdown
+              label="Día de vencimiento (opcional)"
+              options={DUE_DAY_OPTIONS}
+              value={dueDay}
+              onSelect={setDueDay}
+              placeholder="Seleccionar día..."
+            />
+          </>
+        )}
       </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -195,4 +273,8 @@ const styles = StyleSheet.create({
   input: { backgroundColor: COLORS.cardBg, borderRadius: 12, padding: 16, color: COLORS.white, fontSize: 16, marginBottom: 24 },
   errorText: { color: COLORS.red, fontSize: 13, marginTop: -20, marginBottom: 20 },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
+  sectionLabel: { color: COLORS.white, fontSize: 15, fontWeight: '700', marginTop: 28, marginBottom: 12 },
+  percentRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 24 },
+  percentInput: { flex: 1, marginBottom: 0 },
+  percentSign: { color: COLORS.secondaryText, fontSize: 18, fontWeight: '700' },
 });

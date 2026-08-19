@@ -11,7 +11,10 @@ import {
 } from '../utils/storage';
 import { pickAndImportBackup } from '../utils/importData';
 import { formatCurrency } from '../utils/formatCurrency';
-import { clampDayOfMonth, getNextDueDate, getOccurrenceKey } from '../utils/recurrence';
+import {
+  clampDayOfMonth, getNextDueDate, getOccurrenceKey,
+  getDebtCycleDate, getDebtCycleOccurrenceKey, getPreviousDebtCycleDate, DebtCycleAnchor,
+} from '../utils/recurrence';
 
 // Re-exported for backward compatibility — other modules import clampDayOfMonth from here.
 export { clampDayOfMonth };
@@ -73,6 +76,69 @@ export function calculateEnvelopeBalance(
     }
     return sum;
   }, 0);
+}
+
+/**
+ * Accrues interest for debt envelopes whose current cycle (per `interestFrequency`/
+ * `dueDay`) has been reached and not yet charged. Posts an ordinary 'expense'
+ * transaction per envelope ("Interés"), computed as `interestRate% × amount owed`
+ * at cycle start — no separate balance math, same formula as any other debt
+ * transaction. Pure and side-effect-free; callers persist the results. Envelopes
+ * that are not `deuda`, are `isUnlimited`, or have no rate/frequency/dueDay set
+ * pass through unchanged.
+ */
+export function accrueDebtInterest(
+  envelopes: Envelope[],
+  transactions: Transaction[],
+  now: Date
+): { updatedEnvelopes: Envelope[]; newTransactions: Transaction[] } {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const newTransactions: Transaction[] = [];
+  let idOffset = 0;
+
+  const updatedEnvelopes = envelopes.map(envelope => {
+    if (
+      envelope.type !== 'deuda' || envelope.isUnlimited ||
+      !envelope.interestRate || envelope.interestRate <= 0 ||
+      !envelope.interestFrequency || !envelope.dueDay
+    ) {
+      return envelope;
+    }
+
+    const anchor: DebtCycleAnchor = {
+      interestFrequency: envelope.interestFrequency,
+      dueDay: envelope.dueDay,
+      dueAnchorMonth: envelope.dueAnchorMonth,
+    };
+    const cycleDate = getDebtCycleDate(anchor, now);
+    if (cycleDate.getTime() > today.getTime()) return envelope;
+
+    const occurrenceKey = getDebtCycleOccurrenceKey(anchor, cycleDate);
+    if (envelope.lastInterestAccrualPeriod === occurrenceKey) return envelope;
+
+    const balance = calculateEnvelopeBalance(envelope.id, transactions, envelopes, false, null);
+    const amountOwed = envelope.limit - balance;
+    // Nothing owed (paid off or overpaid) -> no interest to charge, but the
+    // cycle is still marked handled so it isn't re-evaluated on every app open.
+    if (amountOwed > 0) {
+      const interestAmount = Math.round(amountOwed * (envelope.interestRate / 100) * 100) / 100;
+      if (interestAmount > 0) {
+        newTransactions.push({
+          id: `${Date.now() + idOffset++}-int`,
+          envelopeId: envelope.id,
+          type: 'expense',
+          amount: interestAmount,
+          description: 'Interés',
+          date: cycleDate.toISOString(),
+          isArchived: false,
+        });
+      }
+    }
+
+    return { ...envelope, lastInterestAccrualPeriod: occurrenceKey };
+  });
+
+  return { updatedEnvelopes, newTransactions };
 }
 
 interface AppContextType {
@@ -194,18 +260,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return { ...template, lastGeneratedPeriod: occurrenceKey };
       });
 
+      // ─── Debt envelope interest accrual ────────────────────────────────────
+      const transactionsBeforeDebtProcessing = [...newTransactions, ...loadedTransactions];
+      const { updatedEnvelopes: envelopesAfterAccrual, newTransactions: interestTransactions } =
+        accrueDebtInterest(loadedEnvelopes, transactionsBeforeDebtProcessing, now);
+      const allNewTransactions = [...interestTransactions, ...newTransactions];
+      const transactionsAfterAccrual = [...interestTransactions, ...transactionsBeforeDebtProcessing];
+
+      // ─── Debt envelope minimum-payment shortfall check ─────────────────────
+      const envelopesAfterMinCheck = await checkMinimumPayments(
+        envelopesAfterAccrual,
+        transactionsAfterAccrual,
+        loadedSettings.billRemindersEnabled,
+        now
+      );
+
+      // ─── Debt envelope due-date reminder scheduling ─────────────────────────
+      const envelopesWithDebtReminders = await scheduleDebtReminders(
+        envelopesAfterMinCheck,
+        transactionsAfterAccrual,
+        loadedSettings.billRemindersEnabled,
+        loadedSettings.billReminderLeadDays
+      );
+      await saveEnvelopes(envelopesWithDebtReminders);
+      setEnvelopes(envelopesWithDebtReminders);
+
       // ─── Bill reminder scheduling for active templates ────────────────────
       const templatesWithReminders = await scheduleBillReminders(
         finalTemplates,
-        loadedEnvelopes,
+        envelopesWithDebtReminders,
         loadedSettings.billRemindersEnabled,
         loadedSettings.billReminderLeadDays
       );
       await saveRecurringTemplates(templatesWithReminders);
       setRecurringTemplates(templatesWithReminders);
 
-      if (newTransactions.length > 0) {
-        const finalTransactions = [...newTransactions, ...loadedTransactions];
+      if (allNewTransactions.length > 0) {
+        const finalTransactions = [...allNewTransactions, ...loadedTransactions];
         await saveTransactions(finalTransactions);
         setTransactions(finalTransactions);
       } else {
@@ -431,21 +522,182 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   }, []);
 
+  // ─── Debt envelope minimum-payment shortfall alert ─────────────────────────
+  /**
+   * For each debt envelope with a set `minimumPayment` whose current cycle has
+   * been reached and not yet checked, sums that cycle's income (payment)
+   * transactions and sends a local notification once per cycle if they fall
+   * short. Skipped entirely (tracking field left untouched) while reminders
+   * are disabled, so a shortfall is still reported once they're turned back on.
+   */
+  const checkMinimumPayments = useCallback(async (
+    envelopesList: Envelope[],
+    transactionsList: Transaction[],
+    billRemindersEnabled: boolean,
+    now: Date
+  ): Promise<Envelope[]> => {
+    const today = dateOnly(now);
+
+    return Promise.all(envelopesList.map(async (envelope) => {
+      if (
+        envelope.type !== 'deuda' || envelope.isUnlimited ||
+        !envelope.minimumPayment || envelope.minimumPayment <= 0 ||
+        !envelope.interestFrequency || !envelope.dueDay || !billRemindersEnabled
+      ) {
+        return envelope;
+      }
+
+      const anchor: DebtCycleAnchor = {
+        interestFrequency: envelope.interestFrequency,
+        dueDay: envelope.dueDay,
+        dueAnchorMonth: envelope.dueAnchorMonth,
+      };
+      const cycleDate = getDebtCycleDate(anchor, now);
+      if (cycleDate.getTime() > today.getTime()) return envelope;
+
+      const occurrenceKey = getDebtCycleOccurrenceKey(anchor, cycleDate);
+      if (envelope.lastMinPaymentCheckPeriod === occurrenceKey) return envelope;
+
+      const windowStart = getPreviousDebtCycleDate(anchor, cycleDate);
+      const totalPayments = transactionsList.reduce((sum, t) => {
+        if (t.isArchived || t.envelopeId !== envelope.id || t.type !== 'income') return sum;
+        const d = new Date(t.date);
+        return d.getTime() >= windowStart.getTime() && d.getTime() < cycleDate.getTime() ? sum + t.amount : sum;
+      }, 0);
+
+      if (totalPayments < envelope.minimumPayment) {
+        try {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'Pago mínimo no cubierto',
+              body: `El pago mínimo de "${envelope.name}" no se cubrió este período.`,
+            },
+            trigger: null,
+          });
+        } catch (e) {
+          console.error('Error scheduling minimum payment notification', e);
+        }
+      }
+
+      return { ...envelope, lastMinPaymentCheckPeriod: occurrenceKey };
+    }));
+  }, []);
+
+  // ─── Debt envelope due-date reminders (extends bill-reminders) ─────────────
+  /**
+   * Cancels a debt envelope's pending scheduled due-date reminder, if any, and
+   * clears the bookkeeping fields. Mirrors cancelTemplateReminder. Safe to call
+   * on an envelope with no pending reminder (no-op).
+   */
+  const cancelDebtReminder = useCallback(async (envelope: Envelope): Promise<Envelope> => {
+    if (!envelope.dueReminderNotificationId) return envelope;
+    try {
+      await Notifications.cancelScheduledNotificationAsync(envelope.dueReminderNotificationId);
+    } catch (e) {
+      console.error('Error cancelling debt due-date reminder notification', e);
+    }
+    return { ...envelope, dueReminderNotificationId: null, lastDueReminderScheduledPeriod: null };
+  }, []);
+
+  /**
+   * Schedules a local notification `leadDays` days before each debt envelope's
+   * next cycle occurrence, naming the envelope and the amount due (its
+   * `minimumPayment` if set, otherwise the amount still owed). Mirrors
+   * scheduleBillReminders' shape/dedup logic exactly, applied to envelopes'
+   * `dueDay` cycle instead of a recurring template's due date.
+   */
+  const scheduleDebtReminders = useCallback(async (
+    envelopesList: Envelope[],
+    transactionsList: Transaction[],
+    billRemindersEnabled: boolean,
+    leadDays: number
+  ): Promise<Envelope[]> => {
+    if (!billRemindersEnabled) return envelopesList;
+
+    const now = new Date();
+
+    return Promise.all(envelopesList.map(async (envelope) => {
+      if (
+        envelope.type !== 'deuda' || envelope.isUnlimited ||
+        !envelope.interestFrequency || !envelope.dueDay
+      ) {
+        return envelope;
+      }
+
+      const anchor: DebtCycleAnchor = {
+        interestFrequency: envelope.interestFrequency,
+        dueDay: envelope.dueDay,
+        dueAnchorMonth: envelope.dueAnchorMonth,
+      };
+      const cycleDate = getDebtCycleDate(anchor, now);
+      const occurrenceKey = getDebtCycleOccurrenceKey(anchor, cycleDate);
+      if (envelope.lastDueReminderScheduledPeriod === occurrenceKey) return envelope;
+
+      const reminderDate = new Date(cycleDate);
+      reminderDate.setDate(reminderDate.getDate() - leadDays);
+      if (reminderDate.getTime() <= now.getTime()) return envelope;
+
+      const amountDue = envelope.minimumPayment && envelope.minimumPayment > 0
+        ? envelope.minimumPayment
+        : Math.max(0, envelope.limit - calculateEnvelopeBalance(envelope.id, transactionsList, envelopesList, false, null));
+      const amountLabel = formatCurrency(amountDue, envelope.currency);
+
+      try {
+        const notificationId = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Vencimiento de deuda próximo',
+            body: `"${envelope.name}" vence en ${leadDays} días (${amountLabel}).`,
+          },
+          trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: reminderDate },
+        });
+        return { ...envelope, dueReminderNotificationId: notificationId, lastDueReminderScheduledPeriod: occurrenceKey };
+      } catch (e) {
+        console.error('Error scheduling debt due-date reminder notification', e);
+        return envelope;
+      }
+    }));
+  }, []);
+
   // ─── Envelope CRUD ─────────────────────────────────────────────────────────
   const addEnvelope = useCallback(async (envelopeData: Omit<Envelope, 'id'>) => {
     const newEnvelope: Envelope = { ...envelopeData, id: Date.now().toString() };
     const updated = [newEnvelope, ...envelopes];
     setEnvelopes(updated);
     await saveEnvelopes(updated);
-  }, [envelopes]);
+    const withReminders = await scheduleDebtReminders(updated, transactions, settings.billRemindersEnabled, settings.billReminderLeadDays);
+    setEnvelopes(withReminders);
+    await saveEnvelopes(withReminders);
+  }, [envelopes, transactions, settings.billRemindersEnabled, settings.billReminderLeadDays, scheduleDebtReminders]);
 
   const updateEnvelope = useCallback(async (id: string, updates: Partial<Omit<Envelope, 'id'>>) => {
-    const updated = envelopes.map(e => (e.id === id ? { ...e, ...updates } : e));
-    setEnvelopes(updated);
-    await saveEnvelopes(updated);
-  }, [envelopes]);
+    // Fields that change which cycle a pending debt reminder was scheduled for.
+    const changesDebtCycle =
+      updates.dueDay !== undefined ||
+      updates.interestFrequency !== undefined ||
+      updates.dueAnchorMonth !== undefined ||
+      updates.isUnlimited !== undefined ||
+      updates.type !== undefined;
+
+    let workingEnvelopes = envelopes;
+    if (changesDebtCycle) {
+      const target = envelopes.find(e => e.id === id);
+      if (target) {
+        const cancelled = await cancelDebtReminder(target);
+        workingEnvelopes = envelopes.map(e => (e.id === id ? cancelled : e));
+      }
+    }
+
+    const updated = workingEnvelopes.map(e => (e.id === id ? { ...e, ...updates } : e));
+    const withReminders = await scheduleDebtReminders(updated, transactions, settings.billRemindersEnabled, settings.billReminderLeadDays);
+    setEnvelopes(withReminders);
+    await saveEnvelopes(withReminders);
+  }, [envelopes, transactions, settings.billRemindersEnabled, settings.billReminderLeadDays, cancelDebtReminder, scheduleDebtReminders]);
 
   const deleteEnvelope = useCallback(async (id: string) => {
+    const target = envelopes.find(e => e.id === id);
+    if (target) {
+      await cancelDebtReminder(target);
+    }
     const updatedEnvelopes = envelopes.filter(e => e.id !== id);
     // Also remove associated transactions
     const updatedTransactions = transactions.filter(t => t.envelopeId !== id);
@@ -453,7 +705,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTransactions(updatedTransactions);
     await saveEnvelopes(updatedEnvelopes);
     await saveTransactions(updatedTransactions);
-  }, [envelopes, transactions]);
+  }, [envelopes, transactions, cancelDebtReminder]);
 
   const archiveTransactions = useCallback(async (envelopeId?: string) => {
     const updatedTransactions = transactions.map(t =>
@@ -684,14 +936,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const withReminders = await scheduleBillReminders(recurringTemplates, envelopes, true, updated.billReminderLeadDays);
       setRecurringTemplates(withReminders);
       await saveRecurringTemplates(withReminders);
+
+      const envelopesWithReminders = await scheduleDebtReminders(envelopes, transactions, true, updated.billReminderLeadDays);
+      setEnvelopes(envelopesWithReminders);
+      await saveEnvelopes(envelopesWithReminders);
     } else if (leadDaysChanged && updated.billRemindersEnabled) {
       // Cancel any already-scheduled reminders so they're rescheduled at the new lead time.
       const cancelled = await Promise.all(recurringTemplates.map(cancelTemplateReminder));
       const withReminders = await scheduleBillReminders(cancelled, envelopes, true, updated.billReminderLeadDays);
       setRecurringTemplates(withReminders);
       await saveRecurringTemplates(withReminders);
+
+      const cancelledEnvelopes = await Promise.all(envelopes.map(cancelDebtReminder));
+      const envelopesWithReminders = await scheduleDebtReminders(cancelledEnvelopes, transactions, true, updated.billReminderLeadDays);
+      setEnvelopes(envelopesWithReminders);
+      await saveEnvelopes(envelopesWithReminders);
     }
-  }, [settings, recurringTemplates, envelopes, scheduleBillReminders, cancelTemplateReminder]);
+  }, [settings, recurringTemplates, envelopes, transactions, scheduleBillReminders, cancelTemplateReminder, scheduleDebtReminders, cancelDebtReminder]);
 
   // ─── Import/Export ─────────────────────────────────────────────────────────
   const importFromBackup = useCallback(async () => {
