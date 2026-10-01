@@ -450,8 +450,12 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                   <TouchableOpacity
                     style={styles.deleteAction}
                     onPress={() => handleSwipeDelete(item.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Eliminar transacción"
                   >
-                    <Trash2 color={colors.white} size={20} />
+                    <View style={styles.deleteActionButton}>
+                      <Trash2 color={colors.white} size={19} />
+                    </View>
                   </TouchableOpacity>
                 )}
               >
@@ -565,8 +569,11 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   fab: { position: 'absolute', bottom: 30, right: 20, backgroundColor: colors.green, paddingVertical: 16, paddingHorizontal: 24, borderRadius: 30 },
   fabText: { color: colors.bg, fontSize: 16, fontWeight: 'bold' },
   deleteAction: {
-    backgroundColor: colors.red, justifyContent: 'center', alignItems: 'center',
-    width: 72, height: '100%',
+    justifyContent: 'center', alignItems: 'center', width: 64, height: '100%',
+  },
+  deleteActionButton: {
+    width: 48, height: 48, borderRadius: 14, backgroundColor: colors.red,
+    justifyContent: 'center', alignItems: 'center',
   },
   undoBanner: {
     position: 'absolute', left: 20, right: 20, bottom: 96,
