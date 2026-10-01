@@ -33,7 +33,7 @@
 
 ## Tecnologías Utilizadas
 
-- **Framework**: React Native con Expo (SDK 54).
+- **Framework**: React Native con Expo (SDK 57).
 - **Iconografía**: Lucide React Native.
 - **Estado Global**: React Context API.
 - **Almacenamiento**: AsyncStorage para persistencia local.
