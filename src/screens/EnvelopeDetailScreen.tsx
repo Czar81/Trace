@@ -528,7 +528,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   transactionsSection: { flex: 1, marginTop: 28, paddingHorizontal: 20 },
   sectionTitle: { color: colors.white, fontSize: 18, fontWeight: '700', marginBottom: 12 },
   sectionHeader: { color: colors.secondaryText, fontSize: 13, fontWeight: '700', backgroundColor: colors.bg, paddingTop: 12, paddingBottom: 6 },
-  emptyText: { color: colors.secondaryText, fontSize: 15, fontStyle: 'italic' },
+  emptyText: { color: colors.secondaryText, fontSize: 15, fontStyle: 'italic', textAlign: 'center' },
   transactionItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 },
   transactionLeft: { flex: 1, paddingRight: 12 },
   transactionDesc: { color: colors.white, fontSize: 15, fontWeight: '600', marginBottom: 3 },
