@@ -12,6 +12,7 @@ import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { RecurrenceFrequency } from '../types';
+import { sortEnvelopesByTypeAndName } from '../utils/envelopeSorting';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateRecurringTransaction'>;
 
@@ -28,6 +29,8 @@ const MONTH_OPTIONS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ].map((label, i) => ({ label, value: String(i + 1) }));
+
+const ENVELOPE_TYPE_LABELS = { gasto: 'Gastos', ahorro: 'Ahorros', deuda: 'Deudas' };
 
 /** Nearest date on/after today that falls on `dayOfWeek` (0=Sunday..6=Saturday). */
 function nextDateForDayOfWeek(dayOfWeek: number): Date {
@@ -69,11 +72,15 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
   const [dayError, setDayError] = useState('');
 
   const envelope = envelopes.find(e => e.id === envelopeId);
-  const envelopeOptions = envelopes.map(e => ({ label: `${e.name} (${e.currency})`, value: e.id }));
+  const envelopeOptions = sortEnvelopesByTypeAndName(envelopes).map(e => ({
+    label: `${e.name} (${e.currency})`,
+    value: e.id,
+    group: ENVELOPE_TYPE_LABELS[e.type],
+  }));
   const pmOptions = paymentMethods.map(pm => ({ label: pm.name, value: pm.id }));
   const catOptions = categories.map(c => ({ label: c.name, value: c.id }));
   // Explicit 'ahorro' check — already excludes 'deuda' envelopes as a funding source.
-  const savingsEnvelopes = envelopes.filter(e => e.type === 'ahorro');
+  const savingsEnvelopes = sortEnvelopesByTypeAndName(envelopes.filter(e => e.type === 'ahorro'));
   const savingsOptions = savingsEnvelopes.map(e => ({ label: e.name, value: e.id }));
 
   useEffect(() => {

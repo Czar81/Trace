@@ -12,6 +12,7 @@ import { Calendar } from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
+import { sortEnvelopesByTypeAndName } from '../utils/envelopeSorting';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransaction'>;
 
@@ -71,7 +72,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   const pmOptions = paymentMethods.map(pm => ({ label: pm.name, value: pm.id }));
   const catOptions = categories.map(c => ({ label: c.name, value: c.id }));
   // Explicit 'ahorro' check — already excludes 'deuda' envelopes as a funding source.
-  const savingsEnvelopes = envelopes.filter(e => e.type === 'ahorro');
+  const savingsEnvelopes = sortEnvelopesByTypeAndName(envelopes.filter(e => e.type === 'ahorro'));
   const savingsOptions = savingsEnvelopes.map(e => ({ label: e.name, value: e.id }));
 
   useEffect(() => {
