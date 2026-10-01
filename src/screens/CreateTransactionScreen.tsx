@@ -23,10 +23,13 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   const { envelopes, addTransaction, updateTransaction, paymentMethods, categories, getEnvelopeBalance, formatAmount } = useAppData();
 
   const envelope = envelopes.find(e => e.id === envelopeId);
+  const isDebtEnvelope = envelope?.type === 'deuda';
   const isEditing = !!transaction;
 
   const [type, setType] = useState<'expense' | 'income'>(
-    transaction?.type === 'income' ? 'income' : 'expense'
+    transaction
+      ? transaction.type === 'income' ? 'income' : 'expense'
+      : isDebtEnvelope ? 'income' : 'expense'
   );
   const [amountStr, setAmountStr] = useState(transaction ? String(transaction.amount) : '');
   const [description, setDescription] = useState(transaction?.description ?? '');
@@ -45,15 +48,16 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
     const amount = parseFloat(amountStr);
     if (!amountStr || isNaN(amount) || amount <= 0) return;
 
+    const savedType = isDebtEnvelope && !isEditing ? 'income' : type;
     const data = {
       envelopeId,
-      type,
+      type: savedType,
       amount,
-      description: description.trim() || (type === 'income' ? 'Ingreso' : 'Gasto'),
-      paymentMethodId: type === 'expense' ? paymentMethodId : undefined,
-      categoryId: type === 'expense' ? categoryId : undefined,
+      description: description.trim() || (savedType === 'income' ? 'Ingreso' : 'Gasto'),
+      paymentMethodId: savedType === 'expense' ? paymentMethodId : undefined,
+      categoryId: savedType === 'expense' ? categoryId : undefined,
       sourceSavingsEnvelopeId:
-        type === 'expense' && envelope?.type === 'gasto' && useSavingsEnvelope && sourceSavingsEnvelopeId
+        savedType === 'expense' && envelope?.type === 'gasto' && useSavingsEnvelope && sourceSavingsEnvelopeId
           ? sourceSavingsEnvelopeId
           : undefined,
       date: date.toISOString(),
@@ -112,20 +116,29 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
 
         {/* ── Expense / Income toggle ── */}
         <View style={styles.typeSelector}>
-          <TouchableOpacity
-            style={[styles.typeBtn, type === 'expense' && styles.typeBtnExpense]}
-            onPress={() => setType('expense')}
-          >
-            <MinusCircle color={type === 'expense' ? colors.white : colors.secondaryText} size={18} />
-            <Text style={[styles.typeText, type === 'expense' && { color: colors.white }]}>Gasto</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.typeBtn, type === 'income' && styles.typeBtnIncome]}
-            onPress={() => setType('income')}
-          >
-            <PlusCircle color={type === 'income' ? colors.white : colors.secondaryText} size={18} />
-            <Text style={[styles.typeText, type === 'income' && { color: colors.white }]}>Ingreso</Text>
-          </TouchableOpacity>
+          {isDebtEnvelope ? (
+            <View style={[styles.typeBtn, styles.typeBtnIncome]}>
+              <PlusCircle color={colors.white} size={18} />
+              <Text style={[styles.typeText, { color: colors.white }]}>Abonar</Text>
+            </View>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={[styles.typeBtn, type === 'expense' && styles.typeBtnExpense]}
+                onPress={() => setType('expense')}
+              >
+                <MinusCircle color={type === 'expense' ? colors.white : colors.secondaryText} size={18} />
+                <Text style={[styles.typeText, type === 'expense' && { color: colors.white }]}>Gasto</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.typeBtn, type === 'income' && styles.typeBtnIncome]}
+                onPress={() => setType('income')}
+              >
+                <PlusCircle color={type === 'income' ? colors.white : colors.secondaryText} size={18} />
+                <Text style={[styles.typeText, type === 'income' && { color: colors.white }]}>Ingreso</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         {/* ── Formatted amount ── */}
