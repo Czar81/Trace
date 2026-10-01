@@ -53,7 +53,11 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
       envelopeId,
       type: savedType,
       amount,
-      description: description.trim() || (savedType === 'income' ? 'Ingreso' : 'Gasto'),
+      description: description.trim() || (
+        isDebtEnvelope && savedType === 'income'
+          ? 'Abono a deuda'
+          : savedType === 'income' ? 'Ingreso' : 'Gasto'
+      ),
       paymentMethodId: savedType === 'expense' ? paymentMethodId : undefined,
       categoryId: savedType === 'expense' ? categoryId : undefined,
       sourceSavingsEnvelopeId:
@@ -78,6 +82,18 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   // Explicit 'ahorro' check — already excludes 'deuda' envelopes as a funding source.
   const savingsEnvelopes = sortEnvelopesByTypeAndName(envelopes.filter(e => e.type === 'ahorro'));
   const savingsOptions = savingsEnvelopes.map(e => ({ label: e.name, value: e.id }));
+  const isDebtPayment = isDebtEnvelope && (!transaction || transaction.type === 'income');
+  const parsedAmount = parseFloat(amountStr);
+  const hasValidAmount = amountStr !== '' && !isNaN(parsedAmount) && parsedAmount > 0;
+  const transactionBalanceImpact = transaction?.envelopeId === envelopeId
+    ? transaction.type === 'income' ? transaction.amount : transaction.type === 'expense' ? -transaction.amount : 0
+    : 0;
+  const balanceBeforeCurrentTransaction = getEnvelopeBalance(envelopeId) - transactionBalanceImpact;
+  const debtOutstanding = envelope.limit - balanceBeforeCurrentTransaction;
+  const projectedDebtOutstanding = debtOutstanding - (hasValidAmount ? parsedAmount : 0);
+  const debtPreviewLabel = hasValidAmount
+    ? projectedDebtOutstanding < 0 ? 'Saldo a favor después del abono' : 'Saldo pendiente después del abono'
+    : debtOutstanding < 0 ? 'Saldo a favor' : 'Saldo pendiente';
 
   useEffect(() => {
     if (type !== 'expense' || envelope.type !== 'gasto') {
@@ -153,6 +169,21 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
             color: colors.white,
           }}
         />
+        {isDebtPayment && !envelope.isUnlimited && (
+          <View style={styles.debtPreview}>
+            <Text style={styles.debtPreviewText}>
+              {debtPreviewLabel}: {formatAmount(
+                Math.abs(hasValidAmount ? projectedDebtOutstanding : debtOutstanding),
+                envelope.currency
+              )}
+            </Text>
+            {hasValidAmount && projectedDebtOutstanding < 0 && (
+              <Text style={styles.debtWarning}>
+                El abono supera el saldo pendiente; el excedente quedará a favor.
+              </Text>
+            )}
+          </View>
+        )}
 
         {/* ── Date Picker ── */}
         <Text style={styles.label}>Fecha</Text>
@@ -180,7 +211,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
           style={styles.input}
           value={description}
           onChangeText={setDescription}
-          placeholder={type === 'expense' ? 'Ej: Supermercado, Almuerzo...' : 'Ej: Salario, Transferencia...'}
+          placeholder={isDebtEnvelope ? 'Ej: Abono mensual, Pago a la deuda...' : type === 'expense' ? 'Ej: Supermercado, Almuerzo...' : 'Ej: Salario, Transferencia...'}
           placeholderTextColor={colors.secondaryText}
         />
 
@@ -271,6 +302,9 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   typeBtnExpense: { backgroundColor: colors.red },
   typeBtnIncome: { backgroundColor: colors.blue },
   typeText: { color: colors.secondaryText, fontSize: 15, fontWeight: '700' },
+  debtPreview: { marginTop: -12, marginBottom: 16 },
+  debtPreviewText: { color: colors.secondaryText, fontSize: 13 },
+  debtWarning: { color: colors.red, fontSize: 13, marginTop: 4 },
   label: { color: colors.white, fontSize: 16, fontWeight: '600', marginTop: 24, marginBottom: 8 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20, marginBottom: 16 },
   toggleLabel: { color: colors.white, fontSize: 15, flex: 1, paddingRight: 12 },
