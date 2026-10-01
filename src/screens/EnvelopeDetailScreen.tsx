@@ -13,6 +13,7 @@ import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { groupTransactionsByDay } from '../utils/transactionGrouping';
 import { formatDebtCycle } from '../utils/recurrence';
+import { Transaction } from '../types';
 
 const PAGE_SIZE = 10;
 
@@ -406,7 +407,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
           </SafeAreaView>
         </Modal>
 
-        <SectionList
+        <SectionList<Transaction>
           sections={visibleSections}
           keyExtractor={item => item.id}
           contentContainerStyle={{ paddingBottom: 110 }}
@@ -465,11 +466,12 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                   <View style={styles.transactionLeft}>
                     <Text style={styles.transactionDesc}>{item.description}</Text>
                     <Text style={styles.transactionDate}>
-                      {new Date(item.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      {cat ? ` · ${cat.name}` : ''}
-                      {pm ? ` · ${pm.name}` : ''}
-                      {item.sourceSavingsEnvelopeId ? ` · Pago desde ${envelopes.find(e => e.id === item.sourceSavingsEnvelopeId)?.name ?? 'ahorro'}` : ''}
-                      {isTransfer ? (isOutgoingTransfer ? ` · → ${otherEnvelopeName}` : ` · ← ${otherEnvelopeName}`) : ''}
+                      {[
+                        cat?.name,
+                        pm?.name,
+                        item.sourceSavingsEnvelopeId ? `Pago desde ${envelopes.find(e => e.id === item.sourceSavingsEnvelopeId)?.name ?? 'ahorro'}` : null,
+                        isTransfer ? `${isOutgoingTransfer ? '→' : '←'} ${otherEnvelopeName}` : null,
+                      ].filter(Boolean).join(' · ')}
                     </Text>
                   </View>
                   <Text style={[
