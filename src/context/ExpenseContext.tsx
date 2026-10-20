@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import * as Notifications from 'expo-notifications';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+import type * as ExpoNotifications from 'expo-notifications';
 import { Envelope, Transaction, EnvelopeType, PaymentMethod, TransactionCategory, AppSettings, Currency, RecurringTransactionTemplate } from '../types';
 import {
   loadEnvelopes, saveEnvelopes,
@@ -18,6 +19,27 @@ import {
 
 // Re-exported for backward compatibility — other modules import clampDayOfMonth from here.
 export { clampDayOfMonth };
+
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+const loadNotifications = () => isExpoGo ? Promise.resolve(null) : import('expo-notifications');
+const dateTriggerType = 'date' as ExpoNotifications.SchedulableTriggerInputTypes.DATE;
+
+const scheduleNotification = async (
+  request: Parameters<typeof ExpoNotifications.scheduleNotificationAsync>[0]
+): Promise<string | null> => {
+  const notifications = await loadNotifications();
+  return notifications ? notifications.scheduleNotificationAsync(request) : null;
+};
+
+const cancelScheduledNotification = async (identifier: string) => {
+  const notifications = await loadNotifications();
+  if (notifications) await notifications.cancelScheduledNotificationAsync(identifier);
+};
+
+const requestNotificationPermissions = async () => {
+  const notifications = await loadNotifications();
+  if (notifications) await notifications.requestPermissionsAsync();
+};
 
 /** Strips the time component, keeping year/month/day in local time. */
 function dateOnly(date: Date): Date {
@@ -412,7 +434,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     beforeTxns: Transaction[],
     afterTxns: Transaction[]
   ) => {
-    if (!settings.budgetAlertsEnabled) return;
+    if (!settings.budgetAlertsEnabled || isExpoGo) return;
 
     const envelope = envelopes.find(e => e.id === envelopeId);
     // Explicit 'gasto' check — already excludes 'ahorro' and 'deuda' envelopes;
@@ -424,7 +446,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
       if (before < 0.8 && after >= 0.8) {
-        await Notifications.scheduleNotificationAsync({
+        await scheduleNotification({
           content: {
             title: 'Presupuesto al 80%',
             body: `Tu sobre "${envelope.name}" llegó al ${Math.round(after * 100)}% de su presupuesto.`,
@@ -434,7 +456,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       if (before < 1.0 && after >= 1.0) {
-        await Notifications.scheduleNotificationAsync({
+        await scheduleNotification({
           content: {
             title: 'Presupuesto excedido',
             body: `Tu sobre "${envelope.name}" superó su presupuesto (${Math.round(after * 100)}%).`,
@@ -456,9 +478,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const cancelTemplateReminder = useCallback(async (
     template: RecurringTransactionTemplate
   ): Promise<RecurringTransactionTemplate> => {
-    if (!template.reminderNotificationId) return template;
+    if (isExpoGo || !template.reminderNotificationId) return template;
     try {
-      await Notifications.cancelScheduledNotificationAsync(template.reminderNotificationId);
+      await cancelScheduledNotification(template.reminderNotificationId);
     } catch (e) {
       console.error('Error cancelling bill reminder notification', e);
     }
@@ -479,7 +501,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     billRemindersEnabled: boolean,
     leadDays: number
   ): Promise<RecurringTransactionTemplate[]> => {
-    if (!billRemindersEnabled) return templates;
+    if (!billRemindersEnabled || isExpoGo) return templates;
 
     const now = new Date();
 
@@ -499,13 +521,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const amountLabel = envelope ? formatCurrency(template.amount, envelope.currency) : String(template.amount);
 
       try {
-        const notificationId = await Notifications.scheduleNotificationAsync({
+        const notificationId = await scheduleNotification({
           content: {
             title: 'Factura próxima',
             body: `"${template.description}" (${amountLabel}) se generará en ${leadDays} días.`,
           },
-          trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: reminderDate },
+          trigger: { type: dateTriggerType, date: reminderDate },
         });
+        if (!notificationId) return template;
         return { ...template, reminderNotificationId: notificationId, lastReminderScheduledPeriod: occurrenceKey };
       } catch (e) {
         console.error('Error scheduling bill reminder notification', e);
@@ -528,6 +551,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     billRemindersEnabled: boolean,
     now: Date
   ): Promise<Envelope[]> => {
+    if (isExpoGo) return envelopesList;
     const today = dateOnly(now);
 
     return Promise.all(envelopesList.map(async (envelope) => {
@@ -559,7 +583,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (totalPayments < envelope.minimumPayment) {
         try {
-          await Notifications.scheduleNotificationAsync({
+          await scheduleNotification({
             content: {
               title: 'Pago mínimo no cubierto',
               body: `El pago mínimo de "${envelope.name}" no se cubrió este período.`,
@@ -582,9 +606,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
    * on an envelope with no pending reminder (no-op).
    */
   const cancelDebtReminder = useCallback(async (envelope: Envelope): Promise<Envelope> => {
-    if (!envelope.dueReminderNotificationId) return envelope;
+    if (isExpoGo || !envelope.dueReminderNotificationId) return envelope;
     try {
-      await Notifications.cancelScheduledNotificationAsync(envelope.dueReminderNotificationId);
+      await cancelScheduledNotification(envelope.dueReminderNotificationId);
     } catch (e) {
       console.error('Error cancelling debt due-date reminder notification', e);
     }
@@ -604,7 +628,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     billRemindersEnabled: boolean,
     leadDays: number
   ): Promise<Envelope[]> => {
-    if (!billRemindersEnabled) return envelopesList;
+    if (!billRemindersEnabled || isExpoGo) return envelopesList;
 
     const now = new Date();
 
@@ -635,13 +659,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const amountLabel = formatCurrency(amountDue, envelope.currency);
 
       try {
-        const notificationId = await Notifications.scheduleNotificationAsync({
+        const notificationId = await scheduleNotification({
           content: {
             title: 'Vencimiento de deuda próximo',
             body: `"${envelope.name}" vence en ${leadDays} días (${amountLabel}).`,
           },
-          trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: reminderDate },
+          trigger: { type: dateTriggerType, date: reminderDate },
         });
+        if (!notificationId) return envelope;
         return { ...envelope, dueReminderNotificationId: notificationId, lastDueReminderScheduledPeriod: occurrenceKey };
       } catch (e) {
         console.error('Error scheduling debt due-date reminder notification', e);
@@ -908,11 +933,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // ─── Settings ──────────────────────────────────────────────────────────────
   const updateSettings = useCallback(async (updates: Partial<AppSettings>) => {
     if (
-      (updates.budgetAlertsEnabled === true && !settings.budgetAlertsEnabled) ||
-      (updates.billRemindersEnabled === true && !settings.billRemindersEnabled)
+      !isExpoGo && (
+        (updates.budgetAlertsEnabled === true && !settings.budgetAlertsEnabled) ||
+        (updates.billRemindersEnabled === true && !settings.billRemindersEnabled)
+      )
     ) {
       try {
-        await Notifications.requestPermissionsAsync();
+        await requestNotificationPermissions();
       } catch (e) {
         console.error('Error requesting notification permissions', e);
       }

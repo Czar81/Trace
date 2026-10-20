@@ -11,10 +11,10 @@ import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { EnvelopeType } from '../types';
+import { sortEnvelopesByTypeAndName } from '../utils/envelopeSorting';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransfer'>;
 
-const TYPE_ORDER: EnvelopeType[] = ['gasto', 'ahorro', 'deuda'];
 const TYPE_GROUP_LABELS: Record<EnvelopeType, string> = { gasto: 'Gastos', ahorro: 'Ahorros', deuda: 'Deudas' };
 
 export const CreateTransferScreen = ({ route, navigation }: Props) => {
@@ -34,11 +34,11 @@ export const CreateTransferScreen = ({ route, navigation }: Props) => {
   const destination = envelopes.find(e => e.id === destinationId);
 
   const toGroupedOptions = (list: typeof envelopes) =>
-    TYPE_ORDER.flatMap(type =>
-      list
-        .filter(e => e.type === type)
-        .map(e => ({ label: `${e.name} (${e.currency})`, value: e.id, group: TYPE_GROUP_LABELS[type] }))
-    );
+    sortEnvelopesByTypeAndName(list).map(e => ({
+      label: `${e.name} (${e.currency})`,
+      value: e.id,
+      group: TYPE_GROUP_LABELS[e.type],
+    }));
 
   const sourceOptions = toGroupedOptions(envelopes);
   const destinationOptions = toGroupedOptions(envelopes.filter(e => e.id !== sourceId));

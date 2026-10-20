@@ -13,6 +13,7 @@ import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { groupTransactionsByDay } from '../utils/transactionGrouping';
 import { formatDebtCycle } from '../utils/recurrence';
+import { Transaction } from '../types';
 
 const PAGE_SIZE = 10;
 
@@ -406,7 +407,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
           </SafeAreaView>
         </Modal>
 
-        <SectionList
+        <SectionList<Transaction>
           sections={visibleSections}
           keyExtractor={item => item.id}
           contentContainerStyle={{ paddingBottom: 110 }}
@@ -449,8 +450,12 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                   <TouchableOpacity
                     style={styles.deleteAction}
                     onPress={() => handleSwipeDelete(item.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Eliminar transacción"
                   >
-                    <Trash2 color={colors.white} size={20} />
+                    <View style={styles.deleteActionButton}>
+                      <Trash2 color={colors.white} size={19} />
+                    </View>
                   </TouchableOpacity>
                 )}
               >
@@ -465,11 +470,12 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                   <View style={styles.transactionLeft}>
                     <Text style={styles.transactionDesc}>{item.description}</Text>
                     <Text style={styles.transactionDate}>
-                      {new Date(item.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      {cat ? ` · ${cat.name}` : ''}
-                      {pm ? ` · ${pm.name}` : ''}
-                      {item.sourceSavingsEnvelopeId ? ` · Pago desde ${envelopes.find(e => e.id === item.sourceSavingsEnvelopeId)?.name ?? 'ahorro'}` : ''}
-                      {isTransfer ? (isOutgoingTransfer ? ` · → ${otherEnvelopeName}` : ` · ← ${otherEnvelopeName}`) : ''}
+                      {[
+                        cat?.name,
+                        pm?.name,
+                        item.sourceSavingsEnvelopeId ? `Pago desde ${envelopes.find(e => e.id === item.sourceSavingsEnvelopeId)?.name ?? 'ahorro'}` : null,
+                        isTransfer ? `${isOutgoingTransfer ? '→' : '←'} ${otherEnvelopeName}` : null,
+                      ].filter(Boolean).join(' · ')}
                     </Text>
                   </View>
                   <Text style={[
@@ -526,7 +532,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   transactionsSection: { flex: 1, marginTop: 28, paddingHorizontal: 20 },
   sectionTitle: { color: colors.white, fontSize: 18, fontWeight: '700', marginBottom: 12 },
   sectionHeader: { color: colors.secondaryText, fontSize: 13, fontWeight: '700', backgroundColor: colors.bg, paddingTop: 12, paddingBottom: 6 },
-  emptyText: { color: colors.secondaryText, fontSize: 15, fontStyle: 'italic' },
+  emptyText: { color: colors.secondaryText, fontSize: 15, fontStyle: 'italic', textAlign: 'center' },
   transactionItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 },
   transactionLeft: { flex: 1, paddingRight: 12 },
   transactionDesc: { color: colors.white, fontSize: 15, fontWeight: '600', marginBottom: 3 },
@@ -563,8 +569,11 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   fab: { position: 'absolute', bottom: 30, right: 20, backgroundColor: colors.green, paddingVertical: 16, paddingHorizontal: 24, borderRadius: 30 },
   fabText: { color: colors.bg, fontSize: 16, fontWeight: 'bold' },
   deleteAction: {
-    backgroundColor: colors.red, justifyContent: 'center', alignItems: 'center',
-    width: 72, height: '100%',
+    justifyContent: 'center', alignItems: 'center', width: 64, height: '100%',
+  },
+  deleteActionButton: {
+    width: 48, height: 48, borderRadius: 14, backgroundColor: colors.red,
+    justifyContent: 'center', alignItems: 'center',
   },
   undoBanner: {
     position: 'absolute', left: 20, right: 20, bottom: 96,
