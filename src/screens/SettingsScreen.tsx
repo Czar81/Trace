@@ -246,9 +246,9 @@ export const SettingsScreen = ({ navigation }: Props) => {
           {settings.billRemindersEnabled && (
             <>
               <View style={styles.reminderDivider} />
-              <View style={styles.reminderRow}>
+              <View style={[styles.reminderRow, styles.reminderRowStacked]}>
                 <Text style={styles.leadDaysLabel}>{t('settings.leadDays')}</Text>
-                <View style={styles.stepper}>
+                <View style={[styles.stepper, styles.stepperFull]}>
                   {leadDaysOptions.map(days => (
                     <TouchableOpacity
                       key={days}
@@ -455,6 +455,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   reminderCard: { backgroundColor: colors.cardBg, borderRadius: 16, marginBottom: 14, borderWidth: 1, borderColor: colors.divider, overflow: 'hidden' },
   reminderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
   reminderDivider: { height: 1, backgroundColor: colors.divider },
+  reminderRowStacked: { flexDirection: 'column', alignItems: 'flex-start', gap: 12 },
+  stepperFull: { alignSelf: 'stretch', justifyContent: 'space-between' },
   leadDaysLabel: { color: colors.white, fontSize: 15, fontWeight: '600' },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: colors.bg, borderRadius: 20, padding: 4 },
   stepperBtn: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.cardHighlight },
