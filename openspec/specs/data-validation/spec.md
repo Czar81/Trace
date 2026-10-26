@@ -5,11 +5,19 @@ Keeps corrupted or malformed data (a hand-edited or truncated backup file, an in
 ## Requirements
 
 ### Requirement: Backup import validates collection shapes
-The system SHALL reject a backup during import if `envelopes`, `transactions`, `paymentMethods`, or `categories` is present but not an array, showing an error instead of accepting the malformed backup.
+The system SHALL reject a backup during import if `envelopes`, `transactions`, `paymentMethods`, `categories`, or (when present) `incomeCategories` is not an array, showing an error instead of accepting the malformed backup.
 
 #### Scenario: Backup has a non-array collection
-- **WHEN** a user imports a backup JSON file where `envelopes` (or any of the other three collections) is not an array (e.g. a string or object)
+- **WHEN** a user imports a backup JSON file where `envelopes` (or any of the other collections) is not an array (e.g. a string or object)
 - **THEN** the system rejects the import with an error message and does not modify any existing app data
+
+#### Scenario: Backup has a non-array incomeCategories
+- **WHEN** a user imports a backup JSON file whose `incomeCategories` field is present but is not an array
+- **THEN** the system rejects the import with an error message and does not modify any existing app data
+
+#### Scenario: Backup omits incomeCategories
+- **WHEN** a user imports a valid backup that has no `incomeCategories` field
+- **THEN** the system accepts the import rather than rejecting it for the missing field
 
 ### Requirement: Backup import validates transaction amounts
 The system SHALL reject a backup during import if any transaction's `amount` is not a finite number, showing an error instead of accepting the malformed backup.

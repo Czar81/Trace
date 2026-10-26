@@ -10,12 +10,14 @@ import { RecurringTransactionTemplate } from '../types';
 import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
+import { useTranslation } from '../context/LanguageContext';
 import { formatCadence } from '../utils/recurrence';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Recurring'>;
 
 export const RecurringTransactionsScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { recurringTemplates, envelopes, updateRecurringTemplate, deleteRecurringTemplate, formatAmount } = useAppData();
   const [templateToDelete, setTemplateToDelete] = useState<RecurringTransactionTemplate | null>(null);
@@ -36,7 +38,7 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Recurrentes</Text>
+        <Text style={styles.headerTitle}>{t('recurring.title')}</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -45,7 +47,7 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
         keyExtractor={item => item.id}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
-          <EmptyState message="No tienes transacciones recurrentes todavía." />
+          <EmptyState message={t('recurring.empty')} />
         }
         renderItem={({ item }) => {
           const envelope = envelopes.find(e => e.id === item.envelopeId);
@@ -56,12 +58,12 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
               onPress={() => navigation.navigate('CreateRecurringTransaction', { template: item })}
             >
               <View style={styles.cardMain}>
-                <Text style={styles.cardTitle}>{envelope?.name ?? 'Sobre eliminado'}</Text>
+                <Text style={styles.cardTitle}>{envelope?.name ?? t('common.deletedEnvelope')}</Text>
                 <Text style={styles.cardSubtitle}>
-                  {formatAmount(item.amount, envelope?.currency ?? 'CRC')} · {formatCadence(item)}
+                  {formatAmount(item.amount, envelope?.currency ?? 'CRC')} · {formatCadence(item, t)}
                 </Text>
                 <Text style={[styles.statusText, item.isActive ? styles.statusActive : styles.statusPaused]}>
-                  {item.isActive ? 'Activo' : 'Pausado'}
+                  {item.isActive ? t('recurring.active') : t('recurring.paused')}
                 </Text>
               </View>
               <TouchableOpacity
@@ -91,14 +93,14 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
         onPress={() => navigation.navigate('CreateRecurringTransaction', {})}
       >
         <Plus color={colors.bg} size={20} />
-        <Text style={styles.fabText}>Nueva plantilla</Text>
+        <Text style={styles.fabText}>{t('recurring.newTemplate')}</Text>
       </TouchableOpacity>
 
       <ConfirmDialog
         visible={!!templateToDelete}
-        title="Eliminar plantilla"
-        message={templateToDelete ? `¿Eliminar la plantilla recurrente "${templateToDelete.description}"? Las transacciones ya generadas no se verán afectadas.` : ''}
-        confirmLabel="Eliminar"
+        title={t('recurring.deleteTitle')}
+        message={templateToDelete ? t('recurring.deleteMessage', { name: templateToDelete.description }) : ''}
+        confirmLabel={t('common.delete')}
         destructive
         onConfirm={handleDelete}
         onCancel={() => setTemplateToDelete(null)}

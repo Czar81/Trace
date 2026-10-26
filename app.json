@@ -31,7 +31,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#092230"
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "extra": {
       "eas": {

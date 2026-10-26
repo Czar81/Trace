@@ -6,6 +6,7 @@ import {
 import { ChevronDown, Check } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
+import { useTranslation } from '../context/LanguageContext';
 
 export interface DropdownOption {
   label: string;
@@ -46,10 +47,11 @@ export const Dropdown: React.FC<DropdownProps> = ({
   options,
   value,
   onSelect,
-  placeholder = 'Seleccionar...',
+  placeholder,
   searchable = false,
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -72,7 +74,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
 
       <TouchableOpacity style={styles.trigger} onPress={() => setOpen(true)} activeOpacity={0.8}>
         <Text style={[styles.triggerText, !selected && { color: colors.secondaryText }]}>
-          {selected ? selected.label : placeholder}
+          {selected ? selected.label : (placeholder ?? t('common.select'))}
         </Text>
         <ChevronDown color={colors.secondaryText} size={18} />
       </TouchableOpacity>
@@ -87,7 +89,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
               style={styles.searchInput}
               value={search}
               onChangeText={setSearch}
-              placeholder="Buscar..."
+              placeholder={t('common.search')}
               placeholderTextColor={colors.secondaryText}
               autoFocus
             />

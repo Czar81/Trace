@@ -10,11 +10,13 @@ import { Currency } from '../types';
 import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
+import { useTranslation } from '../context/LanguageContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CurrencySettings'>;
 
 export const CurrencySettingsScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { settings, updateSettings } = useAppData();
   const [usdRate, setUsdRate] = useState(settings.exchangeRates.USD_TO_CRC.toString());
@@ -41,7 +43,7 @@ export const CurrencySettingsScreen = ({ navigation }: Props) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Monedas</Text>
+        <Text style={styles.headerTitle}>{t('currency.title')}</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -51,18 +53,18 @@ export const CurrencySettingsScreen = ({ navigation }: Props) => {
         keyboardVerticalOffset={1}
       >
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <Text style={styles.sectionTitle}>Moneda por defecto</Text>
+          <Text style={styles.sectionTitle}>{t('currency.default')}</Text>
           <Dropdown
             options={[
-              { label: '₡ CRC — Colón costarricense', value: 'CRC' },
-              { label: '$ USD — Dólar estadounidense', value: 'USD' },
-              { label: '€ EUR — Euro', value: 'EUR' },
+              { label: t('currency.crc'), value: 'CRC' },
+              { label: t('currency.usd'), value: 'USD' },
+              { label: t('currency.eur'), value: 'EUR' },
             ]}
             value={settings.defaultCurrency}
             onSelect={(val) => updateSettings({ defaultCurrency: val as Currency })}
           />
 
-          <Text style={styles.sectionTitle}>Tasas de cambio (base CRC)</Text>
+          <Text style={styles.sectionTitle}>{t('currency.rates')}</Text>
           <View style={styles.rateRow}>
             <Text style={styles.rateLabel}>1 USD =</Text>
             <TextInput
@@ -86,7 +88,7 @@ export const CurrencySettingsScreen = ({ navigation }: Props) => {
             <Text style={styles.rateSuffix}>CRC</Text>
           </View>
           <TouchableOpacity style={[styles.saveBtn, ratesSaved && styles.saveBtnSuccess]} onPress={handleSaveRates}>
-            <Text style={styles.saveBtnText}>{ratesSaved ? '✓ Guardado' : 'Guardar tasas'}</Text>
+            <Text style={styles.saveBtnText}>{ratesSaved ? t('currency.saved') : t('currency.saveRates')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

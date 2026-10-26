@@ -1,4 +1,5 @@
 import { RecurringTransactionTemplate, DebtInterestFrequency } from '../types';
+import { TranslateFn, TranslationKey, translateDefault } from '../i18n';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -116,11 +117,8 @@ export function getOccurrenceKey(template: RecurringTransactionTemplate, dueDate
   }
 }
 
-const WEEKDAY_NAMES = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-const MONTH_NAMES = [
-  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-];
+const weekdayName = (t: TranslateFn, index: number) => t(`weekday.${index}` as TranslationKey);
+const monthName = (t: TranslateFn, index: number) => t(`month.${index + 1}` as TranslationKey);
 
 /**
  * Minimal shape a debt envelope needs to expose to compute its interest/
@@ -228,16 +226,16 @@ export function getPreviousDebtCycleDate(envelope: DebtCycleAnchor, cycleDate: D
   }
 }
 
-/** Human-readable (Spanish) cadence description for a debt envelope's cycle. */
-export function formatDebtCycle(envelope: DebtCycleAnchor): string {
+/** Human-readable cadence description for a debt envelope's cycle (Spanish unless `t` is given). */
+export function formatDebtCycle(envelope: DebtCycleAnchor, t: TranslateFn = translateDefault): string {
   switch (envelope.interestFrequency) {
     case 'mensual':
-      return `Día ${envelope.dueDay} de cada mes`;
+      return t('cadence.monthly', { day: envelope.dueDay });
     case 'quincenal':
-      return `Días ${envelope.dueDay} y ${envelope.dueDay + 15 > 31 ? 31 : envelope.dueDay + 15} de cada mes`;
+      return t('cadence.twiceMonthly', { day: envelope.dueDay, day2: envelope.dueDay + 15 > 31 ? 31 : envelope.dueDay + 15 });
     case 'anual': {
       const monthIdx = (envelope.dueAnchorMonth ?? 1) - 1;
-      return `Cada ${envelope.dueDay} de ${MONTH_NAMES[monthIdx]}`;
+      return t('cadence.yearly', { day: envelope.dueDay, month: monthName(t, monthIdx) });
     }
     default:
       return '';
@@ -245,25 +243,26 @@ export function formatDebtCycle(envelope: DebtCycleAnchor): string {
 }
 
 /**
- * Human-readable (Spanish) cadence description for a template, matching its actual
- * frequency — used by the recurring templates list instead of always showing "Día N".
+ * Human-readable cadence description for a template (Spanish unless `t` is given),
+ * matching its actual frequency — used by the recurring templates list instead of
+ * always showing "Día N".
  */
-export function formatCadence(template: RecurringTransactionTemplate): string {
+export function formatCadence(template: RecurringTransactionTemplate, t: TranslateFn = translateDefault): string {
   switch (template.frequency) {
     case 'monthly':
-      return `Día ${template.dayOfMonth} de cada mes`;
+      return t('cadence.monthly', { day: template.dayOfMonth });
     case 'weekly': {
       const dow = template.dayOfWeek ?? 0;
-      return `Cada ${WEEKDAY_NAMES[dow]}`;
+      return t('cadence.weekly', { weekday: weekdayName(t, dow) });
     }
     case 'biweekly': {
-      if (!template.anchorDate) return 'Cada 2 semanas';
+      if (!template.anchorDate) return t('cadence.biweekly');
       const anchor = new Date(template.anchorDate);
-      return `Cada 2 semanas desde el ${anchor.getDate()} ${MONTH_NAMES[anchor.getMonth()].slice(0, 3)}`;
+      return t('cadence.biweeklyFrom', { day: anchor.getDate(), month: monthName(t, anchor.getMonth()).slice(0, 3) });
     }
     case 'annual': {
       const month = template.month ?? 1;
-      return `Cada ${template.dayOfMonth} de ${MONTH_NAMES[month - 1]}`;
+      return t('cadence.yearly', { day: template.dayOfMonth, month: monthName(t, month - 1) });
     }
     default:
       return '';

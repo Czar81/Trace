@@ -7,20 +7,21 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ArrowLeft, Check, PlusCircle, MinusCircle } from 'lucide-react-native';
 import { CurrencyInput } from '../components/CurrencyInput';
 import { Dropdown } from '../components/Dropdown';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { Calendar } from 'lucide-react-native';
+import { DateField } from '../components/DateField';
 import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
+import { useTranslation } from '../context/LanguageContext';
 import { sortEnvelopesByTypeAndName } from '../utils/envelopeSorting';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransaction'>;
 
 export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { envelopeId, transaction } = route.params;
-  const { envelopes, addTransaction, updateTransaction, paymentMethods, categories, getEnvelopeBalance, formatAmount } = useAppData();
+  const { envelopes, addTransaction, updateTransaction, paymentMethods, categories, incomeCategories, getEnvelopeBalance, formatAmount } = useAppData();
 
   const envelope = envelopes.find(e => e.id === envelopeId);
   const isDebtEnvelope = envelope?.type === 'deuda';
@@ -42,7 +43,6 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   const [useSavingsEnvelope, setUseSavingsEnvelope] = useState(!!transaction?.sourceSavingsEnvelopeId);
   const [sourceSavingsEnvelopeId, setSourceSavingsEnvelopeId] = useState(transaction?.sourceSavingsEnvelopeId ?? '');
   const [date, setDate] = useState(transaction ? new Date(transaction.date) : new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleSave = async () => {
     const amount = parseFloat(amountStr);
@@ -55,11 +55,11 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
       amount,
       description: description.trim() || (
         isDebtEnvelope && savedType === 'income'
-          ? 'Abono a deuda'
-          : savedType === 'income' ? 'Ingreso' : 'Gasto'
+          ? t('tx.defaultDebtPayment')
+          : savedType === 'income' ? t('tx.income') : t('tx.expense')
       ),
       paymentMethodId: savedType === 'expense' ? paymentMethodId : undefined,
-      categoryId: savedType === 'expense' ? categoryId : undefined,
+      categoryId: isDebtPayment ? undefined : categoryId,
       sourceSavingsEnvelopeId:
         savedType === 'expense' && envelope?.type === 'gasto' && useSavingsEnvelope && sourceSavingsEnvelopeId
           ? sourceSavingsEnvelopeId
@@ -79,6 +79,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
 
   const pmOptions = paymentMethods.map(pm => ({ label: pm.name, value: pm.id }));
   const catOptions = categories.map(c => ({ label: c.name, value: c.id }));
+  const incomeCatOptions = incomeCategories.map(c => ({ label: c.name, value: c.id }));
   // Explicit 'ahorro' check — already excludes 'deuda' envelopes as a funding source.
   const savingsEnvelopes = sortEnvelopesByTypeAndName(envelopes.filter(e => e.type === 'ahorro'));
   const savingsOptions = savingsEnvelopes.map(e => ({ label: e.name, value: e.id }));
@@ -92,8 +93,8 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   const debtOutstanding = envelope.limit - balanceBeforeCurrentTransaction;
   const projectedDebtOutstanding = debtOutstanding - (hasValidAmount ? parsedAmount : 0);
   const debtPreviewLabel = hasValidAmount
-    ? projectedDebtOutstanding < 0 ? 'Saldo a favor después del abono' : 'Saldo pendiente después del abono'
-    : debtOutstanding < 0 ? 'Saldo a favor' : 'Saldo pendiente';
+    ? projectedDebtOutstanding < 0 ? t('tx.balanceInFavorAfter') : t('tx.balancePendingAfter')
+    : debtOutstanding < 0 ? t('tx.balanceInFavor') : t('tx.balancePending');
 
   useEffect(() => {
     if (type !== 'expense' || envelope.type !== 'gasto') {
@@ -106,6 +107,16 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
     }
   }, [type, envelope.type, useSavingsEnvelope, sourceSavingsEnvelopeId, savingsEnvelopes]);
 
+  // Category options come from the catalog matching the active type: income
+  // categories for income, expense categories for expense. Their ids never
+  // overlap, so a selection made for one type is re-seeded when the type flips.
+  const activeCategories = type === 'income' ? incomeCategories : categories;
+  useEffect(() => {
+    if (isDebtEnvelope) return;
+    if (categoryId && activeCategories.some(c => c.id === categoryId)) return;
+    setCategoryId(activeCategories[0]?.id ?? '');
+  }, [isDebtEnvelope, activeCategories, categoryId]);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -113,7 +124,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {isEditing ? 'Editar Transacción' : 'Nueva Transacción'}
+          {isEditing ? t('tx.edit') : t('tx.new')}
         </Text>
         <TouchableOpacity onPress={handleSave} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Check color={colors.green} size={24} />
@@ -127,7 +138,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
       >
         <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
         <Text style={styles.envelopeContext}>
-          Sobre: {envelope.name} · {envelope.currency}
+          {t('tx.envelopeContext', { name: envelope.name, currency: envelope.currency })}
         </Text>
 
         {/* ── Expense / Income toggle ── */}
@@ -135,7 +146,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
           {isDebtEnvelope ? (
             <View style={[styles.typeBtn, styles.typeBtnIncome]}>
               <PlusCircle color={colors.white} size={18} />
-              <Text style={[styles.typeText, { color: colors.white }]}>Abonar</Text>
+              <Text style={[styles.typeText, { color: colors.white }]}>{t('tx.payDebt')}</Text>
             </View>
           ) : (
             <>
@@ -144,14 +155,14 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
                 onPress={() => setType('expense')}
               >
                 <MinusCircle color={type === 'expense' ? colors.white : colors.secondaryText} size={18} />
-                <Text style={[styles.typeText, type === 'expense' && { color: colors.white }]}>Gasto</Text>
+                <Text style={[styles.typeText, type === 'expense' && { color: colors.white }]}>{t('tx.expense')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.typeBtn, type === 'income' && styles.typeBtnIncome]}
                 onPress={() => setType('income')}
               >
                 <PlusCircle color={type === 'income' ? colors.white : colors.secondaryText} size={18} />
-                <Text style={[styles.typeText, type === 'income' && { color: colors.white }]}>Ingreso</Text>
+                <Text style={[styles.typeText, type === 'income' && { color: colors.white }]}>{t('tx.income')}</Text>
               </TouchableOpacity>
             </>
           )}
@@ -159,7 +170,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
 
         {/* ── Formatted amount ── */}
         <CurrencyInput
-          label="Monto"
+          label={t('common.amount')}
           currency={envelope.currency}
           value={amountStr}
           onChangeText={setAmountStr}
@@ -179,64 +190,62 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
             </Text>
             {hasValidAmount && projectedDebtOutstanding < 0 && (
               <Text style={styles.debtWarning}>
-                El abono supera el saldo pendiente; el excedente quedará a favor.
+                {t('tx.overpayWarning')}
               </Text>
             )}
           </View>
         )}
 
         {/* ── Date Picker ── */}
-        <Text style={styles.label}>Fecha</Text>
-        <TouchableOpacity style={styles.datePickerBtn} onPress={() => setShowDatePicker(true)}>
-          <Calendar color={colors.secondaryText} size={20} />
-          <Text style={styles.dateText}>{date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</Text>
-        </TouchableOpacity>
-
-        {showDatePicker && (
-          <DateTimePicker
-            value={date}
-            mode="date"
-            display="default"
-            onChange={(event, selectedDate) => {
-              setShowDatePicker(false);
-              if (selectedDate) setDate(selectedDate);
-            }}
-          />
-        )}
-
+        <Text style={styles.label}>{t('common.date')}</Text>
+        <DateField
+          value={date}
+          onChange={setDate}
+        />
 
         {/* ── Description ── */}
-        <Text style={styles.label}>Descripción</Text>
+        <Text style={styles.label}>{t('common.description')}</Text>
         <TextInput
           style={styles.input}
           value={description}
           onChangeText={setDescription}
-          placeholder={isDebtEnvelope ? 'Ej: Abono mensual, Pago a la deuda...' : type === 'expense' ? 'Ej: Supermercado, Almuerzo...' : 'Ej: Salario, Transferencia...'}
+          placeholder={isDebtEnvelope ? t('tx.descriptionPlaceholderDebt') : type === 'expense' ? t('tx.descriptionPlaceholderExpense') : t('tx.descriptionPlaceholderIncome')}
           placeholderTextColor={colors.secondaryText}
         />
+
+        {/* ── Income category (income only, non-debt) ── */}
+        {type === 'income' && !isDebtPayment && (
+          <Dropdown
+            label={t('common.category')}
+            options={incomeCatOptions}
+            value={categoryId}
+            onSelect={setCategoryId}
+            placeholder={incomeCategories.length === 0 ? t('tx.addIncomeCategoriesHint') : t('tx.selectCategory')}
+          />
+        )}
 
         {/* ── Category & Payment method (expense only) ── */}
         {type === 'expense' && (
           <>
             <Dropdown
-              label="Categoría"
+              label={t('common.category')}
               options={catOptions}
               value={categoryId}
               onSelect={setCategoryId}
-              placeholder={categories.length === 0 ? 'Agrega categorías en Configuración' : 'Seleccionar categoría'}
+              placeholder={categories.length === 0 ? t('tx.addCategoriesHint') : t('tx.selectCategory')}
             />
             <Dropdown
-              label="Método de pago"
+              label={t('common.paymentMethod')}
               options={pmOptions}
               value={paymentMethodId}
               onSelect={setPaymentMethodId}
-              placeholder={paymentMethods.length === 0 ? 'Agrega métodos en Configuración' : 'Seleccionar método'}
+              placeholder={paymentMethods.length === 0 ? t('tx.addMethodsHint') : t('tx.selectMethod')}
             />
             {/* Explicit 'gasto' check — the funding-from-savings toggle is not offered for 'deuda' envelopes either. */}
             {envelope.type === 'gasto' && (
               <>
                 <View style={styles.toggleRow}>
-                  <Text style={styles.toggleLabel}>Este gasto sale de un sobre de ahorro</Text>
+                  <Text style={styles.toggleLabel}>{t('tx.fromSavings')}</Text>
                   <Switch
                     value={useSavingsEnvelope}
                     onValueChange={setUseSavingsEnvelope}
@@ -247,11 +256,11 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
                 {useSavingsEnvelope && (
                   <>
                     <Dropdown
-                      label="Sobre de ahorro"
+                      label={t('tx.savingsEnvelope')}
                       options={savingsOptions}
                       value={sourceSavingsEnvelopeId}
                       onSelect={setSourceSavingsEnvelopeId}
-                      placeholder={savingsEnvelopes.length === 0 ? 'Crea un sobre de ahorro primero' : 'Seleccionar sobre de ahorro'}
+                      placeholder={savingsEnvelopes.length === 0 ? t('tx.createSavingsFirst') : t('tx.selectSavings')}
                     />
                     {sourceSavingsEnvelopeId && (() => {
                       const sourceEnvelope = savingsEnvelopes.find(e => e.id === sourceSavingsEnvelopeId);
@@ -263,8 +272,8 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
                       return (
                         <Text style={styles.savingsPreview}>
                           {hasValidAmount
-                            ? `Saldo del sobre de ahorro después de este gasto: ${formatAmount(projectedBalance, sourceEnvelope.currency)}`
-                            : `Saldo actual del sobre de ahorro: ${formatAmount(currentBalance, sourceEnvelope.currency)}`}
+                            ? t('tx.savingsBalanceAfter', { amount: formatAmount(projectedBalance, sourceEnvelope.currency) })
+                            : t('tx.savingsBalanceCurrent', { amount: formatAmount(currentBalance, sourceEnvelope.currency) })}
                         </Text>
                       );
                     })()}
@@ -309,16 +318,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20, marginBottom: 16 },
   toggleLabel: { color: colors.white, fontSize: 15, flex: 1, paddingRight: 12 },
   savingsPreview: { color: colors.secondaryText, fontSize: 13, marginTop: -8, marginBottom: 16 },
-  datePickerBtn: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 8,
-  },
-  dateText: { color: colors.white, fontSize: 16 },
   input: {
     backgroundColor: colors.cardBg, borderRadius: 12, padding: 16,
     color: colors.white, fontSize: 16, marginBottom: 24,

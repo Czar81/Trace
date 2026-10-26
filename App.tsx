@@ -6,6 +6,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AppProvider } from './src/context/ExpenseContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { LanguageProvider } from './src/context/LanguageContext';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { MainScreen } from './src/screens/MainScreen';
@@ -58,11 +59,13 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <KeyboardProvider>
-          <AppProvider>
-            <ThemeProvider>
-              <ThemedNavigator />
-            </ThemeProvider>
-          </AppProvider>
+          <LanguageProvider>
+            <AppProvider>
+              <ThemeProvider>
+                <ThemedNavigator />
+              </ThemeProvider>
+            </AppProvider>
+          </LanguageProvider>
         </KeyboardProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

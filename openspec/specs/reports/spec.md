@@ -28,11 +28,19 @@ All report totals SHALL convert each transaction's amount to a single common cur
 - **THEN** the report SHALL convert each amount to the common currency before computing totals, and SHALL NOT sum raw amounts across differing currencies
 
 ### Requirement: User can select a reporting period
-The system SHALL let the user choose a period — current month, last 3 months, last 6 months, or all time — that filters every report on the Reports screen by transaction date.
+The system SHALL let the user choose a period — current month, last 3 months, last 6 months, all time, or a custom range with a start date and an end date — that filters every report on the Reports screen by transaction date.
 
 #### Scenario: User changes the period
 - **WHEN** a user selects a different period option on the Reports screen
 - **THEN** every report on the screen SHALL recompute using only transactions whose date falls within the newly selected period
+
+#### Scenario: User selects a custom range
+- **WHEN** the user selects the custom range option and sets a start date and an end date
+- **THEN** every report on the screen SHALL recompute using only transactions dated from the start date through the end date, inclusive
+
+#### Scenario: Invalid custom range is rejected
+- **WHEN** the user sets a start date later than the end date
+- **THEN** the system SHALL NOT apply the range and SHALL show a message that the start date must be on or before the end date
 
 ### Requirement: Spending by category report
 The system SHALL show, for expense transactions in the selected period, the total amount and percentage share for each `TransactionCategory`, sorted from highest to lowest total.

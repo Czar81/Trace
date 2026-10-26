@@ -11,13 +11,15 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
+import { useTranslation } from '../context/LanguageContext';
+import { TranslationKey } from '../i18n';
 import { formatCurrency } from '../utils/formatCurrency';
 
 const { width } = Dimensions.get('window');
 
 const CURRENCY_CYCLE: Currency[] = ['CRC', 'USD', 'EUR'];
 const TAB_TYPES: EnvelopeType[] = ['gasto', 'ahorro', 'deuda'];
-const TAB_LABELS: Record<EnvelopeType, string> = { gasto: 'Gastos', ahorro: 'Ahorros', deuda: 'Deudas' };
+const TAB_LABELS: Record<EnvelopeType, TranslationKey> = { gasto: 'main.tabExpenses', ahorro: 'main.tabSavings', deuda: 'main.tabDebts' };
 
 interface EnvelopeCardProps {
   envelope: Envelope;
@@ -101,6 +103,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Main'>;
 
 export const MainScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { envelopes, getTotalByType, getEnvelopeBalance, formatAmount, settings, convertToCRC, resetAllEnvelopes, paymentMethods, categories, transactions } = useAppData();
   const [activeTab, setActiveTab] = useState<EnvelopeType>('gasto');
@@ -202,10 +205,10 @@ export const MainScreen = ({ navigation }: Props) => {
 
     const subtext =
       type === 'gasto'
-        ? (item.isUnlimited ? 'gastados' : (isOver ? 'excedidos' : 'disponibles'))
+        ? t(item.isUnlimited ? 'main.spent' : (isOver ? 'main.exceeded' : 'main.available'))
         : type === 'deuda'
-        ? (item.isUnlimited ? 'adeudado' : (isOver ? 'excedido' : 'falta por pagar'))
-        : 'ahorrados';
+        ? t(item.isUnlimited ? 'main.owed' : (isOver ? 'main.debtExceeded' : 'main.remainingToPay'))
+        : t('main.saved');
 
     return (
       <EnvelopeCard
@@ -231,7 +234,7 @@ export const MainScreen = ({ navigation }: Props) => {
           keyExtractor={item => item.id}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
-            <EmptyState message="No hay sobres todavía." />
+            <EmptyState message={t('main.emptyEnvelopes')} />
           }
           renderItem={renderEnvelope}
         />
@@ -252,9 +255,9 @@ export const MainScreen = ({ navigation }: Props) => {
         visible={showResetConfirm}
         onConfirm={async () => { await resetAllEnvelopes(); setShowResetConfirm(false); }}
         onCancel={() => setShowResetConfirm(false)}
-        title="Reiniciar todos los sobres"
-        message="Todas las transacciones actuales pasarán al historial y el saldo de todos los sobres volverá a cero."
-        confirmLabel="Reiniciar Todo"
+        title={t('main.resetAllTitle')}
+        message={t('main.resetAllMessage')}
+        confirmLabel={t('main.resetAllConfirm')}
         destructive
       />
 
@@ -284,7 +287,7 @@ export const MainScreen = ({ navigation }: Props) => {
           });
           return (
             <TouchableOpacity key={tab} style={styles.tab} onPress={() => handleTabPress(tab)}>
-              <Animated.Text style={[styles.tabText, { color: tabTextColor }]}>{TAB_LABELS[tab]}</Animated.Text>
+              <Animated.Text style={[styles.tabText, { color: tabTextColor }]}>{t(TAB_LABELS[tab])}</Animated.Text>
             </TouchableOpacity>
           );
         })}
@@ -298,10 +301,10 @@ export const MainScreen = ({ navigation }: Props) => {
         <View style={styles.summaryValues}>
           <Text style={styles.summaryLabel}>
             {activeTab === 'gasto'
-              ? (totalCRC < 0 ? 'Total excedido' : 'Total disponible')
+              ? t(totalCRC < 0 ? 'main.totalExceeded' : 'main.totalAvailable')
               : activeTab === 'deuda'
-              ? 'Total por pagar'
-              : 'Total ahorrado'}
+              ? t('main.totalToPay')
+              : t('main.totalSaved')}
           </Text>
           <Text style={[styles.summaryTotal, totalCRC < 0 && { color: colors.red }]}>
             {totalDisplay}
@@ -327,7 +330,7 @@ export const MainScreen = ({ navigation }: Props) => {
         style={styles.fab}
         onPress={() => navigation.navigate('CreateEnvelope', { envelopeType: activeTab })}
       >
-        <Text style={styles.fabText}>+ Crear Sobre</Text>
+        <Text style={styles.fabText}>{t('main.createEnvelope')}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

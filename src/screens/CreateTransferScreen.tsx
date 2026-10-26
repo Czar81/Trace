@@ -10,15 +10,18 @@ import { Dropdown } from '../components/Dropdown';
 import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
+import { useTranslation } from '../context/LanguageContext';
+import { TranslationKey } from '../i18n';
 import { EnvelopeType } from '../types';
 import { sortEnvelopesByTypeAndName } from '../utils/envelopeSorting';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransfer'>;
 
-const TYPE_GROUP_LABELS: Record<EnvelopeType, string> = { gasto: 'Gastos', ahorro: 'Ahorros', deuda: 'Deudas' };
+const TYPE_GROUP_LABELS: Record<EnvelopeType, TranslationKey> = { gasto: 'main.tabExpenses', ahorro: 'main.tabSavings', deuda: 'main.tabDebts' };
 
 export const CreateTransferScreen = ({ route, navigation }: Props) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { envelopeId, transaction } = route.params ?? {};
   const { envelopes, addTransfer, updateTransfer, getEnvelopeBalance, formatAmount } = useAppData();
@@ -37,7 +40,7 @@ export const CreateTransferScreen = ({ route, navigation }: Props) => {
     sortEnvelopesByTypeAndName(list).map(e => ({
       label: `${e.name} (${e.currency})`,
       value: e.id,
-      group: TYPE_GROUP_LABELS[e.type],
+      group: t(TYPE_GROUP_LABELS[e.type]),
     }));
 
   const sourceOptions = toGroupedOptions(envelopes);
@@ -49,19 +52,19 @@ export const CreateTransferScreen = ({ route, navigation }: Props) => {
   const handleSave = async () => {
     setError('');
     if (!hasValidAmount) {
-      setError('Ingresa un monto válido.');
+      setError(t('transfer.invalidAmount'));
       return;
     }
     if (!sourceId || !destinationId) {
-      setError('Selecciona el sobre de origen y el de destino.');
+      setError(t('transfer.selectBoth'));
       return;
     }
     if (sourceId === destinationId) {
-      setError('El sobre de origen y destino deben ser diferentes.');
+      setError(t('transfer.mustDiffer'));
       return;
     }
     if (source && destination && source.currency !== destination.currency) {
-      setError('Los sobres deben tener la misma moneda.');
+      setError(t('transfer.sameCurrency'));
       return;
     }
 
@@ -70,17 +73,17 @@ export const CreateTransferScreen = ({ route, navigation }: Props) => {
           envelopeId: sourceId,
           toEnvelopeId: destinationId,
           amount: parsedAmount,
-          description: description.trim() || 'Transferencia',
+          description: description.trim() || t('transfer.defaultDescription'),
         })
       : await addTransfer({
           envelopeId: sourceId,
           toEnvelopeId: destinationId,
           amount: parsedAmount,
-          description: description.trim() || 'Transferencia',
+          description: description.trim() || t('transfer.defaultDescription'),
         });
 
     if (!result.success) {
-      setError(result.error ?? (isEditing ? 'No se pudo actualizar la transferencia.' : 'No se pudo crear la transferencia.'));
+      setError(result.error ?? (isEditing ? t('transfer.updateFailed') : t('transfer.createFailed')));
       return;
     }
     navigation.goBack();
@@ -92,7 +95,7 @@ export const CreateTransferScreen = ({ route, navigation }: Props) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isEditing ? 'Editar Transferencia' : 'Transferir'}</Text>
+        <Text style={styles.headerTitle}>{isEditing ? t('transfer.edit') : t('transfer.new')}</Text>
         <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
           <Check color={colors.green} size={24} />
         </TouchableOpacity>
@@ -105,38 +108,38 @@ export const CreateTransferScreen = ({ route, navigation }: Props) => {
       >
         <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
           <Dropdown
-            label="Desde"
+            label={t('transfer.from')}
             options={sourceOptions}
             value={sourceId}
             onSelect={(val) => {
               setSourceId(val);
               if (val === destinationId) setDestinationId('');
             }}
-            placeholder="Sobre de origen"
+            placeholder={t('transfer.sourcePlaceholder')}
           />
 
           <Dropdown
-            label="Hacia"
+            label={t('transfer.to')}
             options={destinationOptions}
             value={destinationId}
             onSelect={setDestinationId}
-            placeholder={sourceId ? 'Sobre de destino' : 'Selecciona primero el origen'}
+            placeholder={sourceId ? t('transfer.destinationPlaceholder') : t('transfer.selectSourceFirst')}
           />
 
           <CurrencyInput
-            label="Monto"
+            label={t('common.amount')}
             currency={source?.currency ?? 'CRC'}
             value={amountStr}
             onChangeText={setAmountStr}
             style={{ fontSize: 30, color: colors.white }}
           />
 
-          <Text style={styles.label}>Nota (opcional)</Text>
+          <Text style={styles.label}>{t('transfer.note')}</Text>
           <TextInput
             style={styles.input}
             value={description}
             onChangeText={setDescription}
-            placeholder="Ej: Cubrir gasto de Comida"
+            placeholder={t('transfer.notePlaceholder')}
             placeholderTextColor={colors.secondaryText}
           />
 

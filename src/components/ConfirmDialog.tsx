@@ -4,6 +4,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withSequence, withTiming } 
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
+import { useTranslation } from '../context/LanguageContext';
 
 interface ConfirmDialogProps {
   visible: boolean;
@@ -22,13 +23,17 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   visible,
   title,
   message,
-  confirmLabel = 'Confirmar',
-  cancelLabel = 'Cancelar',
+  confirmLabel,
+  cancelLabel,
   destructive = false,
   onConfirm,
   onCancel,
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
+  // An explicit empty cancelLabel hides the cancel button, so only undefined falls back.
+  const resolvedConfirmLabel = confirmLabel ?? t('common.confirm');
+  const resolvedCancelLabel = cancelLabel ?? t('common.cancel');
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const confirmScale = useSharedValue(1);
   const confirmAnimatedStyle = useAnimatedStyle(() => ({
@@ -61,24 +66,24 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <View style={styles.divider} />
 
           <View style={styles.actions}>
-            {cancelLabel ? (
+            {resolvedCancelLabel ? (
               <>
                 <TouchableOpacity style={styles.cancelBtn} onPress={onCancel} activeOpacity={0.7}>
-                  <Text style={styles.cancelText}>{cancelLabel}</Text>
+                  <Text style={styles.cancelText}>{resolvedCancelLabel}</Text>
                 </TouchableOpacity>
 
                 <View style={styles.actionDivider} />
               </>
             ) : null}
 
-            <Animated.View style={[styles.confirmBtn, !cancelLabel && styles.singleActionBtn, confirmAnimatedStyle]}>
+            <Animated.View style={[styles.confirmBtn, !resolvedCancelLabel && styles.singleActionBtn, confirmAnimatedStyle]}>
               <TouchableOpacity
                 style={[styles.confirmBtnInner, destructive && styles.confirmBtnDestructive]}
                 onPress={handleConfirmPress}
                 activeOpacity={0.7}
               >
                 <Text style={[styles.confirmText, destructive && styles.confirmTextDestructive]}>
-                  {confirmLabel}
+                  {resolvedConfirmLabel}
                 </Text>
               </TouchableOpacity>
             </Animated.View>

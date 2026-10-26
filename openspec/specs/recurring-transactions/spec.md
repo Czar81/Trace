@@ -5,11 +5,19 @@ Lets users define transactions that repeat every month (salary, subscriptions, r
 ## Requirements
 
 ### Requirement: Create a recurring transaction template
-The system SHALL let the user create a recurring transaction template specifying an envelope, type (expense/income), amount, description, a day of month (1-31), and, for expense templates, an optional category, payment method, and source savings envelope — the same optional fields available on a regular transaction.
+The system SHALL let the user create a recurring transaction template specifying an envelope, type (expense/income), amount, description, a day of month (1-31), an optional category, and — for expense templates — an optional payment method and source savings envelope. An income template's category SHALL come from the income category catalog, and an expense template's from the expense category catalog.
 
 #### Scenario: User creates a monthly recurring expense
 - **WHEN** the user fills out the recurring transaction form with an envelope, amount, description, and day of month, and saves
 - **THEN** the system creates a new active recurring template with those values
+
+#### Scenario: User creates a recurring income with a category
+- **WHEN** the user selects the income type on the recurring transaction form, chooses a category, and saves
+- **THEN** the system creates an income template whose stored `categoryId` references a category from the income category catalog
+
+#### Scenario: Generated transactions carry the template's category
+- **WHEN** a recurring income template with a category generates its transaction
+- **THEN** the generated transaction carries that same income `categoryId`
 
 ### Requirement: Day-of-month is clamped on short months
 When generating a transaction for a month shorter than the template's configured day of month, the system SHALL use the last day of that month instead of an invalid date.

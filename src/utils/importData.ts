@@ -2,12 +2,19 @@ import * as DocumentPicker from 'expo-document-picker';
 import { readAsStringAsync } from 'expo-file-system/legacy';
 import { Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings } from '../types';
 import { DEFAULT_SETTINGS } from './storage';
+import { translateActive } from '../i18n';
 
 export interface FullBackup {
   envelopes: Envelope[];
   transactions: Transaction[];
   paymentMethods: PaymentMethod[];
   categories: TransactionCategory[];
+  /**
+   * Optional so backups exported before income categories existed still
+   * type-check and import. When absent, the device's current income
+   * categories are left untouched (see `parseBackup` / `importFromBackup`).
+   */
+  incomeCategories?: TransactionCategory[];
   settings: AppSettings;
   exportedAt: string;
   version: string;
@@ -55,7 +62,7 @@ export const parseBackup = (jsonContent: string): ImportResult => {
 
     // Validate backup structure
     if (!parsed.envelopes || !parsed.transactions || !parsed.paymentMethods || !parsed.categories) {
-      result.errors.push('Formato de backup inválido. Se requieren: envelopes, transactions, paymentMethods, categories');
+      result.errors.push(translateActive('import.error.missingFields'));
       return result;
     }
 
@@ -65,7 +72,14 @@ export const parseBackup = (jsonContent: string): ImportResult => {
       !Array.isArray(parsed.paymentMethods) ||
       !Array.isArray(parsed.categories)
     ) {
-      result.errors.push('Formato de backup inválido. envelopes, transactions, paymentMethods y categories deben ser listas (arrays)');
+      result.errors.push(translateActive('import.error.notArrays'));
+      return result;
+    }
+
+    // incomeCategories is optional (backups from before it existed omit it),
+    // but when present it must be an array.
+    if (parsed.incomeCategories !== undefined && !Array.isArray(parsed.incomeCategories)) {
+      result.errors.push(translateActive('import.error.incomeNotArray'));
       return result;
     }
 
@@ -74,7 +88,7 @@ export const parseBackup = (jsonContent: string): ImportResult => {
         (tx: any) => typeof tx?.amount !== 'number' || !Number.isFinite(tx.amount)
       )
     ) {
-      result.errors.push('Formato de backup inválido. Todas las transacciones deben tener un monto (amount) numérico válido');
+      result.errors.push(translateActive('import.error.badAmount'));
       return result;
     }
 
@@ -93,8 +107,14 @@ export const parseBackup = (jsonContent: string): ImportResult => {
       version: parsed.version || '1.0',
     };
 
+    // Only carry the field through when the backup actually had it; leaving it
+    // undefined tells the importer to keep the device's current income catalog.
+    if (Array.isArray(parsed.incomeCategories)) {
+      result.backup.incomeCategories = parsed.incomeCategories;
+    }
+
   } catch {
-    result.errors.push('El archivo no es un backup válido (JSON corrupto).');
+    result.errors.push(translateActive('import.error.corrupt'));
   }
 
   return result;

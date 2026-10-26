@@ -27,7 +27,7 @@ The system SHALL filter transactions by a case-insensitive substring match of th
 - **THEN** the system shows an initial empty state prompting the user to search or filter, without listing every transaction unfiltered
 
 ### Requirement: Combinable filters
-The system SHALL let the user narrow results with any combination of: category, payment method, date range (from/to), and minimum/maximum amount, applied together with the free-text search (a transaction must satisfy the text match AND every active filter to appear in results).
+The system SHALL let the user narrow results with any combination of: category, payment method, date range (from/to), and minimum/maximum amount, applied together with the free-text search (a transaction must satisfy the text match AND every active filter to appear in results). The category filter SHALL offer both expense and income categories and match a transaction on its stored `categoryId` regardless of whether that category belongs to the expense or the income catalog.
 
 #### Scenario: Text search combined with a category filter
 - **WHEN** the user has entered search text and also selected a category filter
@@ -36,6 +36,10 @@ The system SHALL let the user narrow results with any combination of: category, 
 #### Scenario: Category filter alone, no search text
 - **WHEN** the user selects a category filter without entering any search text
 - **THEN** the system shows all non-archived transactions in that category (subject to any other active filters)
+
+#### Scenario: Filtering by an income category
+- **WHEN** the user selects a category that belongs to the income catalog
+- **THEN** the system shows non-archived income transactions carrying that category, alongside any other transactions matching the filter
 
 #### Scenario: Date range filter excludes out-of-range transactions
 - **WHEN** the user sets a "from" and/or "to" date
@@ -57,11 +61,15 @@ The system SHALL group matching results by calendar day and order both the group
 - **THEN** the system displays them in day-labeled groups ordered from the most recent day to the oldest, with each group's transactions also ordered most recent to oldest
 
 ### Requirement: Results show resolved names, not raw ids
-Each result SHALL display its description, amount, and date, plus the names of its associated envelope, category, and payment method (resolved from their ids), matching how the same information is displayed on the envelope detail screen. A transaction whose category or payment method has been deleted SHALL show a placeholder (e.g. "Sin categoría" / "Sin método") instead of omitting the field or displaying a stale id.
+Each result SHALL display its description, amount, and date, plus the names of its associated envelope, category, and payment method (resolved from their ids), matching how the same information is displayed on the envelope detail screen. A transaction's category SHALL be resolved against the catalog for its type (income category for an income transaction, expense category for an expense transaction). A transaction whose category or payment method has been deleted SHALL show a placeholder (e.g. "Sin categoría" / "Sin método") instead of omitting the field or displaying a stale id.
 
 #### Scenario: Result with all fields present
 - **WHEN** a matching transaction has a valid `categoryId` and `paymentMethodId`
 - **THEN** the system shows the transaction with its envelope name, category name, and payment method name
+
+#### Scenario: Income result shows its income category name
+- **WHEN** a matching income transaction has a `categoryId` from the income catalog
+- **THEN** the system shows that income category's name rather than "Sin categoría"
 
 #### Scenario: Result with a deleted category or payment method
 - **WHEN** a matching transaction's `categoryId` or `paymentMethodId` no longer corresponds to an existing category or payment method

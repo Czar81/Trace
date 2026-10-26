@@ -6,11 +6,14 @@ import { ArrowLeft, Check } from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
+import { useTranslation } from '../context/LanguageContext';
+import { TranslationKey } from '../i18n';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AppearanceSettings'>;
 
 export const AppearanceSettingsScreen = ({ navigation }: Props) => {
   const { colors, themeId, themeList, setThemeId } = useTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
@@ -19,12 +22,12 @@ export const AppearanceSettingsScreen = ({ navigation }: Props) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Apariencia</Text>
+        <Text style={styles.headerTitle}>{t('appearance.title')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.sectionTitle}>Elegí un tema</Text>
+        <Text style={styles.sectionTitle}>{t('appearance.chooseTheme')}</Text>
 
         {themeList.map((theme) => {
           const selected = theme.id === themeId;
@@ -42,8 +45,8 @@ export const AppearanceSettingsScreen = ({ navigation }: Props) => {
                 <View style={[styles.swatchDot, { backgroundColor: theme.colors.blue }]} />
               </View>
               <View style={styles.themeTextWrapper}>
-                <Text style={styles.themeName}>{theme.name}</Text>
-                <Text style={styles.themeSubtitle}>{theme.isLight ? 'Claro' : 'Oscuro'}</Text>
+                <Text style={styles.themeName}>{t(`appearance.theme.${theme.id}` as TranslationKey)}</Text>
+                <Text style={styles.themeSubtitle}>{t(theme.isLight ? 'appearance.light' : 'appearance.dark')}</Text>
               </View>
               <View style={[styles.radio, selected && styles.radioSelected]}>
                 {selected && <Check color={colors.bg} size={12} strokeWidth={3} />}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { renderHook, act } from '@testing-library/react-native';
+import { renderHook, act, waitFor } from '@testing-library/react-native';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
@@ -7,6 +7,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 
 import { AppProvider, useAppData, getCutoffPeriodStart, accrueDebtInterest } from '../ExpenseContext';
 import { Envelope, Transaction } from '../../types';
+import { DEFAULT_INCOME_CATEGORIES } from '../../utils/storage';
 
 describe('accrueDebtInterest', () => {
   const baseDebtEnvelope = (overrides: Partial<Envelope> = {}): Envelope => ({
@@ -293,5 +294,90 @@ describe('getEnvelopeBalance (via useAppData)', () => {
     expect(result.current.getEnvelopeBalance(gastoId)).toBe(-250);
     // Source savings envelope balance is reduced by the same amount, on top of its own income.
     expect(result.current.getEnvelopeBalance(ahorroId)).toBe(1000 - 250);
+  });
+});
+
+describe('income categories (via useAppData)', () => {
+  const wrapper = ({ children }: { children: React.ReactNode }) =>
+    React.createElement(AppProvider, null, children);
+
+  it('loads the default income categories on an empty store', async () => {
+    const { result } = await renderHook(() => useAppData(), { wrapper });
+
+    await waitFor(() => expect(result.current.incomeCategories.length).toBeGreaterThan(0));
+
+    expect(result.current.incomeCategories).toEqual(DEFAULT_INCOME_CATEGORIES);
+  });
+
+  it('adds and deletes income categories without touching the expense categories', async () => {
+    const { result } = await renderHook(() => useAppData(), { wrapper });
+
+    await waitFor(() => expect(result.current.incomeCategories).toEqual(DEFAULT_INCOME_CATEGORIES));
+    const expenseBefore = result.current.categories;
+
+    await act(async () => {
+      await result.current.addIncomeCategory('Alquiler');
+    });
+
+    const added = result.current.incomeCategories.find(c => c.name === 'Alquiler');
+    expect(added).toBeDefined();
+    // Prefixed id keeps income categories from colliding with expense category ids.
+    expect(added!.id.startsWith('inc-')).toBe(true);
+    expect(result.current.categories).toEqual(expenseBefore);
+
+    await act(async () => {
+      await result.current.deleteIncomeCategory(added!.id);
+    });
+
+    expect(result.current.incomeCategories.some(c => c.name === 'Alquiler')).toBe(false);
+    expect(result.current.categories).toEqual(expenseBefore);
+  });
+
+  it('stores an income category on an income transaction and keeps it after the category is deleted', async () => {
+    const { result } = await renderHook(() => useAppData(), { wrapper });
+    await waitFor(() => expect(result.current.incomeCategories).toEqual(DEFAULT_INCOME_CATEGORIES));
+
+    await act(async () => {
+      await result.current.addIncomeCategory('Bono');
+    });
+    const category = result.current.incomeCategories.find(c => c.name === 'Bono');
+    expect(category).toBeDefined();
+
+    await act(async () => {
+      await result.current.addEnvelope({
+        name: 'Ingreso Test',
+        type: 'gasto',
+        currency: 'CRC',
+        limit: 0,
+        isUnlimited: false,
+        icon: 'wallet',
+        color: '#000000',
+      });
+    });
+    const envelope = result.current.envelopes.find(e => e.name === 'Ingreso Test');
+    expect(envelope).toBeDefined();
+
+    await act(async () => {
+      await result.current.addTransaction({
+        envelopeId: envelope!.id,
+        type: 'income',
+        amount: 100,
+        description: 'Bono',
+        date: new Date().toISOString(),
+        categoryId: category!.id,
+      });
+    });
+
+    const stored = result.current.transactions.find(t => t.description === 'Bono');
+    expect(stored?.categoryId).toBe(category!.id);
+
+    await act(async () => {
+      await result.current.deleteIncomeCategory(category!.id);
+    });
+
+    // Deleting the category must not touch the transaction that referenced it.
+    const stillStored = result.current.transactions.find(t => t.description === 'Bono');
+    expect(stillStored?.categoryId).toBe(category!.id);
+    expect(result.current.incomeCategories.some(c => c.id === category!.id)).toBe(false);
   });
 });

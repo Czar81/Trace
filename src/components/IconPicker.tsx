@@ -5,6 +5,7 @@ import { Check, Image as ImageIcon } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
+import { useTranslation } from '../context/LanguageContext';
 
 interface IconPickerProps {
   visible: boolean;
@@ -20,6 +21,7 @@ const OVERLAY = 'rgba(0,0,0,0.65)';
 
 export const IconPicker: React.FC<IconPickerProps> = ({ visible, selectedIcon, selectedImageUri, color, onSelectIcon, onSelectImage, onClose }) => {
   const { colors, isLight } = useTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const handlePickImage = async () => {
@@ -37,7 +39,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({ visible, selectedIcon, s
   };
 
   const sections = CATEGORIZED_ICONS.map(cat => ({
-    title: cat.title,
+    title: t(cat.titleKey),
     data: chunk(cat.icons, 6)
   }));
 
@@ -54,11 +56,11 @@ export const IconPicker: React.FC<IconPickerProps> = ({ visible, selectedIcon, s
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose} />
       <View style={styles.sheet}>
         <View style={styles.handle} />
-        <Text style={styles.title}>Iconos</Text>
+        <Text style={styles.title}>{t('icons.title')}</Text>
 
         <TouchableOpacity style={styles.pickImageBtn} onPress={handlePickImage}>
           <ImageIcon color={colors.white} size={20} />
-          <Text style={styles.pickImageText}>Subir imagen propia</Text>
+          <Text style={styles.pickImageText}>{t('icons.uploadOwn')}</Text>
         </TouchableOpacity>
 
         <SectionList

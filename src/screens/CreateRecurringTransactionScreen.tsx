@@ -2,35 +2,45 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { DateField } from '../components/DateField';
 import { useAppData } from '../context/ExpenseContext';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { ArrowLeft, Check, PlusCircle, MinusCircle, Calendar } from 'lucide-react-native';
+import { ArrowLeft, Check, PlusCircle, MinusCircle, ChevronDown } from 'lucide-react-native';
 import { CurrencyInput } from '../components/CurrencyInput';
 import { Dropdown } from '../components/Dropdown';
+import { DayGridSheet } from '../components/DayGridSheet';
 import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
-import { RecurrenceFrequency } from '../types';
+import { useTranslation } from '../context/LanguageContext';
+import { TranslationKey } from '../i18n';
+import { Envelope, RecurrenceFrequency } from '../types';
 import { sortEnvelopesByTypeAndName } from '../utils/envelopeSorting';
+import { clampDayOfMonth } from '../utils/recurrence';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateRecurringTransaction'>;
 
-const FREQUENCY_OPTIONS: { label: string; value: RecurrenceFrequency }[] = [
-  { label: 'Mensual', value: 'monthly' },
-  { label: 'Semanal', value: 'weekly' },
-  { label: 'Quincenal (cada 2 semanas)', value: 'biweekly' },
-  { label: 'Anual', value: 'annual' },
+const FREQUENCY_OPTIONS: { labelKey: TranslationKey; value: RecurrenceFrequency }[] = [
+  { labelKey: 'recurring.frequencyMonthly', value: 'monthly' },
+  { labelKey: 'recurring.frequencyWeekly', value: 'weekly' },
+  { labelKey: 'recurring.frequencyBiweekly', value: 'biweekly' },
+  { labelKey: 'recurring.frequencyAnnual', value: 'annual' },
 ];
 
-const DAY_OF_MONTH_OPTIONS = Array.from({ length: 31 }, (_, i) => ({ label: String(i + 1), value: String(i + 1) }));
+const ENVELOPE_TYPE_LABELS: Record<Envelope['type'], TranslationKey> = { gasto: 'main.tabExpenses', ahorro: 'main.tabSavings', deuda: 'main.tabDebts' };
 
-const MONTH_OPTIONS = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-].map((label, i) => ({ label, value: String(i + 1) }));
-
-const ENVELOPE_TYPE_LABELS = { gasto: 'Gastos', ahorro: 'Ahorros', deuda: 'Deudas' };
+/** Next date on/after today for a monthly (or, with `month`, annual) charge on `day`, clamped to short months. */
+function nextChargeDate(day: number, month?: number): Date {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let i = 0; i < 24; i++) {
+    const y = today.getFullYear() + (month ? i : 0);
+    const m = month ? month - 1 : today.getMonth() + i;
+    const candidate = new Date(y, m, clampDayOfMonth(y + Math.floor(m / 12), ((m % 12) + 12) % 12, day));
+    if (candidate >= today) return candidate;
+  }
+  return today;
+}
 
 /** Nearest date on/after today that falls on `dayOfWeek` (0=Sunday..6=Saturday). */
 function nextDateForDayOfWeek(dayOfWeek: number): Date {
@@ -42,9 +52,15 @@ function nextDateForDayOfWeek(dayOfWeek: number): Date {
 
 export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) => {
   const { colors } = useTheme();
+  const { t, locale } = useTranslation();
+  const frequencyOptions = FREQUENCY_OPTIONS.map(o => ({ label: t(o.labelKey), value: o.value }));
+  const monthOptions = Array.from({ length: 12 }, (_, i) => {
+    const name = t(`month.${i + 1}` as TranslationKey);
+    return { label: name.charAt(0).toUpperCase() + name.slice(1), value: String(i + 1) };
+  });
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { template } = route.params;
-  const { envelopes, paymentMethods, categories, addRecurringTemplate, updateRecurringTemplate } = useAppData();
+  const { envelopes, paymentMethods, categories, incomeCategories, addRecurringTemplate, updateRecurringTemplate } = useAppData();
 
   const isEditing = !!template;
 
@@ -60,7 +76,6 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
     if (template?.frequency === 'weekly' && template.dayOfWeek !== undefined) return nextDateForDayOfWeek(template.dayOfWeek);
     return new Date();
   });
-  const [showOccurrenceDatePicker, setShowOccurrenceDatePicker] = useState(false);
   const [paymentMethodId, setPaymentMethodId] = useState(
     template?.paymentMethodId ?? (paymentMethods[0]?.id ?? '')
   );
@@ -70,15 +85,19 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
   const [useSavingsEnvelope, setUseSavingsEnvelope] = useState(!!template?.sourceSavingsEnvelopeId);
   const [sourceSavingsEnvelopeId, setSourceSavingsEnvelopeId] = useState(template?.sourceSavingsEnvelopeId ?? '');
   const [dayError, setDayError] = useState('');
+  const [showDaySheet, setShowDaySheet] = useState(false);
 
   const envelope = envelopes.find(e => e.id === envelopeId);
+  const selectedDay = parseInt(dayOfMonthStr, 10) || null;
+  const nextCharge = selectedDay ? nextChargeDate(selectedDay, frequency === 'annual' ? month : undefined) : null;
   const envelopeOptions = sortEnvelopesByTypeAndName(envelopes).map(e => ({
     label: `${e.name} (${e.currency})`,
     value: e.id,
-    group: ENVELOPE_TYPE_LABELS[e.type],
+    group: t(ENVELOPE_TYPE_LABELS[e.type]),
   }));
   const pmOptions = paymentMethods.map(pm => ({ label: pm.name, value: pm.id }));
   const catOptions = categories.map(c => ({ label: c.name, value: c.id }));
+  const incomeCatOptions = incomeCategories.map(c => ({ label: c.name, value: c.id }));
   // Explicit 'ahorro' check — already excludes 'deuda' envelopes as a funding source.
   const savingsEnvelopes = sortEnvelopesByTypeAndName(envelopes.filter(e => e.type === 'ahorro'));
   const savingsOptions = savingsEnvelopes.map(e => ({ label: e.name, value: e.id }));
@@ -94,6 +113,14 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
     }
   }, [type, envelope?.type, useSavingsEnvelope, sourceSavingsEnvelopeId, savingsEnvelopes]);
 
+  // Category options come from the catalog matching the active type, mirroring
+  // the regular transaction form; a selection is re-seeded when the type flips.
+  const activeCategories = type === 'income' ? incomeCategories : categories;
+  useEffect(() => {
+    if (categoryId && activeCategories.some(c => c.id === categoryId)) return;
+    setCategoryId(activeCategories[0]?.id ?? '');
+  }, [activeCategories, categoryId]);
+
   const handleSave = async () => {
     const amount = parseFloat(amountStr);
     if (!amountStr || isNaN(amount) || amount <= 0) return;
@@ -103,7 +130,7 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
     if (frequency === 'monthly' || frequency === 'annual') {
       const parsedDay = parseInt(dayOfMonthStr, 10);
       if (!dayOfMonthStr || isNaN(parsedDay) || parsedDay < 1 || parsedDay > 31) {
-        setDayError('Ingresa un día entre 1 y 31');
+        setDayError(t('recurring.invalidDay'));
         return;
       }
       dayOfMonth = parsedDay;
@@ -114,9 +141,9 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
       envelopeId,
       type,
       amount,
-      description: description.trim() || (type === 'income' ? 'Ingreso' : 'Gasto'),
+      description: description.trim() || (type === 'income' ? t('tx.income') : t('tx.expense')),
       paymentMethodId: type === 'expense' ? paymentMethodId : undefined,
-      categoryId: type === 'expense' ? categoryId : undefined,
+      categoryId,
       sourceSavingsEnvelopeId:
         type === 'expense' && envelope?.type === 'gasto' && useSavingsEnvelope && sourceSavingsEnvelopeId
           ? sourceSavingsEnvelopeId
@@ -146,7 +173,7 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {isEditing ? 'Editar Recurrente' : 'Nueva Recurrente'}
+          {isEditing ? t('recurring.edit') : t('recurring.new')}
         </Text>
         <TouchableOpacity onPress={handleSave} style={styles.headerBtn}>
           <Check color={colors.green} size={24} />
@@ -160,11 +187,11 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
       >
         <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
           <Dropdown
-            label="Sobre"
+            label={t('recurring.envelope')}
             options={envelopeOptions}
             value={envelopeId}
             onSelect={setEnvelopeId}
-            placeholder={envelopes.length === 0 ? 'Crea un sobre primero' : 'Seleccionar sobre'}
+            placeholder={envelopes.length === 0 ? t('recurring.createEnvelopeFirst') : t('recurring.selectEnvelope')}
           />
 
           {/* ── Expense / Income toggle ── */}
@@ -174,20 +201,20 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
               onPress={() => setType('expense')}
             >
               <MinusCircle color={type === 'expense' ? colors.white : colors.secondaryText} size={18} />
-              <Text style={[styles.typeText, type === 'expense' && { color: colors.white }]}>Gasto</Text>
+              <Text style={[styles.typeText, type === 'expense' && { color: colors.white }]}>{t('tx.expense')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.typeBtn, type === 'income' && styles.typeBtnIncome]}
               onPress={() => setType('income')}
             >
               <PlusCircle color={type === 'income' ? colors.white : colors.secondaryText} size={18} />
-              <Text style={[styles.typeText, type === 'income' && { color: colors.white }]}>Ingreso</Text>
+              <Text style={[styles.typeText, type === 'income' && { color: colors.white }]}>{t('tx.income')}</Text>
             </TouchableOpacity>
           </View>
 
           {/* ── Formatted amount ── */}
           <CurrencyInput
-            label="Monto"
+            label={t('common.amount')}
             currency={envelope.currency}
             value={amountStr}
             onChangeText={setAmountStr}
@@ -199,8 +226,8 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
 
           {/* ── Frequency ── */}
           <Dropdown
-            label="Frecuencia"
-            options={FREQUENCY_OPTIONS}
+            label={t('recurring.frequency')}
+            options={frequencyOptions}
             value={frequency}
             onSelect={(value) => { setFrequency(value as RecurrenceFrequency); setDayError(''); }}
           />
@@ -208,8 +235,8 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
           {/* ── Month (annual only) ── */}
           {frequency === 'annual' && (
             <Dropdown
-              label="Mes"
-              options={MONTH_OPTIONS}
+              label={t('recurring.month')}
+              options={monthOptions}
               value={String(month)}
               onSelect={(value) => setMonth(parseInt(value, 10))}
             />
@@ -218,12 +245,27 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
           {/* ── Day of month (monthly & annual) ── */}
           {(frequency === 'monthly' || frequency === 'annual') && (
             <>
-              <Dropdown
-                label="Día del mes"
-                options={DAY_OF_MONTH_OPTIONS}
-                value={dayOfMonthStr}
-                onSelect={(value) => { setDayOfMonthStr(value); setDayError(''); }}
-                placeholder="Selecciona un día"
+              <Text style={styles.fieldLabel}>{t('recurring.dayOfMonth')}</Text>
+              <TouchableOpacity style={styles.dayField} onPress={() => setShowDaySheet(true)} activeOpacity={0.8}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.dayFieldText, !selectedDay && { color: colors.secondaryText }]}>
+                    {selectedDay ? t('cadence.monthly', { day: selectedDay }) : t('recurring.selectDay')}
+                  </Text>
+                  {nextCharge ? (
+                    <Text style={styles.dayFieldHint}>
+                      {t('recurring.nextCharge', { date: nextCharge.toLocaleDateString(locale, { day: 'numeric', month: 'short' }) })}
+                    </Text>
+                  ) : null}
+                </View>
+                <ChevronDown color={colors.secondaryText} size={18} />
+              </TouchableOpacity>
+              <DayGridSheet
+                visible={showDaySheet}
+                title={t('recurring.dayOfMonth')}
+                hint={t('recurring.dayTailHint')}
+                value={selectedDay}
+                onSelect={day => { setDayOfMonthStr(String(day)); setDayError(''); }}
+                onClose={() => setShowDaySheet(false)}
               />
               {dayError ? <Text style={styles.errorText}>{dayError}</Text> : null}
             </>
@@ -232,53 +274,50 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
           {/* ── First occurrence date (weekly & biweekly — derives day of week automatically) ── */}
           {(frequency === 'weekly' || frequency === 'biweekly') && (
             <>
-              <Text style={styles.label}>Primera ocurrencia</Text>
-              <TouchableOpacity style={styles.datePickerBtn} onPress={() => setShowOccurrenceDatePicker(true)}>
-                <Calendar color={colors.secondaryText} size={20} />
-                <Text style={styles.dateText}>
-                  {occurrenceDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                </Text>
-              </TouchableOpacity>
-              {showOccurrenceDatePicker && (
-                <DateTimePicker
-                  value={occurrenceDate}
-                  mode="date"
-                  display="default"
-                  onChange={(event, selectedDate) => {
-                    setShowOccurrenceDatePicker(false);
-                    if (selectedDate) setOccurrenceDate(selectedDate);
-                  }}
-                />
-              )}
+              <Text style={styles.label}>{t('recurring.firstOccurrence')}</Text>
+              <View style={{ marginBottom: 16 }}>
+                <DateField value={occurrenceDate} onChange={setOccurrenceDate} showWeekday />
+              </View>
             </>
           )}
 
           {/* ── Description ── */}
-          <Text style={styles.label}>Descripción</Text>
+          <Text style={styles.label}>{t('common.description')}</Text>
           <TextInput
             style={styles.input}
             value={description}
             onChangeText={setDescription}
-            placeholder={type === 'expense' ? 'Ej: Netflix, Alquiler...' : 'Ej: Salario, Renta...'}
+            placeholder={type === 'expense' ? t('recurring.descriptionPlaceholderExpense') : t('recurring.descriptionPlaceholderIncome')}
             placeholderTextColor={colors.secondaryText}
           />
+
+          {/* ── Income category (income only) ── */}
+          {type === 'income' && (
+            <Dropdown
+              label={t('common.category')}
+              options={incomeCatOptions}
+              value={categoryId}
+              onSelect={setCategoryId}
+              placeholder={incomeCategories.length === 0 ? t('tx.addIncomeCategoriesHint') : t('tx.selectCategory')}
+            />
+          )}
 
           {/* ── Category & Payment method (expense only) ── */}
           {type === 'expense' && (
             <>
               <Dropdown
-                label="Categoría"
+                label={t('common.category')}
                 options={catOptions}
                 value={categoryId}
                 onSelect={setCategoryId}
-                placeholder={categories.length === 0 ? 'Agrega categorías en Configuración' : 'Seleccionar categoría'}
+                placeholder={categories.length === 0 ? t('tx.addCategoriesHint') : t('tx.selectCategory')}
               />
               <Dropdown
-                label="Método de pago"
+                label={t('common.paymentMethod')}
                 options={pmOptions}
                 value={paymentMethodId}
                 onSelect={setPaymentMethodId}
-                placeholder={paymentMethods.length === 0 ? 'Agrega métodos en Configuración' : 'Seleccionar método'}
+                placeholder={paymentMethods.length === 0 ? t('tx.addMethodsHint') : t('tx.selectMethod')}
               />
               {/* Explicit 'gasto' check — the funding-from-savings toggle is not offered for 'deuda' envelopes either. */}
               {envelope.type === 'gasto' && (
@@ -291,15 +330,15 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
                     >
                       {useSavingsEnvelope && <Check color={colors.green} size={16} />}
                     </TouchableOpacity>
-                    <Text style={styles.toggleLabel}>Este gasto sale de un sobre de ahorro</Text>
+                    <Text style={styles.toggleLabel}>{t('tx.fromSavings')}</Text>
                   </View>
                   {useSavingsEnvelope && (
                     <Dropdown
-                      label="Sobre de ahorro"
+                      label={t('tx.savingsEnvelope')}
                       options={savingsOptions}
                       value={sourceSavingsEnvelopeId}
                       onSelect={setSourceSavingsEnvelopeId}
-                      placeholder={savingsEnvelopes.length === 0 ? 'Crea un sobre de ahorro primero' : 'Seleccionar sobre de ahorro'}
+                      placeholder={savingsEnvelopes.length === 0 ? t('tx.createSavingsFirst') : t('tx.selectSavings')}
                     />
                   )}
                 </>
@@ -346,17 +385,14 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     marginRight: 12,
   },
   toggleLabel: { color: colors.white, fontSize: 15, flex: 1 },
-  errorText: { color: colors.red, fontSize: 13, marginTop: -20, marginBottom: 20 },
-  datePickerBtn: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 24,
+  fieldLabel: { color: colors.white, fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  dayField: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.cardBg,
+    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 24,
   },
-  dateText: { color: colors.white, fontSize: 16 },
+  dayFieldText: { color: colors.white, fontSize: 16 },
+  dayFieldHint: { color: colors.secondaryText, fontSize: 13, marginTop: 2 },
+  errorText: { color: colors.red, fontSize: 13, marginTop: -20, marginBottom: 20 },
   input: {
     backgroundColor: colors.cardBg, borderRadius: 12, padding: 16,
     color: colors.white, fontSize: 16, marginBottom: 24,
