@@ -31,8 +31,6 @@ const TREND_MONTHS = 6;
 
 const PERIOD_OPTIONS: { labelKey: TranslationKey; value: Exclude<ReportPeriod, { kind: 'custom' }> }[] = [
   { labelKey: 'reports.periodThisMonth', value: 'current-month' },
-  { labelKey: 'reports.period3Months', value: 'last-3-months' },
-  { labelKey: 'reports.period6Months', value: 'last-6-months' },
   { labelKey: 'reports.periodAll', value: 'all-time' },
 ];
 
@@ -326,7 +324,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
               onPress={() => selectPreset(opt.value)}
               activeOpacity={0.8}
             >
-              <Text style={[styles.periodPillText, !customSelected && period === opt.value && styles.periodPillTextActive]}>
+              <Text style={[styles.periodPillText, !customSelected && period === opt.value && styles.periodPillTextActive]} numberOfLines={1}>
                 {t(opt.labelKey)}
               </Text>
             </TouchableOpacity>
@@ -336,7 +334,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
             onPress={selectCustom}
             activeOpacity={0.8}
           >
-            <Text style={[styles.periodPillText, customSelected && styles.periodPillTextActive]}>{t('reports.periodCustom')}</Text>
+            <Text style={[styles.periodPillText, customSelected && styles.periodPillTextActive]} numberOfLines={1}>{t('reports.periodCustom')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -458,7 +456,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   dateBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12, backgroundColor: colors.cardBg, borderWidth: 1, borderColor: colors.divider },
   dateBtnText: { color: colors.white, fontSize: 13 },
   rangeError: { color: colors.red, fontSize: 13, marginTop: 8 },
-  periodPill: { flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: colors.cardBg, alignItems: 'center', borderWidth: 1, borderColor: colors.divider },
+  periodPill: { flex: 1, paddingVertical: 10, paddingHorizontal: 8, borderRadius: 12, backgroundColor: colors.cardBg, alignItems: 'center', borderWidth: 1, borderColor: colors.divider },
   periodPillActive: { backgroundColor: colors.green, borderColor: colors.green },
   periodPillText: { color: colors.secondaryText, fontSize: 13, fontWeight: '600' },
   periodPillTextActive: { color: colors.bg },

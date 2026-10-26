@@ -39,7 +39,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({ visible, selectedIcon, s
   };
 
   const sections = CATEGORIZED_ICONS.map(cat => ({
-    title: cat.title,
+    title: t(cat.titleKey),
     data: chunk(cat.icons, 6)
   }));
 

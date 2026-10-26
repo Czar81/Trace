@@ -115,18 +115,14 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
       <View style={styles.filtersRow}>
         <View style={styles.filterHalf}>
           <DateField
+            compact
             value={dateFrom}
             placeholder={t('search.from')}
             onChange={setDateFrom}
-            quickOptions={[{
-              label: t('search.last7Days'),
-              getDate: () => { const d = new Date(); d.setDate(d.getDate() - 6); return d; },
-              onSelect: d => { setDateFrom(d); setDateTo(undefined); },
-            }]}
           />
         </View>
         <View style={styles.filterHalf}>
-          <DateField value={dateTo} placeholder={t('search.to')} onChange={setDateTo} />
+          <DateField compact value={dateTo} placeholder={t('search.to')} onChange={setDateTo} />
         </View>
       </View>
 

@@ -22,9 +22,11 @@ interface DateFieldProps {
   quickOptions?: DateQuickOption[];
   /** Include the weekday name in the displayed date. */
   showWeekday?: boolean;
+  /** Short month and a single line, for fields that sit side by side. */
+  compact?: boolean;
 }
 
-export const DateField: React.FC<DateFieldProps> = ({ value, placeholder, onChange, quickOptions, showWeekday = false }) => {
+export const DateField: React.FC<DateFieldProps> = ({ value, placeholder, onChange, quickOptions, showWeekday = false, compact = false }) => {
   const { colors } = useTheme();
   const { locale } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -33,7 +35,7 @@ export const DateField: React.FC<DateFieldProps> = ({ value, placeholder, onChan
   const label = value?.toLocaleDateString(locale, {
     weekday: showWeekday ? 'long' : undefined,
     day: 'numeric',
-    month: 'long',
+    month: compact ? 'short' : 'long',
     year: 'numeric',
   }) ?? placeholder ?? '';
 
@@ -41,7 +43,7 @@ export const DateField: React.FC<DateFieldProps> = ({ value, placeholder, onChan
     <View style={styles.container}>
       <TouchableOpacity style={styles.button} onPress={() => setShowPicker(true)}>
         <Calendar color={colors.secondaryText} size={20} />
-        <Text style={styles.text}>{label}</Text>
+        <Text style={styles.text} numberOfLines={compact ? 1 : undefined}>{label}</Text>
       </TouchableOpacity>
 
       {quickOptions && quickOptions.length > 0 && (
@@ -83,7 +85,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  text: { color: colors.white, fontSize: 16 },
+  text: { color: colors.white, fontSize: 16, flexShrink: 1 },
   quickRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
   chip: {
     backgroundColor: colors.cardBg,

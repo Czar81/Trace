@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings, RecurringTransactionTemplate } from '../types';
 import { DEFAULT_THEME_ID } from '../theme/colors';
-import { LanguagePreference, DEFAULT_LANGUAGE_PREFERENCE, isLanguagePreference } from '../i18n';
+import { LanguagePreference, DEFAULT_LANGUAGE_PREFERENCE, isLanguagePreference, translateActive } from '../i18n';
 import { ReportLayoutItem, parseReportLayout } from './reports';
 
 const KEYS = {
@@ -33,31 +33,36 @@ export const DEFAULT_SETTINGS: AppSettings = {
   themeId: DEFAULT_THEME_ID,
 };
 
-const DEFAULT_PAYMENT_METHODS: PaymentMethod[] = [
-  { id: '1', name: 'Efectivo' },
-  { id: '2', name: 'Tarjeta Débito' },
-  { id: '3', name: 'Tarjeta Crédito' },
+// Default catalogs are built in the active language the first time data is created;
+// once saved they are the user's own names and are never re-translated.
+const defaultPaymentMethods = (): PaymentMethod[] => [
+  { id: '1', name: translateActive('default.paymentCash') },
+  { id: '2', name: translateActive('default.paymentDebit') },
+  { id: '3', name: translateActive('default.paymentCredit') },
 ];
 
-const DEFAULT_CATEGORIES: TransactionCategory[] = [
-  { id: '1', name: 'Comida' },
-  { id: '2', name: 'Transporte' },
-  { id: '3', name: 'Servicios' },
-  { id: '4', name: 'Entretenimiento' },
-  { id: '5', name: 'Salud' },
-  { id: '6', name: 'Otros' },
+const defaultCategories = (): TransactionCategory[] => [
+  { id: '1', name: translateActive('default.catFood') },
+  { id: '2', name: translateActive('default.catTransport') },
+  { id: '3', name: translateActive('default.catServices') },
+  { id: '4', name: translateActive('default.catEntertainment') },
+  { id: '5', name: translateActive('default.catHealth') },
+  { id: '6', name: translateActive('default.catOther') },
 ];
 
 // Income categories are a separate catalog. Their ids are prefixed with `inc-`
 // so they can never collide with an expense category id, which keeps the
 // combined category filter in search unambiguous.
-export const DEFAULT_INCOME_CATEGORIES: TransactionCategory[] = [
-  { id: 'inc-1', name: 'Salario' },
-  { id: 'inc-2', name: 'Freelance' },
-  { id: 'inc-3', name: 'Inversiones' },
-  { id: 'inc-4', name: 'Reembolsos' },
-  { id: 'inc-5', name: 'Otros' },
+const defaultIncomeCategories = (): TransactionCategory[] => [
+  { id: 'inc-1', name: translateActive('default.incSalary') },
+  { id: 'inc-2', name: translateActive('default.incFreelance') },
+  { id: 'inc-3', name: translateActive('default.incInvestments') },
+  { id: 'inc-4', name: translateActive('default.incRefunds') },
+  { id: 'inc-5', name: translateActive('default.incOther') },
 ];
+
+/** Spanish defaults, kept for tests and imports that need a fixed reference. */
+export const DEFAULT_INCOME_CATEGORIES: TransactionCategory[] = defaultIncomeCategories();
 
 async function saveData(key: string, data: any) {
   try {
@@ -84,13 +89,13 @@ export const saveTransactions = (data: Transaction[]) => saveData(KEYS.TRANSACTI
 export const loadTransactions = () => loadData<Transaction[]>(KEYS.TRANSACTIONS, []);
 
 export const savePaymentMethods = (data: PaymentMethod[]) => saveData(KEYS.PAYMENT_METHODS, data);
-export const loadPaymentMethods = () => loadData<PaymentMethod[]>(KEYS.PAYMENT_METHODS, DEFAULT_PAYMENT_METHODS);
+export const loadPaymentMethods = () => loadData<PaymentMethod[]>(KEYS.PAYMENT_METHODS, defaultPaymentMethods());
 
 export const saveCategories = (data: TransactionCategory[]) => saveData(KEYS.CATEGORIES, data);
-export const loadCategories = () => loadData<TransactionCategory[]>(KEYS.CATEGORIES, DEFAULT_CATEGORIES);
+export const loadCategories = () => loadData<TransactionCategory[]>(KEYS.CATEGORIES, defaultCategories());
 
 export const saveIncomeCategories = (data: TransactionCategory[]) => saveData(KEYS.INCOME_CATEGORIES, data);
-export const loadIncomeCategories = () => loadData<TransactionCategory[]>(KEYS.INCOME_CATEGORIES, DEFAULT_INCOME_CATEGORIES);
+export const loadIncomeCategories = () => loadData<TransactionCategory[]>(KEYS.INCOME_CATEGORIES, defaultIncomeCategories());
 
 export const saveRecurringTemplates = (data: RecurringTransactionTemplate[]) => saveData(KEYS.RECURRING_TEMPLATES, data);
 export const loadRecurringTemplates = () => loadData<RecurringTransactionTemplate[]>(KEYS.RECURRING_TEMPLATES, []);

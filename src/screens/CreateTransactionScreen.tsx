@@ -19,10 +19,6 @@ type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransaction'>;
 export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const dateQuickOptions = [
-    { label: t('common.today'), getDate: () => new Date() },
-    { label: t('common.yesterday'), getDate: () => { const d = new Date(); d.setDate(d.getDate() - 1); return d; } },
-  ];
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { envelopeId, transaction } = route.params;
   const { envelopes, addTransaction, updateTransaction, paymentMethods, categories, incomeCategories, getEnvelopeBalance, formatAmount } = useAppData();
@@ -205,7 +201,6 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
         <DateField
           value={date}
           onChange={setDate}
-          quickOptions={dateQuickOptions}
         />
 
         {/* ── Description ── */}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { TranslationKey } from '../i18n';
 import {
   Home, Car, Coffee, ShoppingBag, Heart, Zap, Film, Music,
   BookOpen, GraduationCap, Briefcase, Gift, Plane, Gamepad2,
@@ -28,33 +29,33 @@ export type IconName =
   | 'soup' | 'cookie' | 'burger' | 'wine' | 'utensils-crossed';
 
 export interface IconCategory {
-  title: string;
+  titleKey: TranslationKey;
   icons: IconName[];
 }
 
 export const CATEGORIZED_ICONS: IconCategory[] = [
   {
-    title: 'Animales / Animals',
+    titleKey: 'icons.catAnimals',
     icons: ['bird', 'bone', 'bug', 'cat', 'dog', 'fish', 'fish-bowl', 'paw', 'rabbit', 'turtle']
   },
   {
-    title: 'Archivos / Files',
+    titleKey: 'icons.catFiles',
     icons: ['file-pie', 'file-stack', 'file', 'mail', 'printer', 'calendar', 'folder', 'pen', 'paintbrush', 'pentool', 'trash', 'trash2']
   },
   {
-    title: 'Casa / Home',
+    titleKey: 'icons.catHome',
     icons: ['home', 'warehouse', 'bed', 'hammer', 'lamp', 'lightbulb', 'lock', 'sofa', 'zap', 'droplet']
   },
   {
-    title: 'Celebración / Celebration',
+    titleKey: 'icons.catCelebration',
     icons: ['cake', 'cake-slice', 'party', 'balloon', 'tree', 'firework']
   },
   {
-    title: 'Comida / Food',
+    titleKey: 'icons.catFood',
     icons: ['utensils-crossed', 'wine', 'soup', 'cookie', 'burger']
   },
   {
-    title: 'Otros / Others',
+    titleKey: 'icons.catOther',
     icons: ['car', 'coffee', 'shopping-bag', 'heart', 'film', 'music', 'book', 'graduation-cap', 'briefcase', 'gift', 'plane', 'gamepad', 'smartphone', 'dollar', 'piggy-bank', 'shopping-cart', 'bus', 'wallet', 'credit-card', 'dumbbell', 'baby', 'wrench', 'scissors', 'globe', 'building', 'star', 'bike', 'beef', 'pizza', 'tv', 'shirt', 'fuel', 'stethoscope', 'beer', 'box']
   }
 ];
