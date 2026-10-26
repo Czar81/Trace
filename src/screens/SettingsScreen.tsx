@@ -3,11 +3,12 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
-import { ArrowLeft, ChevronRight, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat, Minus, Plus, Palette, Share2 } from 'lucide-react-native';
+import { ArrowLeft, ChevronRight, ChevronDown, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat, Palette, Share2 } from 'lucide-react-native';
 import { exportDataToCSV } from '../utils/exportData';
 import { getLatestAutomaticBackupUri, AUTO_BACKUP_INTERVAL_OPTIONS } from '../utils/autoBackup';
 import { isAvailableAsync, shareAsync } from 'expo-sharing';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { DayGridSheet } from '../components/DayGridSheet';
 import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
@@ -22,6 +23,8 @@ const LANGUAGE_OPTIONS: { value: LanguagePreference; labelKey: 'settings.languag
   { value: 'system', labelKey: 'settings.languageSystem' },
 ];
 
+const LEAD_DAYS_OPTIONS = [1, 2, 3, 5, 7];
+
 export const SettingsScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
   const { t, preference, setPreference } = useTranslation();
@@ -32,6 +35,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
   } = useAppData();
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showCutoffSheet, setShowCutoffSheet] = useState(false);
   const [showInfoDialog, setShowInfoDialog] = useState(false);
   const [infoDialogTitle, setInfoDialogTitle] = useState('');
   const [infoDialogMessage, setInfoDialogMessage] = useState('');
@@ -50,13 +54,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
     );
   };
 
-  const changeLeadDays = (delta: number) => {
-    const next = Math.min(7, Math.max(1, settings.billReminderLeadDays + delta));
-    if (next !== settings.billReminderLeadDays) {
-      updateSettings({ billReminderLeadDays: next });
-    }
-  };
-
   const handleCutoffToggle = (value: boolean) => {
     updateSettings({
       expenseCutoffEnabled: value,
@@ -64,13 +61,10 @@ export const SettingsScreen = ({ navigation }: Props) => {
     });
   };
 
-  const changeCutoffDay = (delta: number) => {
-    const current = settings.expenseCutoffDay ?? 1;
-    const next = Math.min(31, Math.max(1, current + delta));
-    if (next !== current) {
-      updateSettings({ expenseCutoffDay: next });
-    }
-  };
+  // Saved values from before the chips (e.g. 4 or 6 days) stay selectable.
+  const leadDaysOptions = LEAD_DAYS_OPTIONS.includes(settings.billReminderLeadDays)
+    ? LEAD_DAYS_OPTIONS
+    : [...LEAD_DAYS_OPTIONS, settings.billReminderLeadDays].sort((a, b) => a - b);
 
   const handleExport = () => {
     exportDataToCSV(envelopes, transactions, paymentMethods, categories, incomeCategories, settings);
@@ -255,23 +249,15 @@ export const SettingsScreen = ({ navigation }: Props) => {
               <View style={styles.reminderRow}>
                 <Text style={styles.leadDaysLabel}>{t('settings.leadDays')}</Text>
                 <View style={styles.stepper}>
-                  <TouchableOpacity
-                    style={[styles.stepperBtn, settings.billReminderLeadDays <= 1 && styles.stepperBtnDisabled]}
-                    disabled={settings.billReminderLeadDays <= 1}
-                    onPress={() => changeLeadDays(-1)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Minus color={settings.billReminderLeadDays <= 1 ? colors.secondaryText : colors.white} size={16} />
-                  </TouchableOpacity>
-                  <Text style={styles.stepperValue}>{settings.billReminderLeadDays}</Text>
-                  <TouchableOpacity
-                    style={[styles.stepperBtn, settings.billReminderLeadDays >= 7 && styles.stepperBtnDisabled]}
-                    disabled={settings.billReminderLeadDays >= 7}
-                    onPress={() => changeLeadDays(1)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Plus color={settings.billReminderLeadDays >= 7 ? colors.secondaryText : colors.white} size={16} />
-                  </TouchableOpacity>
+                  {leadDaysOptions.map(days => (
+                    <TouchableOpacity
+                      key={days}
+                      style={[styles.intervalChip, settings.billReminderLeadDays === days && styles.intervalChipActive]}
+                      onPress={() => updateSettings({ billReminderLeadDays: days })}
+                    >
+                      <Text style={styles.stepperValue}>{t('settings.autoBackupDaysShort', { days })}</Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
               </View>
             </>
@@ -303,25 +289,10 @@ export const SettingsScreen = ({ navigation }: Props) => {
               <View style={styles.reminderDivider} />
               <View style={styles.reminderRow}>
                 <Text style={styles.leadDaysLabel}>{t('settings.cutoffDay')}</Text>
-                <View style={styles.stepper}>
-                  <TouchableOpacity
-                    style={[styles.stepperBtn, (settings.expenseCutoffDay ?? 1) <= 1 && styles.stepperBtnDisabled]}
-                    disabled={(settings.expenseCutoffDay ?? 1) <= 1}
-                    onPress={() => changeCutoffDay(-1)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Minus color={(settings.expenseCutoffDay ?? 1) <= 1 ? colors.secondaryText : colors.white} size={16} />
-                  </TouchableOpacity>
-                  <Text style={styles.stepperValue}>{settings.expenseCutoffDay ?? 1}</Text>
-                  <TouchableOpacity
-                    style={[styles.stepperBtn, (settings.expenseCutoffDay ?? 1) >= 31 && styles.stepperBtnDisabled]}
-                    disabled={(settings.expenseCutoffDay ?? 1) >= 31}
-                    onPress={() => changeCutoffDay(1)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Plus color={(settings.expenseCutoffDay ?? 1) >= 31 ? colors.secondaryText : colors.white} size={16} />
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity style={styles.dayPill} onPress={() => setShowCutoffSheet(true)} activeOpacity={0.8}>
+                  <Text style={styles.stepperValue}>{t('settings.dayN', { day: settings.expenseCutoffDay ?? 1 })}</Text>
+                  <ChevronDown color={colors.secondaryText} size={16} />
+                </TouchableOpacity>
               </View>
             </>
           )}
@@ -431,6 +402,14 @@ export const SettingsScreen = ({ navigation }: Props) => {
         </TouchableOpacity>
       </ScrollView>
 
+      <DayGridSheet
+        visible={showCutoffSheet}
+        title={t('settings.cutoffDay')}
+        subtitle={t('settings.cutoffEveryMonth')}
+        value={settings.expenseCutoffDay ?? 1}
+        onSelect={day => updateSettings({ expenseCutoffDay: day })}
+        onClose={() => setShowCutoffSheet(false)}
+      />
       <ConfirmDialog
         visible={showResetConfirm}
         title={t('settings.resetDialogTitle')}
@@ -481,6 +460,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   stepperBtn: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.cardHighlight },
   intervalChip: { minWidth: 38, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 6 },
   intervalChipActive: { backgroundColor: colors.cardHighlight },
+  dayPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.bg, borderRadius: 14, paddingVertical: 8, paddingHorizontal: 12 },
   stepperBtnDisabled: { opacity: 0.35 },
   stepperValue: { color: colors.white, fontSize: 15, fontWeight: '700', minWidth: 26, textAlign: 'center' },
 });

@@ -5,9 +5,10 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { DateField } from '../components/DateField';
 import { useAppData } from '../context/ExpenseContext';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { ArrowLeft, Check, PlusCircle, MinusCircle } from 'lucide-react-native';
+import { ArrowLeft, Check, PlusCircle, MinusCircle, ChevronDown } from 'lucide-react-native';
 import { CurrencyInput } from '../components/CurrencyInput';
 import { Dropdown } from '../components/Dropdown';
+import { DayGridSheet } from '../components/DayGridSheet';
 import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
@@ -15,6 +16,7 @@ import { useTranslation } from '../context/LanguageContext';
 import { TranslationKey } from '../i18n';
 import { Envelope, RecurrenceFrequency } from '../types';
 import { sortEnvelopesByTypeAndName } from '../utils/envelopeSorting';
+import { clampDayOfMonth } from '../utils/recurrence';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateRecurringTransaction'>;
 
@@ -25,9 +27,20 @@ const FREQUENCY_OPTIONS: { labelKey: TranslationKey; value: RecurrenceFrequency 
   { labelKey: 'recurring.frequencyAnnual', value: 'annual' },
 ];
 
-const DAY_OF_MONTH_OPTIONS = Array.from({ length: 31 }, (_, i) => ({ label: String(i + 1), value: String(i + 1) }));
-
 const ENVELOPE_TYPE_LABELS: Record<Envelope['type'], TranslationKey> = { gasto: 'main.tabExpenses', ahorro: 'main.tabSavings', deuda: 'main.tabDebts' };
+
+/** Next date on/after today for a monthly (or, with `month`, annual) charge on `day`, clamped to short months. */
+function nextChargeDate(day: number, month?: number): Date {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let i = 0; i < 24; i++) {
+    const y = today.getFullYear() + (month ? i : 0);
+    const m = month ? month - 1 : today.getMonth() + i;
+    const candidate = new Date(y, m, clampDayOfMonth(y + Math.floor(m / 12), ((m % 12) + 12) % 12, day));
+    if (candidate >= today) return candidate;
+  }
+  return today;
+}
 
 /** Nearest date on/after today that falls on `dayOfWeek` (0=Sunday..6=Saturday). */
 function nextDateForDayOfWeek(dayOfWeek: number): Date {
@@ -39,7 +52,7 @@ function nextDateForDayOfWeek(dayOfWeek: number): Date {
 
 export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) => {
   const { colors } = useTheme();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const frequencyOptions = FREQUENCY_OPTIONS.map(o => ({ label: t(o.labelKey), value: o.value }));
   const monthOptions = Array.from({ length: 12 }, (_, i) => {
     const name = t(`month.${i + 1}` as TranslationKey);
@@ -72,8 +85,11 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
   const [useSavingsEnvelope, setUseSavingsEnvelope] = useState(!!template?.sourceSavingsEnvelopeId);
   const [sourceSavingsEnvelopeId, setSourceSavingsEnvelopeId] = useState(template?.sourceSavingsEnvelopeId ?? '');
   const [dayError, setDayError] = useState('');
+  const [showDaySheet, setShowDaySheet] = useState(false);
 
   const envelope = envelopes.find(e => e.id === envelopeId);
+  const selectedDay = parseInt(dayOfMonthStr, 10) || null;
+  const nextCharge = selectedDay ? nextChargeDate(selectedDay, frequency === 'annual' ? month : undefined) : null;
   const envelopeOptions = sortEnvelopesByTypeAndName(envelopes).map(e => ({
     label: `${e.name} (${e.currency})`,
     value: e.id,
@@ -229,12 +245,27 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
           {/* ── Day of month (monthly & annual) ── */}
           {(frequency === 'monthly' || frequency === 'annual') && (
             <>
-              <Dropdown
-                label={t('recurring.dayOfMonth')}
-                options={DAY_OF_MONTH_OPTIONS}
-                value={dayOfMonthStr}
-                onSelect={(value) => { setDayOfMonthStr(value); setDayError(''); }}
-                placeholder={t('recurring.selectDay')}
+              <Text style={styles.fieldLabel}>{t('recurring.dayOfMonth')}</Text>
+              <TouchableOpacity style={styles.dayField} onPress={() => setShowDaySheet(true)} activeOpacity={0.8}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.dayFieldText, !selectedDay && { color: colors.secondaryText }]}>
+                    {selectedDay ? t('cadence.monthly', { day: selectedDay }) : t('recurring.selectDay')}
+                  </Text>
+                  {nextCharge ? (
+                    <Text style={styles.dayFieldHint}>
+                      {t('recurring.nextCharge', { date: nextCharge.toLocaleDateString(locale, { day: 'numeric', month: 'short' }) })}
+                    </Text>
+                  ) : null}
+                </View>
+                <ChevronDown color={colors.secondaryText} size={18} />
+              </TouchableOpacity>
+              <DayGridSheet
+                visible={showDaySheet}
+                title={t('recurring.dayOfMonth')}
+                hint={t('recurring.dayTailHint')}
+                value={selectedDay}
+                onSelect={day => { setDayOfMonthStr(String(day)); setDayError(''); }}
+                onClose={() => setShowDaySheet(false)}
               />
               {dayError ? <Text style={styles.errorText}>{dayError}</Text> : null}
             </>
@@ -354,6 +385,13 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     marginRight: 12,
   },
   toggleLabel: { color: colors.white, fontSize: 15, flex: 1 },
+  fieldLabel: { color: colors.white, fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  dayField: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.cardBg,
+    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 24,
+  },
+  dayFieldText: { color: colors.white, fontSize: 16 },
+  dayFieldHint: { color: colors.secondaryText, fontSize: 13, marginTop: 2 },
   errorText: { color: colors.red, fontSize: 13, marginTop: -20, marginBottom: 20 },
   input: {
     backgroundColor: colors.cardBg, borderRadius: 12, padding: 16,
