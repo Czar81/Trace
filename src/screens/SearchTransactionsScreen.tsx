@@ -3,25 +3,25 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, SectionList, Platf
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
-import { ArrowLeft, Search, X, Calendar } from 'lucide-react-native';
+import { ArrowLeft, Search, X } from 'lucide-react-native';
 import { Dropdown } from '../components/Dropdown';
 import { EmptyState } from '../components/EmptyState';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { DateField } from '../components/DateField';
 import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
+import { useTranslation } from '../context/LanguageContext';
 import { filterTransactions, hasActiveSearch, SearchFilters } from '../utils/transactionSearch';
 import { groupTransactionsByDay } from '../utils/transactionGrouping';
 import { Transaction } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Search'>;
 
-const NONE_OPTION = { label: 'Todas', value: '' };
-
 export const SearchTransactionsScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
+  const { t, locale } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { transactions, envelopes, categories, paymentMethods, formatAmount } = useAppData();
+  const { transactions, envelopes, categories, incomeCategories, paymentMethods, formatAmount } = useAppData();
 
   const [text, setText] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -30,15 +30,14 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [minAmountStr, setMinAmountStr] = useState('');
   const [maxAmountStr, setMaxAmountStr] = useState('');
-  const [showFromPicker, setShowFromPicker] = useState(false);
-  const [showToPicker, setShowToPicker] = useState(false);
 
   const categoryOptions = [
-    { label: 'Todas las categorías', value: '' },
+    { label: t('search.allCategories'), value: '' },
     ...categories.map(c => ({ label: c.name, value: c.id })),
+    ...incomeCategories.map(c => ({ label: c.name, value: c.id })),
   ];
   const paymentMethodOptions = [
-    { label: 'Todos los métodos', value: '' },
+    { label: t('search.allMethods'), value: '' },
     ...paymentMethods.map(pm => ({ label: pm.name, value: pm.id })),
   ];
 
@@ -58,7 +57,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
 
   const active = hasActiveSearch(filters);
   const results = useMemo(() => (active ? filterTransactions(transactions, filters) : []), [active, transactions, filters]);
-  const sections = useMemo(() => groupTransactionsByDay(results), [results]);
+  const sections = useMemo(() => groupTransactionsByDay(results, locale), [results, locale]);
 
   const clearFilters = () => {
     setText('');
@@ -70,8 +69,13 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
     setMaxAmountStr('');
   };
 
-  const dateLabel = (d?: Date) =>
-    d ? d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : null;
+  // Resolve a category name from the catalog that matches the transaction's
+  // type: income categories for income, expense categories otherwise.
+  const categoryNameOf = (item: Transaction) => {
+    if (!item.categoryId) return t('common.noCategory');
+    const catalog = item.type === 'income' ? incomeCategories : categories;
+    return catalog.find(c => c.id === item.categoryId)?.name ?? t('common.noCategory');
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -79,7 +83,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Buscar</Text>
+        <Text style={styles.headerTitle}>{t('search.title')}</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -89,7 +93,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
           style={styles.searchInput}
           value={text}
           onChangeText={setText}
-          placeholder="Buscar por descripción..."
+          placeholder={t('search.placeholder')}
           placeholderTextColor={colors.secondaryText}
         />
         {text !== '' && (
@@ -101,53 +105,37 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
 
       <View style={styles.filtersRow}>
         <View style={styles.filterHalf}>
-          <Dropdown options={categoryOptions} value={categoryId} onSelect={setCategoryId} placeholder={NONE_OPTION.label} />
+          <Dropdown options={categoryOptions} value={categoryId} onSelect={setCategoryId} placeholder={t('search.all')} />
         </View>
         <View style={styles.filterHalf}>
-          <Dropdown options={paymentMethodOptions} value={paymentMethodId} onSelect={setPaymentMethodId} placeholder={NONE_OPTION.label} />
+          <Dropdown options={paymentMethodOptions} value={paymentMethodId} onSelect={setPaymentMethodId} placeholder={t('search.all')} />
         </View>
       </View>
 
       <View style={styles.filtersRow}>
-        <TouchableOpacity style={[styles.dateBtn, styles.filterHalf]} onPress={() => setShowFromPicker(true)}>
-          <Calendar color={colors.secondaryText} size={16} />
-          <Text style={styles.dateBtnText}>{dateLabel(dateFrom) ?? 'Desde'}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.dateBtn, styles.filterHalf]} onPress={() => setShowToPicker(true)}>
-          <Calendar color={colors.secondaryText} size={16} />
-          <Text style={styles.dateBtnText}>{dateLabel(dateTo) ?? 'Hasta'}</Text>
-        </TouchableOpacity>
+        <View style={styles.filterHalf}>
+          <DateField
+            value={dateFrom}
+            placeholder={t('search.from')}
+            onChange={setDateFrom}
+            quickOptions={[{
+              label: t('search.last7Days'),
+              getDate: () => { const d = new Date(); d.setDate(d.getDate() - 6); return d; },
+              onSelect: d => { setDateFrom(d); setDateTo(undefined); },
+            }]}
+          />
+        </View>
+        <View style={styles.filterHalf}>
+          <DateField value={dateTo} placeholder={t('search.to')} onChange={setDateTo} />
+        </View>
       </View>
-
-      {showFromPicker && (
-        <DateTimePicker
-          value={dateFrom ?? new Date()}
-          mode="date"
-          display="default"
-          onChange={(event, selectedDate) => {
-            setShowFromPicker(false);
-            if (selectedDate) setDateFrom(selectedDate);
-          }}
-        />
-      )}
-      {showToPicker && (
-        <DateTimePicker
-          value={dateTo ?? new Date()}
-          mode="date"
-          display="default"
-          onChange={(event, selectedDate) => {
-            setShowToPicker(false);
-            if (selectedDate) setDateTo(selectedDate);
-          }}
-        />
-      )}
 
       <View style={styles.filtersRow}>
         <TextInput
           style={[styles.amountInput, styles.filterHalf]}
           value={minAmountStr}
           onChangeText={setMinAmountStr}
-          placeholder="Monto mín."
+          placeholder={t('search.minAmount')}
           placeholderTextColor={colors.secondaryText}
           keyboardType="numeric"
         />
@@ -155,7 +143,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
           style={[styles.amountInput, styles.filterHalf]}
           value={maxAmountStr}
           onChangeText={setMaxAmountStr}
-          placeholder="Monto máx."
+          placeholder={t('search.maxAmount')}
           placeholderTextColor={colors.secondaryText}
           keyboardType="numeric"
         />
@@ -163,7 +151,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
 
       {active && (
         <TouchableOpacity onPress={clearFilters} style={styles.clearBtn}>
-          <Text style={styles.clearBtnText}>Limpiar filtros</Text>
+          <Text style={styles.clearBtnText}>{t('search.clearFilters')}</Text>
         </TouchableOpacity>
       )}
 
@@ -175,19 +163,20 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
         renderSectionHeader={({ section }) => <Text style={styles.sectionHeader}>{section.title}</Text>}
         ListEmptyComponent={
           active ? (
-            <EmptyState message="No se encontraron transacciones." />
+            <EmptyState message={t('search.noResults')} />
           ) : (
-            <EmptyState message="Busca por descripción o usa los filtros para encontrar una transacción." />
+            <EmptyState message={t('search.hint')} />
           )
         }
         renderItem={({ item }) => (
           <TransactionResultRow
             item={item}
-            envelopeName={envelopes.find(e => e.id === item.envelopeId)?.name ?? 'Sobre eliminado'}
-            categoryName={item.categoryId ? categories.find(c => c.id === item.categoryId)?.name ?? 'Sin categoría' : 'Sin categoría'}
-            paymentMethodName={item.paymentMethodId ? paymentMethods.find(p => p.id === item.paymentMethodId)?.name ?? 'Sin método' : 'Sin método'}
+            envelopeName={envelopes.find(e => e.id === item.envelopeId)?.name ?? t('common.deletedEnvelope')}
+            categoryName={categoryNameOf(item)}
+            paymentMethodName={item.paymentMethodId ? paymentMethods.find(p => p.id === item.paymentMethodId)?.name ?? t('common.noMethod') : t('common.noMethod')}
             currency={envelopes.find(e => e.id === item.envelopeId)?.currency ?? 'CRC'}
             formatAmount={formatAmount}
+            locale={locale}
             onPress={() => {
               if (item.type === 'transfer') return;
               navigation.navigate('CreateTransaction', { envelopeId: item.envelopeId, transaction: item });
@@ -207,8 +196,9 @@ const TransactionResultRow: React.FC<{
   paymentMethodName: string;
   currency: 'CRC' | 'USD' | 'EUR';
   formatAmount: (amount: number, currency: 'CRC' | 'USD' | 'EUR') => string;
+  locale: string;
   onPress: () => void;
-}> = ({ item, envelopeName, categoryName, paymentMethodName, currency, formatAmount, onPress }) => {
+}> = ({ item, envelopeName, categoryName, paymentMethodName, currency, formatAmount, locale, onPress }) => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const isTransfer = item.type === 'transfer';
@@ -223,7 +213,7 @@ const TransactionResultRow: React.FC<{
           {!isTransfer ? ` · ${categoryName} · ${paymentMethodName}` : ''}
         </Text>
         <Text style={styles.resultDate}>
-          {new Date(item.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+          {new Date(item.date).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })}
         </Text>
       </View>
       <Text style={[styles.resultAmount, { color }]}>{formatAmount(item.amount, currency)}</Text>
@@ -244,11 +234,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   searchInput: { flex: 1, color: colors.white, fontSize: 15, padding: 0 },
   filtersRow: { flexDirection: 'row', gap: 10, marginHorizontal: 20, marginBottom: 12 },
   filterHalf: { flex: 1 },
-  dateBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: colors.cardBg, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14,
-  },
-  dateBtnText: { color: colors.white, fontSize: 14 },
   amountInput: {
     backgroundColor: colors.cardBg, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14,
     color: colors.white, fontSize: 14,

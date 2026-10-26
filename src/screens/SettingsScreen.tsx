@@ -3,21 +3,32 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
-import { ArrowLeft, ChevronRight, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat, Minus, Plus, Palette } from 'lucide-react-native';
+import { ArrowLeft, ChevronRight, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat, Minus, Plus, Palette, Share2 } from 'lucide-react-native';
 import { exportDataToCSV } from '../utils/exportData';
+import { getLatestAutomaticBackupUri, AUTO_BACKUP_INTERVAL_OPTIONS } from '../utils/autoBackup';
+import { isAvailableAsync, shareAsync } from 'expo-sharing';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
+import { useTranslation } from '../context/LanguageContext';
+import { LanguagePreference } from '../i18n';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
+const LANGUAGE_OPTIONS: { value: LanguagePreference; labelKey: 'settings.languageSpanish' | 'settings.languageEnglish' | 'settings.languageSystem' }[] = [
+  { value: 'es', labelKey: 'settings.languageSpanish' },
+  { value: 'en', labelKey: 'settings.languageEnglish' },
+  { value: 'system', labelKey: 'settings.languageSystem' },
+];
+
 export const SettingsScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
+  const { t, preference, setPreference } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const {
-    envelopes, transactions, paymentMethods, categories, settings,
-    importFromBackup, resetAllEnvelopes, updateSettings,
+    envelopes, transactions, paymentMethods, categories, incomeCategories, settings,
+    importFromBackup, resetAllEnvelopes, updateSettings, autoBackup, updateAutoBackup,
   } = useAppData();
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -34,7 +45,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
   const handleImport = async () => {
     const result = await importFromBackup();
     showInfo(
-      result.success ? 'Importación exitosa' : 'Error de importación',
+      result.success ? t('settings.importSuccessTitle') : t('settings.importErrorTitle'),
       result.message
     );
   };
@@ -62,8 +73,21 @@ export const SettingsScreen = ({ navigation }: Props) => {
   };
 
   const handleExport = () => {
-    exportDataToCSV(envelopes, transactions, paymentMethods, categories, settings);
-    showInfo('Exportación', 'Backup exportado correctamente.');
+    exportDataToCSV(envelopes, transactions, paymentMethods, categories, incomeCategories, settings);
+    showInfo(t('settings.exportTitle'), t('settings.exportDone'));
+  };
+
+  const handleShareLatestBackup = async () => {
+    const uri = await getLatestAutomaticBackupUri();
+    if (!uri || !(await isAvailableAsync())) {
+      showInfo(t('settings.autoBackupTitle'), t('settings.noAutoBackupToShare'));
+      return;
+    }
+    try {
+      await shareAsync(uri, { UTI: 'public.json', mimeType: 'application/json' });
+    } catch {
+      showInfo(t('settings.autoBackupTitle'), t('settings.autoBackupOpenFailed'));
+    }
   };
 
   const handleResetAll = () => {
@@ -76,12 +100,12 @@ export const SettingsScreen = ({ navigation }: Props) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Configuración</Text>
+        <Text style={styles.headerTitle}>{t('settings.title')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={styles.sectionTitle}>Configura tu app</Text>
+        <Text style={styles.sectionTitle}>{t('settings.configureApp')}</Text>
 
         <TouchableOpacity
           style={styles.menuItem}
@@ -92,8 +116,8 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <Palette color={colors.white} size={18} />
           </View>
           <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>Apariencia</Text>
-            <Text style={styles.menuSubtitle}>Elegí el tema visual de la app</Text>
+            <Text style={styles.menuTitle}>{t('settings.appearance')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.appearanceSubtitle')}</Text>
           </View>
           <ChevronRight color={colors.secondaryText} size={20} />
         </TouchableOpacity>
@@ -107,8 +131,8 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <DollarSign color={colors.white} size={18} />
           </View>
           <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>Monedas</Text>
-            <Text style={styles.menuSubtitle}>Tipo de moneda y tasas de cambio</Text>
+            <Text style={styles.menuTitle}>{t('settings.currencies')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.currenciesSubtitle')}</Text>
           </View>
           <ChevronRight color={colors.secondaryText} size={20} />
         </TouchableOpacity>
@@ -122,8 +146,8 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <CreditCard color={colors.white} size={18} />
           </View>
           <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>Métodos de pago</Text>
-            <Text style={styles.menuSubtitle}>Agregar, editar y eliminar métodos</Text>
+            <Text style={styles.menuTitle}>{t('settings.paymentMethods')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.paymentMethodsSubtitle')}</Text>
           </View>
           <ChevronRight color={colors.secondaryText} size={20} />
         </TouchableOpacity>
@@ -137,8 +161,8 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <Tag color={colors.white} size={18} />
           </View>
           <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>Categorías</Text>
-            <Text style={styles.menuSubtitle}>Organiza tus transacciones</Text>
+            <Text style={styles.menuTitle}>{t('settings.categories')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.categoriesSubtitle')}</Text>
           </View>
           <ChevronRight color={colors.secondaryText} size={20} />
         </TouchableOpacity>
@@ -152,8 +176,8 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <BarChart3 color={colors.white} size={18} />
           </View>
           <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>Reportes</Text>
-            <Text style={styles.menuSubtitle}>Gastos por categoría, mes y más</Text>
+            <Text style={styles.menuTitle}>{t('settings.reports')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.reportsSubtitle')}</Text>
           </View>
           <ChevronRight color={colors.secondaryText} size={20} />
         </TouchableOpacity>
@@ -167,18 +191,37 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <Repeat color={colors.white} size={18} />
           </View>
           <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>Recurrentes</Text>
-            <Text style={styles.menuSubtitle}>Transacciones automáticas mensuales</Text>
+            <Text style={styles.menuTitle}>{t('settings.recurring')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.recurringSubtitle')}</Text>
           </View>
           <ChevronRight color={colors.secondaryText} size={20} />
         </TouchableOpacity>
 
-        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Alertas</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>{t('settings.language')}</Text>
+
+        <View style={styles.reminderCard}>
+          <View style={styles.reminderRow}>
+            <Text style={styles.leadDaysLabel}>{t('settings.language')}</Text>
+            <View style={styles.stepper}>
+              {LANGUAGE_OPTIONS.map(option => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[styles.intervalChip, preference === option.value && styles.intervalChipActive]}
+                  onPress={() => setPreference(option.value)}
+                >
+                  <Text style={styles.stepperValue}>{t(option.labelKey)}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+
+        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>{t('settings.alerts')}</Text>
 
         <View style={styles.toggleRow}>
           <View style={styles.toggleTextWrapper}>
-            <Text style={styles.menuTitle}>Alertas de presupuesto</Text>
-            <Text style={styles.menuSubtitle}>Notifica al llegar al 80% y 100% de un sobre de gasto</Text>
+            <Text style={styles.menuTitle}>{t('settings.budgetAlerts')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.budgetAlertsSubtitle')}</Text>
           </View>
           <Switch
             value={settings.budgetAlertsEnabled}
@@ -191,11 +234,11 @@ export const SettingsScreen = ({ navigation }: Props) => {
         <View style={styles.reminderCard}>
           <View style={styles.reminderRow}>
             <View style={styles.toggleTextWrapper}>
-              <Text style={styles.menuTitle}>Recordatorios de facturas</Text>
+              <Text style={styles.menuTitle}>{t('settings.billReminders')}</Text>
               <Text style={styles.menuSubtitle}>
                 {settings.billRemindersEnabled
-                  ? `Avisa ${settings.billReminderLeadDays} día${settings.billReminderLeadDays > 1 ? 's' : ''} antes de que se genere una transacción recurrente`
-                  : 'Avisa antes de que se genere una transacción recurrente'}
+                  ? t(settings.billReminderLeadDays > 1 ? 'settings.billRemindersOnOther' : 'settings.billRemindersOnOne', { days: settings.billReminderLeadDays })
+                  : t('settings.billRemindersOff')}
               </Text>
             </View>
             <Switch
@@ -210,7 +253,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <>
               <View style={styles.reminderDivider} />
               <View style={styles.reminderRow}>
-                <Text style={styles.leadDaysLabel}>Días de anticipación</Text>
+                <Text style={styles.leadDaysLabel}>{t('settings.leadDays')}</Text>
                 <View style={styles.stepper}>
                   <TouchableOpacity
                     style={[styles.stepperBtn, settings.billReminderLeadDays <= 1 && styles.stepperBtnDisabled]}
@@ -235,16 +278,16 @@ export const SettingsScreen = ({ navigation }: Props) => {
           )}
         </View>
 
-        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Corte de gastos</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>{t('settings.cutoffSection')}</Text>
 
         <View style={styles.reminderCard}>
           <View style={styles.reminderRow}>
             <View style={styles.toggleTextWrapper}>
-              <Text style={styles.menuTitle}>Corte mensual</Text>
+              <Text style={styles.menuTitle}>{t('settings.cutoff')}</Text>
               <Text style={styles.menuSubtitle}>
                 {settings.expenseCutoffEnabled
-                  ? `Ignora gastos previos al día ${settings.expenseCutoffDay ?? 1} de cada mes`
-                  : 'Ignora gastos previos al día de corte en sobres de gasto'}
+                  ? t('settings.cutoffOn', { day: settings.expenseCutoffDay ?? 1 })
+                  : t('settings.cutoffOff')}
               </Text>
             </View>
             <Switch
@@ -259,7 +302,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <>
               <View style={styles.reminderDivider} />
               <View style={styles.reminderRow}>
-                <Text style={styles.leadDaysLabel}>Día de corte</Text>
+                <Text style={styles.leadDaysLabel}>{t('settings.cutoffDay')}</Text>
                 <View style={styles.stepper}>
                   <TouchableOpacity
                     style={[styles.stepperBtn, (settings.expenseCutoffDay ?? 1) <= 1 && styles.stepperBtnDisabled]}
@@ -284,7 +327,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
           )}
         </View>
 
-        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Backup y restauración</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>{t('settings.backupSection')}</Text>
 
         <TouchableOpacity
           style={styles.menuItem}
@@ -295,8 +338,8 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <Upload color={colors.white} size={18} />
           </View>
           <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>Importar backup</Text>
-            <Text style={styles.menuSubtitle}>Cargar datos desde backup</Text>
+            <Text style={styles.menuTitle}>{t('settings.importBackup')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.importBackupSubtitle')}</Text>
           </View>
         </TouchableOpacity>
 
@@ -309,10 +352,69 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <Download color={colors.white} size={18} />
           </View>
           <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>Exportar backup</Text>
-            <Text style={styles.menuSubtitle}>Guardar copia de seguridad</Text>
+            <Text style={styles.menuTitle}>{t('settings.exportBackup')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.exportBackupSubtitle')}</Text>
           </View>
         </TouchableOpacity>
+
+        <View style={styles.reminderCard}>
+          <View style={styles.reminderRow}>
+            <View style={styles.toggleTextWrapper}>
+              <Text style={styles.menuTitle}>{t('settings.autoBackups')}</Text>
+              <Text style={styles.menuSubtitle}>
+                {autoBackup.enabled
+                  ? t(autoBackup.intervalDays > 1 ? 'settings.autoBackupsOnOther' : 'settings.autoBackupsOnOne', { days: autoBackup.intervalDays })
+                  : t('settings.autoBackupsOff')}
+              </Text>
+            </View>
+            <Switch
+              value={autoBackup.enabled}
+              onValueChange={(value) => updateAutoBackup({ enabled: value })}
+              trackColor={{ false: colors.cardBg, true: colors.green }}
+              thumbColor={autoBackup.enabled ? colors.green : colors.white}
+            />
+          </View>
+
+          {autoBackup.enabled && (
+            <>
+              <View style={styles.reminderDivider} />
+              <View style={styles.reminderRow}>
+                <Text style={styles.leadDaysLabel}>{t('settings.autoBackupEvery')}</Text>
+                <View style={styles.stepper}>
+                  {AUTO_BACKUP_INTERVAL_OPTIONS.map(days => (
+                    <TouchableOpacity
+                      key={days}
+                      style={[styles.intervalChip, autoBackup.intervalDays === days && styles.intervalChipActive]}
+                      onPress={() => updateAutoBackup({ intervalDays: days })}
+                    >
+                      <Text style={styles.stepperValue}>{t('settings.autoBackupDaysShort', { days })}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+              <View style={styles.reminderDivider} />
+              <TouchableOpacity style={styles.reminderRow} onPress={handleShareLatestBackup} activeOpacity={0.8}>
+                <View style={styles.toggleTextWrapper}>
+                  <Text style={styles.leadDaysLabel}>
+                    {autoBackup.lastSuccessAt
+                      ? t('settings.lastBackup', { date: new Date(autoBackup.lastSuccessAt).toLocaleDateString() })
+                      : t('settings.noAutoBackups')}
+                  </Text>
+                  {autoBackup.lastError && (
+                    <Text style={[styles.menuSubtitle, { color: colors.red }]}>
+                      {t('settings.lastBackupFailed', { error: autoBackup.lastError })}
+                    </Text>
+                  )}
+                </View>
+                <Share2 color={colors.secondaryText} size={18} />
+              </TouchableOpacity>
+            </>
+          )}
+          <View style={styles.reminderDivider} />
+          <Text style={[styles.menuSubtitle, { padding: 16 }]}>
+            {t('settings.autoBackupNote')}
+          </Text>
+        </View>
 
         <TouchableOpacity
           style={styles.menuItem}
@@ -323,23 +425,23 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <RefreshCw color={colors.white} size={18} />
           </View>
           <View style={styles.menuTextWrapper}>
-            <Text style={[styles.menuTitle, { color: colors.red }]}>Resetear todos los sobres</Text>
-            <Text style={styles.menuSubtitle}>Reinicia los saldos y mueve todo al historial</Text>
+            <Text style={[styles.menuTitle, { color: colors.red }]}>{t('settings.resetAll')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.resetAllSubtitle')}</Text>
           </View>
         </TouchableOpacity>
       </ScrollView>
 
       <ConfirmDialog
         visible={showResetConfirm}
-        title="Resetear todos los sobres"
-        message="Esta acción moverá el historial de todos los sobres y reiniciará sus balances. Es irreversible."
-        confirmLabel="Resetear"
-        cancelLabel="Cancelar"
+        title={t('settings.resetDialogTitle')}
+        message={t('settings.resetDialogMessage')}
+        confirmLabel={t('settings.resetDialogConfirm')}
+        cancelLabel={t('common.cancel')}
         destructive
         onConfirm={async () => {
           await resetAllEnvelopes();
           setShowResetConfirm(false);
-          showInfo('Éxito', 'Todos los sobres han sido reiniciados.');
+          showInfo(t('common.success'), t('settings.resetDone'));
         }}
         onCancel={() => setShowResetConfirm(false)}
       />
@@ -348,7 +450,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
         visible={showInfoDialog}
         title={infoDialogTitle}
         message={infoDialogMessage}
-        confirmLabel="Aceptar"
+        confirmLabel={t('common.accept')}
         cancelLabel=""
         onConfirm={() => setShowInfoDialog(false)}
         onCancel={() => setShowInfoDialog(false)}
@@ -377,6 +479,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   leadDaysLabel: { color: colors.white, fontSize: 15, fontWeight: '600' },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: colors.bg, borderRadius: 20, padding: 4 },
   stepperBtn: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.cardHighlight },
+  intervalChip: { minWidth: 38, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 6 },
+  intervalChipActive: { backgroundColor: colors.cardHighlight },
   stepperBtnDisabled: { opacity: 0.35 },
   stepperValue: { color: colors.white, fontSize: 15, fontWeight: '700', minWidth: 26, textAlign: 'center' },
 });

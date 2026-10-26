@@ -7,10 +7,15 @@ import {
   loadTransactions, saveTransactions,
   loadPaymentMethods, savePaymentMethods,
   loadCategories, saveCategories,
+  loadIncomeCategories, saveIncomeCategories,
   loadSettings, saveSettings, DEFAULT_SETTINGS,
+  AutoBackupState, DEFAULT_AUTO_BACKUP_STATE, loadAutoBackupState,
+  saveAutoBackupEnabled, saveAutoBackupIntervalDays, saveAutoBackupLastSuccessAt, saveAutoBackupLastError,
   loadRecurringTemplates, saveRecurringTemplates
 } from '../utils/storage';
 import { pickAndImportBackup } from '../utils/importData';
+import { createAutomaticBackup, isBackupDue } from '../utils/autoBackup';
+import { translateActive } from '../i18n';
 import { formatCurrency } from '../utils/formatCurrency';
 import {
   clampDayOfMonth, getNextDueDate, getOccurrenceKey,
@@ -150,7 +155,7 @@ export function accrueDebtInterest(
           envelopeId: envelope.id,
           type: 'expense',
           amount: interestAmount,
-          description: 'Interés',
+          description: translateActive('debt.interestDescription'),
           date: cycleDate.toISOString(),
           isArchived: false,
         });
@@ -168,8 +173,11 @@ interface AppContextType {
   transactions: Transaction[];
   paymentMethods: PaymentMethod[];
   categories: TransactionCategory[];
+  incomeCategories: TransactionCategory[];
   settings: AppSettings;
   recurringTemplates: RecurringTransactionTemplate[];
+  autoBackup: AutoBackupState;
+  updateAutoBackup: (updates: Partial<Pick<AutoBackupState, 'enabled' | 'intervalDays'>>) => Promise<void>;
 
   // Envelope CRUD
   addEnvelope: (envelope: Omit<Envelope, 'id'>) => Promise<void>;
@@ -207,6 +215,8 @@ interface AppContextType {
   deletePaymentMethod: (id: string) => Promise<void>;
   addCategory: (name: string) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
+  addIncomeCategory: (name: string) => Promise<void>;
+  deleteIncomeCategory: (id: string) => Promise<void>;
 
   // Settings
   updateSettings: (updates: Partial<AppSettings>) => Promise<void>;
@@ -229,8 +239,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [categories, setCategories] = useState<TransactionCategory[]>([]);
+  const [incomeCategories, setIncomeCategories] = useState<TransactionCategory[]>([]);
   const [recurringTemplates, setRecurringTemplates] = useState<RecurringTransactionTemplate[]>([]);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [autoBackup, setAutoBackup] = useState<AutoBackupState>(DEFAULT_AUTO_BACKUP_STATE);
 
   useEffect(() => {
     const initData = async () => {
@@ -240,6 +252,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const loadedTemplates = await loadRecurringTemplates();
       setPaymentMethods(await loadPaymentMethods());
       setCategories(await loadCategories());
+      setIncomeCategories(await loadIncomeCategories());
       const loadedSettings = await loadSettings();
       setSettings(loadedSettings);
 
@@ -309,16 +322,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await saveRecurringTemplates(templatesWithReminders);
       setRecurringTemplates(templatesWithReminders);
 
+      const finalTransactions = allNewTransactions.length > 0
+        ? [...allNewTransactions, ...loadedTransactions]
+        : loadedTransactions;
       if (allNewTransactions.length > 0) {
-        const finalTransactions = [...allNewTransactions, ...loadedTransactions];
         await saveTransactions(finalTransactions);
-        setTransactions(finalTransactions);
-      } else {
-        setTransactions(loadedTransactions);
+      }
+      setTransactions(finalTransactions);
+
+      // ─── Automatic backup (never blocks or rejects the initial load) ──────
+      try {
+        const backupState = await loadAutoBackupState();
+        setAutoBackup(backupState);
+        if (backupState.enabled && isBackupDue(backupState.lastSuccessAt, backupState.intervalDays, now)) {
+          try {
+            await createAutomaticBackup(
+              envelopesWithDebtReminders,
+              finalTransactions,
+              await loadPaymentMethods(),
+              await loadCategories(),
+              await loadIncomeCategories(),
+              loadedSettings,
+              now
+            );
+            const lastSuccessAt = now.toISOString();
+            await saveAutoBackupLastSuccessAt(lastSuccessAt);
+            await saveAutoBackupLastError(null);
+            setAutoBackup(prev => ({ ...prev, lastSuccessAt, lastError: null }));
+          } catch (e) {
+            const lastError = e instanceof Error ? e.message : String(e);
+            console.error('Automatic backup failed', e);
+            await saveAutoBackupLastError(lastError);
+            setAutoBackup(prev => ({ ...prev, lastError }));
+          }
+        }
+      } catch (e) {
+        console.error('Automatic backup check failed', e);
       }
     };
     initData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const updateAutoBackup = useCallback(async (updates: Partial<Pick<AutoBackupState, 'enabled' | 'intervalDays'>>) => {
+    setAutoBackup(prev => ({ ...prev, ...updates }));
+    if (updates.enabled !== undefined) await saveAutoBackupEnabled(updates.enabled);
+    if (updates.intervalDays !== undefined) await saveAutoBackupIntervalDays(updates.intervalDays);
   }, []);
 
   // ─── Currency helpers ──────────────────────────────────────────────────────
@@ -448,8 +497,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (before < 0.8 && after >= 0.8) {
         await scheduleNotification({
           content: {
-            title: 'Presupuesto al 80%',
-            body: `Tu sobre "${envelope.name}" llegó al ${Math.round(after * 100)}% de su presupuesto.`,
+            title: translateActive('notif.budget80Title'),
+            body: translateActive('notif.budget80Body', { name: envelope.name, percent: Math.round(after * 100) }),
           },
           trigger: null,
         });
@@ -458,8 +507,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (before < 1.0 && after >= 1.0) {
         await scheduleNotification({
           content: {
-            title: 'Presupuesto excedido',
-            body: `Tu sobre "${envelope.name}" superó su presupuesto (${Math.round(after * 100)}%).`,
+            title: translateActive('notif.budgetExceededTitle'),
+            body: translateActive('notif.budgetExceededBody', { name: envelope.name, percent: Math.round(after * 100) }),
           },
           trigger: null,
         });
@@ -523,8 +572,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         const notificationId = await scheduleNotification({
           content: {
-            title: 'Factura próxima',
-            body: `"${template.description}" (${amountLabel}) se generará en ${leadDays} días.`,
+            title: translateActive('notif.billTitle'),
+            body: translateActive('notif.billBody', { name: template.description, amount: amountLabel, days: leadDays }),
           },
           trigger: { type: dateTriggerType, date: reminderDate },
         });
@@ -585,8 +634,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
           await scheduleNotification({
             content: {
-              title: 'Pago mínimo no cubierto',
-              body: `El pago mínimo de "${envelope.name}" no se cubrió este período.`,
+              title: translateActive('notif.minPaymentTitle'),
+              body: translateActive('notif.minPaymentBody', { name: envelope.name }),
             },
             trigger: null,
           });
@@ -661,8 +710,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         const notificationId = await scheduleNotification({
           content: {
-            title: 'Vencimiento de deuda próximo',
-            body: `"${envelope.name}" vence en ${leadDays} días (${amountLabel}).`,
+            title: translateActive('notif.debtDueTitle'),
+            body: translateActive('notif.debtDueBody', { name: envelope.name, days: leadDays, amount: amountLabel }),
           },
           trigger: { type: dateTriggerType, date: reminderDate },
         });
@@ -786,15 +835,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     date?: string;
   }): Promise<{ success: boolean; error?: string }> => {
     if (transfer.envelopeId === transfer.toEnvelopeId) {
-      return { success: false, error: 'El sobre de origen y destino deben ser diferentes.' };
+      return { success: false, error: translateActive('transfer.error.sameEnvelope') };
     }
     const source = envelopes.find(e => e.id === transfer.envelopeId);
     const destination = envelopes.find(e => e.id === transfer.toEnvelopeId);
     if (!source || !destination) {
-      return { success: false, error: 'Sobre no encontrado.' };
+      return { success: false, error: translateActive('transfer.error.envelopeNotFound') };
     }
     if (source.currency !== destination.currency) {
-      return { success: false, error: 'Los sobres deben tener la misma moneda.' };
+      return { success: false, error: translateActive('transfer.error.currencyMismatch') };
     }
 
     await addTransaction({
@@ -823,20 +872,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }): Promise<{ success: boolean; error?: string }> => {
     const existing = transactions.find(t => t.id === id);
     if (!existing) {
-      return { success: false, error: 'Transferencia no encontrada.' };
+      return { success: false, error: translateActive('transfer.error.notFound') };
     }
     const merged = { ...existing, ...updates };
 
     if (merged.envelopeId === merged.toEnvelopeId) {
-      return { success: false, error: 'El sobre de origen y destino deben ser diferentes.' };
+      return { success: false, error: translateActive('transfer.error.sameEnvelope') };
     }
     const source = envelopes.find(e => e.id === merged.envelopeId);
     const destination = envelopes.find(e => e.id === merged.toEnvelopeId);
     if (!source || !destination) {
-      return { success: false, error: 'Sobre no encontrado.' };
+      return { success: false, error: translateActive('transfer.error.envelopeNotFound') };
     }
     if (source.currency !== destination.currency) {
-      return { success: false, error: 'Los sobres deben tener la misma moneda.' };
+      return { success: false, error: translateActive('transfer.error.currencyMismatch') };
     }
 
     await updateTransaction(id, {
@@ -930,6 +979,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await saveCategories(updated);
   }, [categories]);
 
+  // ─── Income Categories CRUD ────────────────────────────────────────────────
+  const addIncomeCategory = useCallback(async (name: string) => {
+    // Prefixed so an income category id can never collide with an expense one.
+    const newCat: TransactionCategory = { id: `inc-${Date.now()}`, name };
+    const updated = [...incomeCategories, newCat];
+    setIncomeCategories(updated);
+    await saveIncomeCategories(updated);
+  }, [incomeCategories]);
+
+  const deleteIncomeCategory = useCallback(async (id: string) => {
+    const updated = incomeCategories.filter(c => c.id !== id);
+    setIncomeCategories(updated);
+    await saveIncomeCategories(updated);
+  }, [incomeCategories]);
+
   // ─── Settings ──────────────────────────────────────────────────────────────
   const updateSettings = useCallback(async (updates: Partial<AppSettings>) => {
     if (
@@ -978,11 +1042,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const importResult = await pickAndImportBackup();
       if (!importResult) {
-        return { success: false, message: 'Import cancelled' };
+        return { success: false, message: translateActive('import.cancelled') };
       }
 
       if (importResult.errors.length > 0) {
-        return { success: false, message: 'Errors in file', errors: importResult.errors };
+        return { success: false, message: translateActive('import.fileErrors'), errors: importResult.errors };
       }
 
       const backup = importResult.backup;
@@ -1001,30 +1065,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await saveCategories(backup.categories);
       await saveSettings(backup.settings);
 
-      const message = `Backup restored: ${backup.envelopes.length} envelopes, ${backup.transactions.length} transactions, ${backup.categories.length} categories, ${backup.paymentMethods.length} payment methods`;
+      // Income categories are optional in the backup: apply them only when the
+      // file carried the field, so importing a pre-change backup does not wipe
+      // the device's current income catalog.
+      let restoredIncomeCategories = incomeCategories;
+      if (backup.incomeCategories) {
+        restoredIncomeCategories = backup.incomeCategories;
+        setIncomeCategories(backup.incomeCategories);
+        await saveIncomeCategories(backup.incomeCategories);
+      }
+
+      const message = translateActive('import.restored', {
+        envelopes: backup.envelopes.length,
+        transactions: backup.transactions.length,
+        categories: backup.categories.length,
+        incomeCategories: restoredIncomeCategories.length,
+        paymentMethods: backup.paymentMethods.length,
+      });
       return { success: true, message };
     } catch {
-      return { success: false, message: 'No se pudo importar el backup. Verifica que el archivo sea válido.' };
+      return { success: false, message: translateActive('import.failed') };
     }
-  }, []);
+  }, [incomeCategories]);
 
   const value = useMemo(() => ({
-    envelopes, transactions, paymentMethods, categories, settings, recurringTemplates,
+    envelopes, transactions, paymentMethods, categories, incomeCategories, settings, recurringTemplates, autoBackup, updateAutoBackup,
     addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
     addTransaction, updateTransaction, deleteTransaction, addTransfer, updateTransfer,
     addRecurringTemplate, updateRecurringTemplate, deleteRecurringTemplate,
     addPaymentMethod, deletePaymentMethod,
     addCategory, deleteCategory,
+    addIncomeCategory, deleteIncomeCategory,
     updateSettings,
     importFromBackup,
     getEnvelopeBalance, getTotalByType, convertToCRC, formatAmount,
   }), [
-    envelopes, transactions, paymentMethods, categories, settings, recurringTemplates,
+    envelopes, transactions, paymentMethods, categories, incomeCategories, settings, recurringTemplates, autoBackup, updateAutoBackup,
     addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
     addTransaction, updateTransaction, deleteTransaction, addTransfer, updateTransfer,
     addRecurringTemplate, updateRecurringTemplate, deleteRecurringTemplate,
     addPaymentMethod, deletePaymentMethod,
     addCategory, deleteCategory,
+    addIncomeCategory, deleteIncomeCategory,
     updateSettings,
     importFromBackup,
     getEnvelopeBalance, getTotalByType, convertToCRC, formatAmount,

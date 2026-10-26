@@ -12,7 +12,7 @@ export interface TransactionDaySection {
   data: Transaction[];
 }
 
-export const groupTransactionsByDay = (transactions: Transaction[]): TransactionDaySection[] => {
+export const groupTransactionsByDay = (transactions: Transaction[], locale: string = 'es-ES'): TransactionDaySection[] => {
   const sections: TransactionDaySection[] = [];
   const sectionByKey = new Map<string, TransactionDaySection>();
 
@@ -21,7 +21,7 @@ export const groupTransactionsByDay = (transactions: Transaction[]): Transaction
     let section = sectionByKey.get(key);
     if (!section) {
       const title = capitalize(
-        new Date(t.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
+        new Date(t.date).toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' })
       );
       section = { title, data: [] };
       sectionByKey.set(key, section);

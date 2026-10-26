@@ -14,6 +14,8 @@ import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { Dropdown } from '../components/Dropdown';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
+import { useTranslation } from '../context/LanguageContext';
+import { TranslationKey } from '../i18n';
 
 const CURRENCY_OPTIONS = [
   { label: 'CRC', value: 'CRC' },
@@ -21,10 +23,10 @@ const CURRENCY_OPTIONS = [
   { label: 'EUR', value: 'EUR' },
 ];
 
-const INTEREST_FREQUENCY_OPTIONS = [
-  { label: 'Mensual', value: 'mensual' },
-  { label: 'Quincenal', value: 'quincenal' },
-  { label: 'Anual', value: 'anual' },
+const INTEREST_FREQUENCY_OPTIONS: { labelKey: TranslationKey; value: string }[] = [
+  { labelKey: 'envelope.freqMonthly', value: 'mensual' },
+  { labelKey: 'envelope.freqBiweekly', value: 'quincenal' },
+  { labelKey: 'envelope.freqAnnual', value: 'anual' },
 ];
 
 const DUE_DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => ({ label: String(i + 1), value: String(i + 1) }));
@@ -33,6 +35,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'CreateEnvelope'>;
 
 export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { envelopeType, envelope } = route.params;
   const { addEnvelope, updateEnvelope, settings } = useAppData();
@@ -64,7 +67,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
     const limit = isUnlimited ? 0 : parseFloat(limitStr || '0');
 
     if (!isUnlimited && (isNaN(limit) || limit < 0)) {
-      setLimitError('Ingresa un monto válido mayor o igual a 0');
+      setLimitError(t('envelope.invalidLimit'));
       return;
     }
     setLimitError('');
@@ -127,8 +130,8 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {isEditing
-            ? 'Editar Sobre'
-            : `Nuevo Sobre · ${envelopeType === 'gasto' ? 'Gasto' : envelopeType === 'deuda' ? 'Deuda' : 'Ahorro'}`}
+            ? t('envelope.edit')
+            : t(envelopeType === 'gasto' ? 'envelope.newExpense' : envelopeType === 'deuda' ? 'envelope.newDebt' : 'envelope.newSaving')}
         </Text>
         <TouchableOpacity onPress={handleSave} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Check color={colors.green} size={24} />
@@ -151,22 +154,22 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
             <EnvelopeAvatar icon={icon} imageUri={imageUri} color={color} size={80} borderRadius={24} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowIconPicker(true)}>
-            <Text style={styles.changeIconText}>Cambiar ícono o imagen</Text>
+            <Text style={styles.changeIconText}>{t('envelope.changeIcon')}</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.label}>Nombre</Text>
+        <Text style={styles.label}>{t('envelope.name')}</Text>
         <TextInput
           style={styles.input}
           value={name}
           onChangeText={setName}
-          placeholder="Nombre del sobre"
+          placeholder={t('envelope.namePlaceholder')}
           placeholderTextColor={colors.secondaryText}
           autoFocus={!isEditing}
         />
 
         <Dropdown
-          label="Moneda"
+          label={t('envelope.currency')}
           options={CURRENCY_OPTIONS}
           value={currency}
           onSelect={(value) => setCurrency(value as Currency)}
@@ -177,10 +180,10 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
             <CurrencyInput
               label={
                 envelopeType === 'gasto'
-                  ? 'Presupuesto'
+                  ? t('envelope.budget')
                   : envelopeType === 'deuda'
-                  ? 'Monto total de la deuda'
-                  : 'Meta de ahorro'
+                  ? t('envelope.debtTotal')
+                  : t('envelope.savingsGoal')
               }
               currency={settings.defaultCurrency}
               value={limitStr}
@@ -194,17 +197,17 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
           <View style={{ flex: 1, paddingRight: 20 }}>
             <Text style={styles.label}>
               {envelopeType === 'gasto'
-                ? 'Sin límite de gasto'
+                ? t('envelope.unlimitedExpense')
                 : envelopeType === 'deuda'
-                ? 'Deuda sin monto total definido'
-                : 'Ahorro ilimitado'}
+                ? t('envelope.unlimitedDebt')
+                : t('envelope.unlimitedSavings')}
             </Text>
             <Text style={styles.hint}>
               {envelopeType === 'gasto'
-                ? 'No habrá un presupuesto máximo.'
+                ? t('envelope.unlimitedExpenseHint')
                 : envelopeType === 'deuda'
-                ? 'No se calculará cuánto falta por pagar.'
-                : 'La meta de ahorro no tiene límite.'}
+                ? t('envelope.unlimitedDebtHint')
+                : t('envelope.unlimitedSavingsHint')}
             </Text>
           </View>
           <Switch
@@ -217,9 +220,9 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
 
         {isDebtDetailsVisible && (
           <>
-            <Text style={styles.sectionLabel}>Detalles de la deuda</Text>
+            <Text style={styles.sectionLabel}>{t('envelope.debtDetails')}</Text>
 
-            <Text style={styles.label}>Tasa de interés (opcional)</Text>
+            <Text style={styles.label}>{t('envelope.interestRate')}</Text>
             <View style={styles.percentRow}>
               <TextInput
                 style={[styles.input, styles.percentInput]}
@@ -233,25 +236,25 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
             </View>
 
             <Dropdown
-              label="Frecuencia del interés"
-              options={INTEREST_FREQUENCY_OPTIONS}
+              label={t('envelope.interestFrequency')}
+              options={INTEREST_FREQUENCY_OPTIONS.map(o => ({ label: t(o.labelKey), value: o.value }))}
               value={interestFrequency}
               onSelect={(value) => setInterestFrequency(value as DebtInterestFrequency)}
             />
 
             <CurrencyInput
-              label="Pago mínimo (opcional)"
+              label={t('envelope.minimumPayment')}
               currency={settings.defaultCurrency}
               value={minimumPaymentStr}
               onChangeText={setMinimumPaymentStr}
             />
 
             <Dropdown
-              label="Día de vencimiento (opcional)"
+              label={t('envelope.dueDay')}
               options={DUE_DAY_OPTIONS}
               value={dueDay}
               onSelect={setDueDay}
-              placeholder="Seleccionar día..."
+              placeholder={t('envelope.selectDay')}
             />
           </>
         )}

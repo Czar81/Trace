@@ -11,6 +11,7 @@ import { RootStackParamList } from '../navigation/types';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
+import { useTranslation } from '../context/LanguageContext';
 import { groupTransactionsByDay } from '../utils/transactionGrouping';
 import { formatDebtCycle } from '../utils/recurrence';
 import { Transaction } from '../types';
@@ -25,6 +26,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'EnvelopeDetail'>;
 
 export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
   const { colors } = useTheme();
+  const { t, locale } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { envelopeId } = route.params;
   const {
@@ -60,7 +62,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
   const periodLabel = (key: string) => {
     const [y, m] = key.split('-');
     const d = new Date(Number(y), Number(m) - 1, 1);
-    return capitalize(d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }));
+    return capitalize(d.toLocaleDateString(locale, { month: 'long', year: 'numeric' }));
   };
 
   const monthsByYear = useMemo(() => {
@@ -70,7 +72,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
       const year = d.getFullYear();
       const key = periodKey(t.date);
       if (!byYear.has(year)) byYear.set(year, new Map());
-      byYear.get(year)!.set(key, capitalize(d.toLocaleDateString('es-ES', { month: 'long' })));
+      byYear.get(year)!.set(key, capitalize(d.toLocaleDateString(locale, { month: 'long' })));
     });
     return Array.from(byYear.entries())
       .sort((a, b) => b[0] - a[0])
@@ -80,7 +82,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
           .sort((a, b) => b[0].localeCompare(a[0]))
           .map(([key, label]) => ({ key, label })),
       }));
-  }, [sortedTransactions]);
+  }, [sortedTransactions, locale]);
 
   const [selectedPeriod, setSelectedPeriod] = useState(() => periodKey(new Date().toISOString()));
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
@@ -151,8 +153,8 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
   );
 
   const visibleSections = useMemo(
-    () => groupTransactionsByDay(visibleTransactions),
-    [visibleTransactions]
+    () => groupTransactionsByDay(visibleTransactions, locale),
+    [visibleTransactions, locale]
   );
 
   if (!envelope) return null;
@@ -216,16 +218,16 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
     if (!dialog) return { title: '', message: '' };
     if (dialog.type === 'reset') {
       return {
-        title: 'Reiniciar sobre',
-        message: 'Las transacciones actuales pasarán al historial y el saldo volverá a cero.',
-        confirmLabel: 'Reiniciar',
+        title: t('detail.resetTitle'),
+        message: t('detail.resetMessage'),
+        confirmLabel: t('detail.resetConfirm'),
       };
     }
     if (dialog.type === 'deleteEnvelope') {
       return {
-        title: `Eliminar "${envelope.name}"`,
-        message: 'Se eliminarán el sobre y todas sus transacciones. Esta acción no se puede deshacer.',
-        confirmLabel: 'Eliminar',
+        title: t('common.deleteNamed', { name: envelope.name }),
+        message: t('detail.deleteMessage'),
+        confirmLabel: t('common.delete'),
       };
     }
     return { title: '', message: '' };
@@ -239,7 +241,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
         visible={!!dialog}
         title={dp.title}
         message={dp.message}
-        confirmLabel={dp.confirmLabel ?? 'Confirmar'}
+        confirmLabel={dp.confirmLabel ?? t('common.confirm')}
         destructive
         onConfirm={handleConfirm}
         onCancel={() => setDialog(null)}
@@ -300,7 +302,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
               <View style={styles.budgetRow}>
                 <Text style={styles.budgetAmount}>{formatAmount(envelope.limit, envelope.currency)}</Text>
                 <Text style={styles.budgetLabel}>
-                  {type === 'gasto' ? ' presupuesto' : type === 'deuda' ? ' deuda total' : ' meta'}
+                  {t(type === 'gasto' ? 'detail.budgetLabel' : type === 'deuda' ? 'detail.debtTotalLabel' : 'detail.goalLabel')}
                 </Text>
               </View>
               <View style={styles.budgetRow}>
@@ -311,13 +313,13 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                   )}
                 </Text>
                 <Text style={styles.budgetLabel}>
-                  {type === 'gasto' ? ' disponibles' : type === 'deuda' ? ' pagado' : ' falta'}
+                  {t(type === 'gasto' ? 'detail.availableLabel' : type === 'deuda' ? 'detail.paidLabel' : 'detail.missingLabel')}
                 </Text>
               </View>
             </View>
           ):
           <Text style={styles.budgetLabel}>
-            {type === 'gasto' ? 'Presupuesto ilimitado' : type === 'deuda' ? 'Deuda sin monto total definido' : 'Meta ilimitada'}
+            {t(type === 'gasto' ? 'detail.unlimitedBudget' : type === 'deuda' ? 'detail.unlimitedDebt' : 'detail.unlimitedGoal')}
           </Text>
           }
 
@@ -327,10 +329,10 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
             </Text>
             <Text style={styles.availableLabel}>
               {type === 'gasto'
-                ? (envelope.isUnlimited ? 'gastados' : (isOver ? 'excedidos' : 'disponibles'))
+                ? t(envelope.isUnlimited ? 'main.spent' : (isOver ? 'main.exceeded' : 'main.available'))
                 : type === 'deuda'
-                ? (envelope.isUnlimited ? 'adeudado' : (isOver ? 'excedido' : 'falta por pagar'))
-                : 'ahorrados'}
+                ? t(envelope.isUnlimited ? 'main.owed' : (isOver ? 'main.debtExceeded' : 'main.remainingToPay'))
+                : t('main.saved')}
             </Text>
           </View>
         </View>
@@ -339,27 +341,30 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
           <View style={styles.debtDetails}>
             {envelope.interestRate && envelope.interestFrequency ? (
               <Text style={styles.debtDetailText}>
-                Interés {envelope.interestRate}% · {formatDebtCycle({
-                  interestFrequency: envelope.interestFrequency,
-                  dueDay: envelope.dueDay ?? 1,
-                  dueAnchorMonth: envelope.dueAnchorMonth,
+                {t('detail.interest', {
+                  rate: envelope.interestRate,
+                  cycle: formatDebtCycle({
+                    interestFrequency: envelope.interestFrequency,
+                    dueDay: envelope.dueDay ?? 1,
+                    dueAnchorMonth: envelope.dueAnchorMonth,
+                  }, t),
                 })}
               </Text>
             ) : null}
             {envelope.minimumPayment ? (
               <Text style={styles.debtDetailText}>
-                Pago mínimo: {formatAmount(envelope.minimumPayment, envelope.currency)}
+                {t('detail.minimumPayment', { amount: formatAmount(envelope.minimumPayment, envelope.currency) })}
               </Text>
             ) : null}
             {envelope.dueDay && !envelope.interestRate ? (
-              <Text style={styles.debtDetailText}>Vence el día {envelope.dueDay}</Text>
+              <Text style={styles.debtDetailText}>{t('detail.dueDay', { day: envelope.dueDay })}</Text>
             ) : null}
           </View>
         ) : null}
       </View>
 
       <View style={styles.transactionsSection}>
-        <Text style={styles.sectionTitle}>Transacciones</Text>
+        <Text style={styles.sectionTitle}>{t('detail.transactions')}</Text>
         <View style={styles.filterRow}>
           <TouchableOpacity
             style={[styles.filterPill, styles.filterPillActive]}
@@ -375,14 +380,14 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
         <Modal visible={monthPickerOpen} animationType="slide" onRequestClose={() => setMonthPickerOpen(false)}>
           <SafeAreaView style={styles.monthPickerContainer}>
             <View style={styles.monthPickerHeader}>
-              <Text style={styles.monthPickerTitle}>Seleccione el mes que desea visualizar</Text>
+              <Text style={styles.monthPickerTitle}>{t('detail.pickMonth')}</Text>
               <TouchableOpacity onPress={() => setMonthPickerOpen(false)} style={styles.monthPickerClose}>
                 <X color={colors.white} size={22} />
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
               {monthsByYear.length === 0 ? (
-                <Text style={styles.emptyText}>Sin transacciones aún.</Text>
+                <Text style={styles.emptyText}>{t('detail.noTransactionsYet')}</Text>
               ) : (
                 monthsByYear.map(group => (
                   <View key={group.year} style={styles.yearGroup}>
@@ -416,9 +421,9 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
           )}
           ListEmptyComponent={
             sortedTransactions.length === 0 ? (
-              <EmptyState message="Sin transacciones aún." />
+              <EmptyState message={t('detail.noTransactionsYet')} />
             ) : (
-              <EmptyState message="No hay transacciones en este período." />
+              <EmptyState message={t('detail.noTransactionsPeriod')} />
             )
           }
           ListFooterComponent={
@@ -442,7 +447,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
             const isTransfer = item.type === 'transfer';
             const isOutgoingTransfer = isTransfer && item.envelopeId === envelopeId;
             const otherEnvelopeId = isOutgoingTransfer ? item.toEnvelopeId : item.envelopeId;
-            const otherEnvelopeName = envelopes.find(e => e.id === otherEnvelopeId)?.name ?? 'sobre eliminado';
+            const otherEnvelopeName = envelopes.find(e => e.id === otherEnvelopeId)?.name ?? t('detail.deletedEnvelopeLower');
 
             return (
               <Swipeable
@@ -451,7 +456,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                     style={styles.deleteAction}
                     onPress={() => handleSwipeDelete(item.id)}
                     accessibilityRole="button"
-                    accessibilityLabel="Eliminar transacción"
+                    accessibilityLabel={t('detail.deleteTransaction')}
                   >
                     <View style={styles.deleteActionButton}>
                       <Trash2 color={colors.white} size={19} />
@@ -473,7 +478,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                       {[
                         cat?.name,
                         pm?.name,
-                        item.sourceSavingsEnvelopeId ? `Pago desde ${envelopes.find(e => e.id === item.sourceSavingsEnvelopeId)?.name ?? 'ahorro'}` : null,
+                        item.sourceSavingsEnvelopeId ? t('detail.paymentFrom', { name: envelopes.find(e => e.id === item.sourceSavingsEnvelopeId)?.name ?? t('detail.savingsFallback') }) : null,
                         isTransfer ? `${isOutgoingTransfer ? '→' : '←'} ${otherEnvelopeName}` : null,
                       ].filter(Boolean).join(' · ')}
                     </Text>
@@ -494,15 +499,15 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
 
       {pendingDeleteId !== null && (
         <View style={styles.undoBanner}>
-          <Text style={styles.undoText}>Transacción eliminada</Text>
+          <Text style={styles.undoText}>{t('detail.transactionDeleted')}</Text>
           <TouchableOpacity onPress={handleUndoDelete}>
-            <Text style={styles.undoBtnText}>Deshacer</Text>
+            <Text style={styles.undoBtnText}>{t('detail.undo')}</Text>
           </TouchableOpacity>
         </View>
       )}
 
       <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('CreateTransaction', { envelopeId })}>
-        <Text style={styles.fabText}>+ Nueva transacción</Text>
+        <Text style={styles.fabText}>{t('detail.newTransaction')}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
