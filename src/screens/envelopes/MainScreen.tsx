@@ -1,5 +1,9 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Pressable, FlatList, Animated, Dimensions, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, FlatList, Dimensions, Modal } from 'react-native';
+import Animated, {
+  FadeInDown, FadeOut, LinearTransition, interpolate, interpolateColor, Extrapolation,
+  useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withSpring, SharedValue,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
@@ -16,12 +20,28 @@ import { TranslationKey } from '../../i18n';
 import { formatCurrency } from '../../domain/shared/formatCurrency';
 import { loadMainDisplayCurrency, saveMainDisplayCurrency } from '../../services/storage/storage';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
+import { MENU_ENTERING } from '../../components/feedback/menuMotion';
+import { hapticSelection } from '../../services/device/haptics';
 
 const { width } = Dimensions.get('window');
 
 const CURRENCY_CYCLE: Currency[] = ['CRC', 'USD', 'EUR'];
 const TAB_TYPES: EnvelopeType[] = ['gasto', 'ahorro', 'deuda'];
 const TAB_LABELS: Record<EnvelopeType, TranslationKey> = { gasto: 'main.tabExpenses', ahorro: 'main.tabSavings', deuda: 'main.tabDebts' };
+
+/** Tab text that cross-fades between the inactive and active color as the pager scrolls (UI thread). */
+const TabLabel: React.FC<{ label: string; index: number; scrollX: SharedValue<number> }> = ({ label, index, scrollX }) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const animatedStyle = useAnimatedStyle(() => ({
+    color: interpolateColor(
+      scrollX.value,
+      [width * (index - 1), width * index, width * (index + 1)],
+      [colors.secondaryText, colors.bg, colors.secondaryText],
+    ),
+  }));
+  return <Animated.Text style={[styles.tabText, animatedStyle]}>{label}</Animated.Text>;
+};
 
 interface EnvelopeCardProps {
   envelope: Envelope;
@@ -35,42 +55,23 @@ interface EnvelopeCardProps {
   formatAmount: (amount: number, currency: Currency) => string;
 }
 
-/** Fades/slides in on mount (staggered by list position) and squishes slightly on press. */
+/** Fades/slides in on mount (staggered by list position), fades out on removal and squishes slightly on press. */
 const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
   envelope, remaining, textColor, progress, progressColor, subtext, index, onPress, formatAmount,
 }) => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const entrance = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(1)).current;
+  const scale = useSharedValue(1);
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
-  useEffect(() => {
-    Animated.timing(entrance, {
-      toValue: 1,
-      duration: 280,
-      delay: Math.min(index, 6) * 45,
-      useNativeDriver: true,
-    }).start();
-    // Only animate in once, on mount — not on every re-render (e.g. balance updates).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handlePressIn = () => {
-    Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 40, bounciness: 6 }).start();
-  };
-  const handlePressOut = () => {
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 8 }).start();
-  };
+  const handlePressIn = () => { scale.value = withSpring(0.97, { damping: 15, stiffness: 400 }); };
+  const handlePressOut = () => { scale.value = withSpring(1, { damping: 12, stiffness: 300 }); };
 
   return (
     <Animated.View
-      style={{
-        opacity: entrance,
-        transform: [
-          { translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) },
-          { scale },
-        ],
-      }}
+      entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 45)}
+      exiting={FadeOut.duration(180)}
+      style={pressStyle}
     >
       <Pressable
         style={styles.envelopeCard}
@@ -124,24 +125,26 @@ export const MainScreen = ({ navigation }: Props) => {
     return () => { cancelled = true; };
   }, []);
 
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const listRef = useRef<FlatList>(null);
+  const scrollX = useSharedValue(0);
+  const listRef = useRef<FlatList<EnvelopeType>>(null);
 
   const handleTabPress = (tab: EnvelopeType) => {
     const index = TAB_TYPES.indexOf(tab);
+    if (tab !== activeTab) hapticSelection();
     setActiveTab(tab);
     listRef.current?.scrollToIndex({ index, animated: true });
   };
 
-  const handleScroll = Animated.event(
-    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-    { useNativeDriver: false }
-  );
+  const handleScroll = useAnimatedScrollHandler(event => {
+    scrollX.value = event.contentOffset.x;
+  });
 
   const onMomentumScrollEnd = (e: any) => {
     const contentOffsetX = e.nativeEvent.contentOffset.x;
     const index = Math.round(contentOffsetX / width);
-    setActiveTab(TAB_TYPES[index] ?? TAB_TYPES[0]);
+    const next = TAB_TYPES[index] ?? TAB_TYPES[0];
+    if (next !== activeTab) hapticSelection();
+    setActiveTab(next);
   };
 
   const onScrollEndDrag = (e: any) => {
@@ -245,8 +248,9 @@ export const MainScreen = ({ navigation }: Props) => {
     const data = envelopes.filter(e => e.type === type);
     return (
       <View style={{ width, flex: 1 }}>
-        <FlatList
+        <Animated.FlatList
           data={data}
+          itemLayoutAnimation={LinearTransition.duration(220)}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
@@ -259,11 +263,16 @@ export const MainScreen = ({ navigation }: Props) => {
   };
 
   const indicatorWidth = (width - 40 - 8) / TAB_TYPES.length;
-  const translateX = scrollX.interpolate({
-    inputRange: [0, width * (TAB_TYPES.length - 1)],
-    outputRange: [0, indicatorWidth * (TAB_TYPES.length - 1)],
-    extrapolate: 'clamp',
-  });
+  const indicatorStyle = useAnimatedStyle(() => ({
+    transform: [{
+      translateX: interpolate(
+        scrollX.value,
+        [0, width * (TAB_TYPES.length - 1)],
+        [0, indicatorWidth * (TAB_TYPES.length - 1)],
+        Extrapolation.CLAMP,
+      ),
+    }],
+  }));
 
   return (
     <SafeAreaView style={styles.container}>
@@ -294,7 +303,7 @@ export const MainScreen = ({ navigation }: Props) => {
 
       <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
         <Pressable style={styles.menuBackdrop} onPress={() => setMenuVisible(false)} accessibilityLabel={t('a11y.back')}>
-          <View style={styles.menu}>
+          <Animated.View entering={MENU_ENTERING} style={styles.menu}>
             {([
               ['Reports', BarChart3, 'settings.reports'],
               ['Recurring', Repeat, 'settings.recurring'],
@@ -311,28 +320,17 @@ export const MainScreen = ({ navigation }: Props) => {
                 <Text style={styles.menuText}>{t(label)}</Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </Animated.View>
         </Pressable>
       </Modal>
 
       <View style={styles.tabContainer}>
-        <Animated.View style={[styles.tabIndicator, { width: indicatorWidth, transform: [{ translateX }] }]} />
-        {TAB_TYPES.map((tab, index) => {
-          const tabTextColor = scrollX.interpolate({
-            inputRange: [
-              width * (index - 1),
-              width * index,
-              width * (index + 1),
-            ],
-            outputRange: [colors.secondaryText, colors.bg, colors.secondaryText],
-            extrapolate: 'clamp',
-          });
-          return (
-            <TouchableOpacity key={tab} style={styles.tab} onPress={() => handleTabPress(tab)}>
-              <Animated.Text style={[styles.tabText, { color: tabTextColor }]}>{t(TAB_LABELS[tab])}</Animated.Text>
-            </TouchableOpacity>
-          );
-        })}
+        <Animated.View style={[styles.tabIndicator, { width: indicatorWidth }, indicatorStyle]} />
+        {TAB_TYPES.map((tab, index) => (
+          <TouchableOpacity key={tab} style={styles.tab} onPress={() => handleTabPress(tab)}>
+            <TabLabel label={t(TAB_LABELS[tab])} index={index} scrollX={scrollX} />
+          </TouchableOpacity>
+        ))}
       </View>
 
       <View style={styles.summaryCard}>
@@ -360,7 +358,7 @@ export const MainScreen = ({ navigation }: Props) => {
         </View>
       </View>
 
-      <FlatList
+      <Animated.FlatList
         ref={listRef}
         data={TAB_TYPES}
         horizontal

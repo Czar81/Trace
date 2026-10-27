@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Animated, { Easing, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import { EnvelopeIcon } from './EnvelopeIcon';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -15,6 +16,8 @@ function darkenColor(hex: string, amount: number): string {
   const b = Math.max(0, Math.round((num & 0xff) * (1 - amount)));
   return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 interface EnvelopeAvatarProps {
   icon: string;
@@ -42,7 +45,15 @@ export const EnvelopeAvatar: React.FC<EnvelopeAvatarProps> = ({
   const strokeWidth = 3;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (Math.min(Math.max(progress, 0), 1)) * circumference;
+  const clampedProgress = Math.min(Math.max(progress, 0), 1);
+  // Starts empty and fills on mount; later changes (a new expense) glide to the new value.
+  const animatedProgress = useSharedValue(0);
+  useEffect(() => {
+    animatedProgress.value = withTiming(clampedProgress, { duration: 700, easing: Easing.out(Easing.cubic) });
+  }, [clampedProgress, animatedProgress]);
+  const progressProps = useAnimatedProps(() => ({
+    strokeDashoffset: circumference * (1 - animatedProgress.value),
+  }));
   const gradientId = useMemo(() => `progressGradient-${Math.random().toString(36).slice(2)}`, []);
   const gradientDeepColor = useMemo(() => darkenColor(progressColor, 0.25), [progressColor]);
 
@@ -65,7 +76,7 @@ export const EnvelopeAvatar: React.FC<EnvelopeAvatarProps> = ({
           fill="transparent"
         />
         {/* Progress circle */}
-        <Circle
+        <AnimatedCircle
           cx={size / 2}
           cy={size / 2}
           r={radius}
@@ -73,7 +84,8 @@ export const EnvelopeAvatar: React.FC<EnvelopeAvatarProps> = ({
           strokeWidth={strokeWidth}
           fill="transparent"
           strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
+          strokeDashoffset={circumference}
+          animatedProps={progressProps}
           strokeLinecap="round"
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
