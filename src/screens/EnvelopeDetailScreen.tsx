@@ -24,6 +24,8 @@ type DialogState =
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EnvelopeDetail'>;
 
+const UNDO_WINDOW_MS = 4000;
+
 export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
   const { colors } = useTheme();
   const { t, locale } = useTranslation();
@@ -90,31 +92,38 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
 
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const deleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Refs so the timer and the unmount cleanup always delete with the latest
+  // transactions list (a stale deleteTransaction would overwrite newer changes).
+  const pendingDeleteRef = useRef<string | null>(null);
+  const deleteTransactionRef = useRef(deleteTransaction);
+  deleteTransactionRef.current = deleteTransaction;
+
+  const setPendingDelete = (id: string | null) => {
+    pendingDeleteRef.current = id;
+    setPendingDeleteId(id);
+  };
 
   const commitPendingDelete = () => {
     if (deleteTimeoutRef.current) {
       clearTimeout(deleteTimeoutRef.current);
       deleteTimeoutRef.current = null;
     }
-    if (pendingDeleteId) {
-      deleteTransaction(pendingDeleteId);
-      setPendingDeleteId(null);
+    const id = pendingDeleteRef.current;
+    if (id) {
+      setPendingDelete(null);
+      deleteTransactionRef.current(id);
     }
   };
 
   const handleSwipeDelete = (id: string) => {
-    if (pendingDeleteId && pendingDeleteId !== id) {
+    if (pendingDeleteRef.current && pendingDeleteRef.current !== id) {
       commitPendingDelete();
     }
     if (deleteTimeoutRef.current) {
       clearTimeout(deleteTimeoutRef.current);
     }
-    setPendingDeleteId(id);
-    deleteTimeoutRef.current = setTimeout(() => {
-      deleteTransaction(id);
-      setPendingDeleteId(null);
-      deleteTimeoutRef.current = null;
-    }, 4000);
+    setPendingDelete(id);
+    deleteTimeoutRef.current = setTimeout(commitPendingDelete, UNDO_WINDOW_MS);
   };
 
   const handleUndoDelete = () => {
@@ -122,13 +131,18 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
       clearTimeout(deleteTimeoutRef.current);
       deleteTimeoutRef.current = null;
     }
-    setPendingDeleteId(null);
+    setPendingDelete(null);
   };
 
+  // Leaving the screen during the undo window confirms the delete instead of
+  // silently dropping it.
   useEffect(() => {
     return () => {
       if (deleteTimeoutRef.current) {
         clearTimeout(deleteTimeoutRef.current);
+      }
+      if (pendingDeleteRef.current) {
+        deleteTransactionRef.current(pendingDeleteRef.current);
       }
     };
   }, []);
