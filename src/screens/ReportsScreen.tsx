@@ -11,6 +11,7 @@ import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
 import { TranslationKey } from '../i18n';
+import { Currency } from '../types';
 import {
   ReportPeriod,
   getSpendingByCategory,
@@ -24,10 +25,11 @@ import {
   ReportLayoutItem,
   ReportSectionId,
 } from '../utils/reports';
-import { loadReportLayout, saveReportLayout } from '../utils/storage';
+import { loadReportLayout, saveReportLayout, loadReportsDisplayCurrency, saveReportsDisplayCurrency } from '../utils/storage';
 import { formatCurrency } from '../utils/formatCurrency';
 
 const TREND_MONTHS = 6;
+const CURRENCY_CYCLE: Currency[] = ['CRC', 'USD', 'EUR'];
 
 const PERIOD_OPTIONS: { labelKey: TranslationKey; value: Exclude<ReportPeriod, { kind: 'custom' }> }[] = [
   { labelKey: 'reports.periodThisMonth', value: 'current-month' },
@@ -58,7 +60,29 @@ export const ReportsScreen = ({ navigation }: Props) => {
   const formatDate = (date: Date) =>
     date.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { transactions, categories, envelopes, paymentMethods, convertToCRC } = useAppData();
+  const { transactions, categories, envelopes, paymentMethods, convertToCRC, settings } = useAppData();
+  const [currency, setCurrency] = useState<Currency>(settings.defaultCurrency);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadReportsDisplayCurrency().then(stored => {
+      if (!cancelled && stored) setCurrency(stored);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const cycleCurrency = () => {
+    const next = CURRENCY_CYCLE[(CURRENCY_CYCLE.indexOf(currency) + 1) % CURRENCY_CYCLE.length];
+    setCurrency(next);
+    saveReportsDisplayCurrency(next);
+  };
+
+  // Report totals are computed in CRC; convert only for display.
+  const money = (crc: number) => {
+    const { USD_TO_CRC, EUR_TO_CRC } = settings.exchangeRates;
+    const amount = currency === 'USD' ? crc / USD_TO_CRC : currency === 'EUR' ? crc / EUR_TO_CRC : crc;
+    return formatCurrency(amount, currency);
+  };
   const [period, setPeriod] = useState<ReportPeriod>('current-month');
   const [customSelected, setCustomSelected] = useState(false);
   const [customStart, setCustomStart] = useState(() => {
@@ -173,7 +197,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
                 <View key={c.categoryId} style={styles.row}>
                   <View style={styles.rowHeader}>
                     <Text style={styles.rowLabel}>{c.name}</Text>
-                    <Text style={styles.rowValue}>{formatCurrency(c.totalCRC, 'CRC')} · {c.percentage.toFixed(0)}%</Text>
+                    <Text style={styles.rowValue}>{money(c.totalCRC)} · {c.percentage.toFixed(0)}%</Text>
                   </View>
                   <View style={styles.barTrack}>
                     <View style={[styles.barFill, { width: `${(c.totalCRC / maxCategoryTotal) * 100}%` }]} />
@@ -195,7 +219,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
                 <View key={m.monthKey} style={styles.row}>
                   <View style={styles.rowHeader}>
                     <Text style={styles.rowLabel}>{m.label}</Text>
-                    <Text style={styles.rowValue}>{formatCurrency(m.totalCRC, 'CRC')}</Text>
+                    <Text style={styles.rowValue}>{money(m.totalCRC)}</Text>
                   </View>
                   <View style={styles.barTrack}>
                     <View style={[styles.barFill, { width: `${(m.totalCRC / maxMonthTotal) * 100}%` }]} />
@@ -218,7 +242,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
                   <View style={styles.rowHeader}>
                     <Text style={styles.rowLabel}>{e.name}</Text>
                     <Text style={styles.rowValue}>
-                      {formatCurrency(e.totalCRC, 'CRC')}
+                      {money(e.totalCRC)}
                       {e.percentOfLimit != null ? t('reports.percentOfLimit', { percent: e.percentOfLimit.toFixed(0) }) : ''}
                     </Text>
                   </View>
@@ -242,7 +266,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
                 <View key={p.paymentMethodId} style={styles.row}>
                   <View style={styles.rowHeader}>
                     <Text style={styles.rowLabel}>{p.name}</Text>
-                    <Text style={styles.rowValue}>{formatCurrency(p.totalCRC, 'CRC')}</Text>
+                    <Text style={styles.rowValue}>{money(p.totalCRC)}</Text>
                   </View>
                   <View style={styles.barTrack}>
                     <View style={[styles.barFill, { width: `${(p.totalCRC / maxPaymentMethodTotal) * 100}%` }]} />
@@ -264,13 +288,13 @@ export const ReportsScreen = ({ navigation }: Props) => {
                 <View key={entry.monthKey} style={styles.row}>
                   <Text style={styles.rowLabel}>{entry.label}</Text>
                   <View style={styles.trendLine}>
-                    <Text style={styles.trendIncomeLabel}>{t('reports.incomeAmount', { amount: formatCurrency(entry.incomeCRC, 'CRC') })}</Text>
+                    <Text style={styles.trendIncomeLabel}>{t('reports.incomeAmount', { amount: money(entry.incomeCRC) })}</Text>
                     <View style={styles.barTrack}>
                       <View style={[styles.barFill, { backgroundColor: colors.green, width: `${(entry.incomeCRC / maxTrendValue) * 100}%` }]} />
                     </View>
                   </View>
                   <View style={styles.trendLine}>
-                    <Text style={styles.trendExpenseLabel}>{t('reports.expenseAmount', { amount: formatCurrency(entry.expenseCRC, 'CRC') })}</Text>
+                    <Text style={styles.trendExpenseLabel}>{t('reports.expenseAmount', { amount: money(entry.expenseCRC) })}</Text>
                     <View style={styles.barTrack}>
                       <View style={[styles.barFill, { backgroundColor: colors.red, width: `${(entry.expenseCRC / maxTrendValue) * 100}%` }]} />
                     </View>
@@ -296,7 +320,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
                       {entry.envelopeName} · {entry.categoryName} · {new Date(entry.transaction.date).toLocaleDateString(reportI18n.locale)}
                     </Text>
                   </View>
-                  <Text style={styles.rowValue}>{formatCurrency(entry.amountCRC, 'CRC')}</Text>
+                  <Text style={styles.rowValue}>{money(entry.amountCRC)}</Text>
                 </View>
               ))
             )}
@@ -312,7 +336,15 @@ export const ReportsScreen = ({ navigation }: Props) => {
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('reports.title')}</Text>
-        <View style={{ width: 32 }} />
+        <TouchableOpacity
+          onPress={cycleCurrency}
+          style={styles.currencyBtn}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={t('a11y.changeReportsCurrency', { currency })}
+        >
+          <Text style={styles.currencyText}>{currency}</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
@@ -373,22 +405,22 @@ export const ReportsScreen = ({ navigation }: Props) => {
         <View style={styles.summaryGrid}>
           <View style={styles.summaryTile}>
             <Text style={styles.summaryLabel}>{t('reports.summaryIncome')}</Text>
-            <Text style={[styles.summaryValue, { color: colors.green }]}>{formatCurrency(summary.income, 'CRC')}</Text>
+            <Text style={[styles.summaryValue, { color: colors.green }]}>{money(summary.income)}</Text>
           </View>
           <View style={styles.summaryTile}>
             <Text style={styles.summaryLabel}>{t('reports.summaryExpenses')}</Text>
-            <Text style={[styles.summaryValue, { color: colors.red }]}>{formatCurrency(summary.expenses, 'CRC')}</Text>
+            <Text style={[styles.summaryValue, { color: colors.red }]}>{money(summary.expenses)}</Text>
           </View>
           <View style={styles.summaryTile}>
             <Text style={styles.summaryLabel}>{t('reports.summaryNet')}</Text>
             <Text style={[styles.summaryValue, { color: summary.net >= 0 ? colors.green : colors.red }]}>
-              {formatCurrency(summary.net, 'CRC')}
+              {money(summary.net)}
             </Text>
           </View>
           <View style={styles.summaryTile}>
             <Text style={styles.summaryLabel}>{t('reports.summaryAverage')}</Text>
             <Text style={styles.summaryValue}>
-              {summary.averageExpense == null ? '—' : formatCurrency(summary.averageExpense, 'CRC')}
+              {summary.averageExpense == null ? '—' : money(summary.averageExpense)}
             </Text>
           </View>
           <View style={styles.summaryTile}>
@@ -449,6 +481,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 },
   headerBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
   headerTitle: { color: colors.white, fontSize: 20, fontWeight: 'bold' },
+  currencyBtn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, backgroundColor: colors.divider },
+  currencyText: { color: colors.white, fontSize: 14, fontWeight: '700' },
   scroll: { paddingHorizontal: 20, paddingBottom: 60 },
   periodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
   customRange: { marginTop: 4 },

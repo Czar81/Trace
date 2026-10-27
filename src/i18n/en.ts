@@ -399,4 +399,6 @@ export const en: Record<TranslationKey, string> = {
   'a11y.pause': 'Pause',
   'a11y.resume': 'Resume',
   'a11y.changeCurrency': 'Change total currency (current: {currency})',
+  // reports currency selector
+  'a11y.changeReportsCurrency': 'Change reports currency (current: {currency})',
 };

@@ -22,6 +22,8 @@ import {
   saveLanguagePreference,
   loadMainDisplayCurrency,
   saveMainDisplayCurrency,
+  loadReportsDisplayCurrency,
+  saveReportsDisplayCurrency,
 } from './storage';
 import { REPORT_SECTIONS } from './reports';
 
@@ -170,6 +172,19 @@ describe('main display currency storage', () => {
 
   it('ignores an unknown stored value', async () => {
     await AsyncStorage.setItem('@trace_main_display_currency', JSON.stringify('GBP'));
+    await expect(loadMainDisplayCurrency()).resolves.toBeNull();
+  });
+});
+
+describe('reports display currency storage', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('is stored apart from the home total currency', async () => {
+    await expect(loadReportsDisplayCurrency()).resolves.toBeNull();
+    await saveReportsDisplayCurrency('USD');
+    await expect(loadReportsDisplayCurrency()).resolves.toBe('USD');
     await expect(loadMainDisplayCurrency()).resolves.toBeNull();
   });
 });

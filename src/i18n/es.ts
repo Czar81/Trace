@@ -400,6 +400,8 @@ export const es = {
   'a11y.pause': 'Pausar',
   'a11y.resume': 'Reanudar',
   'a11y.changeCurrency': 'Cambiar moneda del total (actual: {currency})',
+  // reports currency selector
+  'a11y.changeReportsCurrency': 'Cambiar moneda de los reportes (actual: {currency})',
 } as const;
 
 export type TranslationKey = keyof typeof es;
