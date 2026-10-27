@@ -305,6 +305,7 @@ export const es = {
   'split.part': 'Parte {n}',
   'split.envelope': 'Sobre',
   'split.addPart': 'Agregar parte',
+  'split.equal': 'Repartir en partes iguales',
   'split.balanced': 'Las partes suman el total',
   'split.missing': 'Faltan {amount} por asignar',
   'split.over': 'Te pasaste por {amount}',

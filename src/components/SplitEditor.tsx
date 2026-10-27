@@ -1,13 +1,13 @@
 import React, { useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { Plus, X } from 'lucide-react-native';
+import { Equal, Plus, X } from 'lucide-react-native';
 import { Dropdown } from './Dropdown';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
 import { Currency, Envelope, TransactionCategory } from '../types';
 import { formatCurrency } from '../utils/formatCurrency';
-import { getUnallocated, parseAmount } from '../utils/allocation';
+import { getUnallocated, parseAmount, splitEqually, toInputString } from '../utils/allocation';
 
 export interface SplitPart {
   key: string;
@@ -78,6 +78,18 @@ export const SplitEditor: React.FC<SplitEditorProps> = ({ parts, onChange, total
           />
         </View>
       ))}
+
+      <TouchableOpacity
+        style={styles.addBtn}
+        onPress={() => {
+          const amounts = splitEqually(total, parts.length);
+          onChange(parts.map((p, i) => ({ ...p, amountStr: toInputString(amounts[i]) })));
+        }}
+        disabled={total <= 0}
+      >
+        <Equal color={colors.secondaryText} size={16} />
+        <Text style={styles.addText}>{t('split.equal')}</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity style={styles.addBtn} onPress={() => onChange([...parts, newSplitPart(parts[0]?.envelopeId ?? '', '')])}>
         <Plus color={colors.secondaryText} size={16} />
