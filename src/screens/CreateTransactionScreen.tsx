@@ -46,6 +46,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   );
   const [useSavingsEnvelope, setUseSavingsEnvelope] = useState(!!transaction?.sourceSavingsEnvelopeId);
   const [sourceSavingsEnvelopeId, setSourceSavingsEnvelopeId] = useState(transaction?.sourceSavingsEnvelopeId ?? '');
+  const [notes, setNotes] = useState(transaction?.notes ?? '');
   const [receiptUris, setReceiptUris] = useState<string[]>(transaction?.receiptUris ?? []);
   // Receipts copied during this session but not saved yet; removed again if the user backs out.
   const unsavedReceipts = useRef<Set<string>>(new Set());
@@ -80,6 +81,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
         type: 'expense' as const,
         amount: partAmounts[i],
         description: description.trim() || t('tx.expense'),
+        notes: notes.trim() || undefined,
         paymentMethodId,
         categoryId: p.categoryId || undefined,
         date: date.toISOString(),
@@ -108,6 +110,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
           : undefined,
       date: date.toISOString(),
       receiptUris: receiptUris.length > 0 ? receiptUris : [],
+      notes: notes.trim() || undefined,
     };
 
     saved.current = true;
@@ -264,6 +267,17 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
           placeholderTextColor={colors.secondaryText}
         />
 
+        <Text style={styles.label}>{t('common.notes')}</Text>
+        <TextInput
+          style={[styles.input, styles.notesInput]}
+          value={notes}
+          onChangeText={setNotes}
+          placeholder={t('common.notesPlaceholder')}
+          placeholderTextColor={colors.secondaryText}
+          multiline
+          textAlignVertical="top"
+        />
+
         <ReceiptField value={receiptUris} onChange={handleReceiptsChange} />
 
         {/* ── Income category (income only, non-debt) ── */}
@@ -396,6 +410,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   label: { color: colors.white, fontSize: 16, fontWeight: '600', marginTop: 24, marginBottom: 8 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20, marginBottom: 16 },
   toggleLabel: { color: colors.white, fontSize: 15, flex: 1, paddingRight: 12 },
+  notesInput: { minHeight: 96 },
   splitError: { color: colors.red, fontSize: 14, marginBottom: 16 },
   savingsPreview: { color: colors.secondaryText, fontSize: 13, marginTop: -8, marginBottom: 16 },
   input: {

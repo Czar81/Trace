@@ -201,6 +201,7 @@ interface AppContextType {
     toEnvelopeId: string;
     amount: number;
     description: string;
+    notes?: string;
     date?: string;
   }) => Promise<{ success: boolean; error?: string }>;
   updateTransfer: (id: string, updates: {
@@ -208,6 +209,7 @@ interface AppContextType {
     toEnvelopeId?: string;
     amount?: number;
     description?: string;
+    notes?: string;
     date?: string;
   }) => Promise<{ success: boolean; error?: string }>;
 
@@ -880,6 +882,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     toEnvelopeId: string;
     amount: number;
     description: string;
+    notes?: string;
     date?: string;
   }): Promise<{ success: boolean; error?: string }> => {
     if (transfer.envelopeId === transfer.toEnvelopeId) {
@@ -900,6 +903,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'transfer',
       amount: transfer.amount,
       description: transfer.description,
+      notes: transfer.notes,
       date: transfer.date ?? new Date().toISOString(),
     });
     return { success: true };
@@ -916,6 +920,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     toEnvelopeId?: string;
     amount?: number;
     description?: string;
+    notes?: string;
     date?: string;
   }): Promise<{ success: boolean; error?: string }> => {
     const existing = transactions.find(t => t.id === id);

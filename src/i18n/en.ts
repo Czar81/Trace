@@ -4,6 +4,8 @@ import { TranslationKey } from './es';
 export const en: Record<TranslationKey, string> = {
   // common
   'common.cancel': 'Cancel',
+  'common.notes': 'Notes (optional)',
+  'common.notesPlaceholder': 'Additional details…',
   'common.accept': 'OK',
   'common.save': 'Save',
   'common.delete': 'Delete',

@@ -515,6 +515,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                         isTransfer ? `${isOutgoingTransfer ? '→' : '←'} ${otherEnvelopeName}` : null,
                       ].filter(Boolean).join(' · ')}
                     </Text>
+                    {item.notes ? <Text style={styles.transactionNotes} numberOfLines={2}>{item.notes}</Text> : null}
                   </View>
                   <Text style={[
                     styles.transactionAmount,
@@ -548,6 +549,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   receiptCount: { color: colors.secondaryText, fontSize: 12, marginLeft: 2 },
+  transactionNotes: { color: colors.secondaryText, fontSize: 12, fontStyle: 'italic', marginTop: 4 },
   descRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },

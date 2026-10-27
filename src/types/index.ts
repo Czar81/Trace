@@ -44,6 +44,8 @@ export interface Transaction {
   type: 'expense' | 'income' | 'transfer';
   amount: number; // Always positive, 'type' determines sign
   description: string;
+  /** Free-form multiline notes. */
+  notes?: string;
   date: string; // ISO string
   paymentMethodId?: string;
   categoryId?: string;

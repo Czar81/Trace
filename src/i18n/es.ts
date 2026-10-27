@@ -5,6 +5,8 @@
 export const es = {
   // common
   'common.cancel': 'Cancelar',
+  'common.notes': 'Notas (opcional)',
+  'common.notesPlaceholder': 'Detalles adicionales…',
   'common.accept': 'Aceptar',
   'common.save': 'Guardar',
   'common.delete': 'Eliminar',
