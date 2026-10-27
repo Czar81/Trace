@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SavedDebtPlan, Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings, RecurringTransactionTemplate } from '../types';
+import { SavedDebtPlan, Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings, RecurringTransactionTemplate, Currency } from '../types';
 import { DEFAULT_THEME_ID } from '../theme/colors';
 import { LanguagePreference, DEFAULT_LANGUAGE_PREFERENCE, isLanguagePreference, translateActive } from '../i18n';
 import { ReportLayoutItem, parseReportLayout } from './reports';
@@ -19,6 +19,8 @@ const KEYS = {
   AUTO_BACKUP_LAST_ERROR: '@trace_auto_backup_last_error',
   LANGUAGE: '@trace_language',
   DEBT_PLANS: '@trace_debt_plans',
+  MAIN_DISPLAY_CURRENCY: '@trace_main_display_currency',
+  REPORTS_DISPLAY_CURRENCY: '@trace_reports_display_currency',
 };
 
 export const DEFAULT_AUTO_BACKUP_INTERVAL_DAYS = 7;
@@ -159,3 +161,19 @@ export const loadLanguagePreference = async (): Promise<LanguagePreference> => {
   const stored = await loadData<unknown>(KEYS.LANGUAGE, DEFAULT_LANGUAGE_PREFERENCE);
   return isLanguagePreference(stored) ? stored : DEFAULT_LANGUAGE_PREFERENCE;
 };
+
+const CURRENCIES: Currency[] = ['CRC', 'USD', 'EUR'];
+
+const loadCurrency = async (key: string): Promise<Currency | null> => {
+  const stored = await loadData<unknown>(key, null);
+  return CURRENCIES.includes(stored as Currency) ? (stored as Currency) : null;
+};
+
+// The currencies the home total and Reports are shown in are UI preferences
+// with their own keys (not in AppSettings), so they are not part of a backup.
+// null means "use the default currency".
+export const saveMainDisplayCurrency = (v: Currency) => saveData(KEYS.MAIN_DISPLAY_CURRENCY, v);
+export const loadMainDisplayCurrency = () => loadCurrency(KEYS.MAIN_DISPLAY_CURRENCY);
+
+export const saveReportsDisplayCurrency = (v: Currency) => saveData(KEYS.REPORTS_DISPLAY_CURRENCY, v);
+export const loadReportsDisplayCurrency = () => loadCurrency(KEYS.REPORTS_DISPLAY_CURRENCY);

@@ -379,6 +379,8 @@ export const en: Record<TranslationKey, string> = {
   'search.to': 'To',
   'search.minAmount': 'Min. amount',
   'search.maxAmount': 'Max. amount',
+  'search.showFilters': 'Show filters',
+  'search.hideFilters': 'Hide filters',
   'search.clearFilters': 'Clear filters',
   'search.noResults': 'No transactions found.',
   'search.hint': 'Search by description or use the filters to find a transaction.',
@@ -485,4 +487,20 @@ export const en: Record<TranslationKey, string> = {
   'import.error.incomeNotArray': 'Invalid backup format. incomeCategories must be a list (array)',
   'import.error.badAmount': 'Invalid backup format. Every transaction must have a valid numeric amount',
   'import.error.corrupt': 'The file is not a valid backup (corrupt JSON).',
+  // accessibility labels for icon-only buttons
+  'a11y.back': 'Back',
+  'a11y.close': 'Close',
+  'a11y.clearSearch': 'Clear search',
+  'a11y.transfer': 'Transfer',
+  'a11y.editEnvelope': 'Edit envelope',
+  'a11y.resetEnvelope': 'Reset envelope',
+  'a11y.deleteEnvelope': 'Delete envelope',
+  'a11y.pause': 'Pause',
+  'a11y.resume': 'Resume',
+  'a11y.changeCurrency': 'Change total currency (current: {currency})',
+  // reports currency selector
+  'a11y.changeReportsCurrency': 'Change reports currency (current: {currency})',
+  // reports drag to reorder
+  'reports.dragHandle': 'Drag {section}',
+  'reports.dragHint': 'Press and hold the handle to drag a section.',
 };

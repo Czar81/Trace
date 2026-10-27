@@ -17,6 +17,8 @@ import { SplitEditor, SplitPart, newSplitPart } from '../components/SplitEditor'
 import { getUnallocated, parseAmount } from '../utils/allocation';
 import { ReceiptField } from '../components/ReceiptField';
 import { deleteReceiptImage } from '../utils/receipts';
+import { mostUsedCategories } from '../utils/categoryUsage';
+import { hapticSave } from '../utils/haptics';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransaction'>;
 
@@ -25,7 +27,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { envelopeId, transaction } = route.params;
-  const { envelopes, addTransaction, addTransactions, updateTransaction, paymentMethods, categories, incomeCategories, getEnvelopeBalance, formatAmount } = useAppData();
+  const { envelopes, transactions, addTransaction, addTransactions, updateTransaction, paymentMethods, categories, incomeCategories, getEnvelopeBalance, formatAmount } = useAppData();
 
   const envelope = envelopes.find(e => e.id === envelopeId);
   const isDebtEnvelope = envelope?.type === 'deuda';
@@ -119,6 +121,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
     } else {
       await addTransaction(data);
     }
+    hapticSave();
     navigation.goBack();
   };
 
@@ -171,16 +174,41 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
     setCategoryId(activeCategories[0]?.id ?? '');
   }, [isDebtEnvelope, activeCategories, categoryId]);
 
+  const topCategories = useMemo(
+    () => mostUsedCategories(transactions, activeCategories, type),
+    [transactions, activeCategories, type]
+  );
+
+  // One-tap shortcuts for the most used categories, shown under the dropdown.
+  const renderCategoryChips = () => topCategories.length === 0 ? null : (
+    <View style={styles.chipsRow}>
+      {topCategories.map(c => {
+        const selected = c.id === categoryId;
+        return (
+          <TouchableOpacity
+            key={c.id}
+            style={[styles.chip, selected && styles.chipSelected]}
+            onPress={() => setCategoryId(c.id)}
+            accessibilityRole="button"
+            accessibilityState={{ selected }}
+          >
+            <Text style={[styles.chipText, selected && styles.chipTextSelected]} numberOfLines={1}>{c.name}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {isEditing ? t('tx.edit') : t('tx.new')}
         </Text>
-        <TouchableOpacity onPress={handleSave} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity onPress={handleSave} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={t('common.save')}>
           <Check color={colors.green} size={24} />
         </TouchableOpacity>
       </View>
@@ -290,6 +318,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
             placeholder={incomeCategories.length === 0 ? t('tx.addIncomeCategoriesHint') : t('tx.selectCategory')}
           />
         )}
+        {type === 'income' && !isDebtPayment && renderCategoryChips()}
 
         {/* ── Category & Payment method (expense only) ── */}
         {type === 'expense' && (
@@ -301,6 +330,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
               onSelect={setCategoryId}
               placeholder={categories.length === 0 ? t('tx.addCategoriesHint') : t('tx.selectCategory')}
             />
+            {renderCategoryChips()}
             <Dropdown
               label={t('common.paymentMethod')}
               options={pmOptions}
@@ -412,6 +442,11 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   toggleLabel: { color: colors.white, fontSize: 15, flex: 1, paddingRight: 12 },
   notesInput: { minHeight: 96 },
   splitError: { color: colors.red, fontSize: 14, marginBottom: 16 },
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: -12, marginBottom: 24 },
+  chip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 18, backgroundColor: colors.cardBg, maxWidth: '48%' },
+  chipSelected: { backgroundColor: colors.green },
+  chipText: { color: colors.secondaryText, fontSize: 14, fontWeight: '600' },
+  chipTextSelected: { color: colors.bg },
   savingsPreview: { color: colors.secondaryText, fontSize: 13, marginTop: -8, marginBottom: 16 },
   input: {
     backgroundColor: colors.cardBg, borderRadius: 12, padding: 16,

@@ -5,7 +5,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { EnvelopeType, Currency, Envelope } from '../types';
 import { RootStackParamList } from '../navigation/types';
-import { Settings, MoreVertical, RefreshCw, Search, Coins } from 'lucide-react-native';
+import { Settings, MoreVertical, RefreshCw, Search, Coins, BarChart3, Repeat } from 'lucide-react-native';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
@@ -14,6 +14,7 @@ import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
 import { TranslationKey } from '../i18n';
 import { formatCurrency } from '../utils/formatCurrency';
+import { loadMainDisplayCurrency, saveMainDisplayCurrency } from '../utils/storage';
 
 const { width } = Dimensions.get('window');
 
@@ -110,6 +111,15 @@ export const MainScreen = ({ navigation }: Props) => {
   const [displayCurrency, setDisplayCurrency] = useState<Currency>(settings.defaultCurrency);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
+  // Restore the currency the user last picked for the total.
+  useEffect(() => {
+    let cancelled = false;
+    loadMainDisplayCurrency().then(stored => {
+      if (!cancelled && stored) setDisplayCurrency(stored);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   const scrollX = useRef(new Animated.Value(0)).current;
   const listRef = useRef<FlatList>(null);
 
@@ -150,7 +160,9 @@ export const MainScreen = ({ navigation }: Props) => {
 
   const cycleCurrency = () => {
     const idx = CURRENCY_CYCLE.indexOf(displayCurrency);
-    setDisplayCurrency(CURRENCY_CYCLE[(idx + 1) % CURRENCY_CYCLE.length]);
+    const next = CURRENCY_CYCLE[(idx + 1) % CURRENCY_CYCLE.length];
+    setDisplayCurrency(next);
+    saveMainDisplayCurrency(next);
   };
 
 
@@ -267,10 +279,16 @@ export const MainScreen = ({ navigation }: Props) => {
           <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('AssignIncome')}>
             <Coins color={colors.secondaryText} size={22} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Search')}>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Search')} accessibilityRole="button" accessibilityLabel={t('search.title')}>
             <Search color={colors.secondaryText} size={22} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Settings')}>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }} onPress={() => navigation.navigate('Reports')} accessibilityRole="button" accessibilityLabel={t('settings.reports')}>
+            <BarChart3 color={colors.secondaryText} size={22} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }} onPress={() => navigation.navigate('Recurring')} accessibilityRole="button" accessibilityLabel={t('settings.recurring')}>
+            <Repeat color={colors.secondaryText} size={22} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Settings')} accessibilityRole="button" accessibilityLabel={t('settings.title')}>
             <MoreVertical color={colors.secondaryText} size={24} />
           </TouchableOpacity>
         </View>
@@ -298,7 +316,13 @@ export const MainScreen = ({ navigation }: Props) => {
 
       <View style={styles.summaryCard}>
         <View style={styles.cardFlap} pointerEvents="none" />
-        <TouchableOpacity onPress={cycleCurrency} style={styles.currencyBtn} activeOpacity={0.7}>
+        <TouchableOpacity
+          onPress={cycleCurrency}
+          style={styles.currencyBtn}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={t('a11y.changeCurrency', { currency: displayCurrency })}
+        >
           <Text style={styles.currencyText}>{displayCurrency}</Text>
         </TouchableOpacity>
         <View style={styles.summaryValues}>

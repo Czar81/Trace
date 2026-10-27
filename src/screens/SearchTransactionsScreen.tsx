@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, SectionList, Platf
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
-import { ArrowLeft, Search, X } from 'lucide-react-native';
+import { ArrowLeft, Search, SlidersHorizontal, X } from 'lucide-react-native';
 import { Dropdown } from '../components/Dropdown';
 import { EmptyState } from '../components/EmptyState';
 import { DateField } from '../components/DateField';
@@ -30,6 +30,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [minAmountStr, setMinAmountStr] = useState('');
   const [maxAmountStr, setMaxAmountStr] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
 
   const categoryOptions = [
     { label: t('search.allCategories'), value: '' },
@@ -56,6 +57,14 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
   }, [text, categoryId, paymentMethodId, dateFrom, dateTo, minAmountStr, maxAmountStr]);
 
   const active = hasActiveSearch(filters);
+  const activeFilterCount = [
+    filters.categoryId,
+    filters.paymentMethodId,
+    filters.dateFrom,
+    filters.dateTo,
+    filters.minAmount,
+    filters.maxAmount,
+  ].filter(v => v !== undefined).length;
   const results = useMemo(() => (active ? filterTransactions(transactions, filters) : []), [active, transactions, filters]);
   const sections = useMemo(() => groupTransactionsByDay(results, locale), [results, locale]);
 
@@ -77,10 +86,17 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
     return catalog.find(c => c.id === item.categoryId)?.name ?? t('common.noCategory');
   };
 
+  const envelopeNameOf = (id?: string) => envelopes.find(e => e.id === id)?.name ?? t('common.deletedEnvelope');
+  // Transfers show "source → destination" so both sides are visible in results.
+  const envelopeLabelOf = (item: Transaction) =>
+    item.type === 'transfer'
+      ? `${envelopeNameOf(item.envelopeId)} → ${envelopeNameOf(item.toEnvelopeId)}`
+      : envelopeNameOf(item.envelopeId);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('search.title')}</Text>
@@ -97,53 +113,71 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
           placeholderTextColor={colors.secondaryText}
         />
         {text !== '' && (
-          <TouchableOpacity onPress={() => setText('')}>
+          <TouchableOpacity onPress={() => setText('')} accessibilityRole="button" accessibilityLabel={t('a11y.clearSearch')}>
             <X color={colors.secondaryText} size={18} />
           </TouchableOpacity>
         )}
+        <TouchableOpacity
+          onPress={() => setShowFilters(v => !v)}
+          style={styles.filterToggle}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: showFilters }}
+          accessibilityLabel={showFilters ? t('search.hideFilters') : t('search.showFilters')}
+        >
+          <SlidersHorizontal color={showFilters || activeFilterCount > 0 ? colors.green : colors.secondaryText} size={18} />
+          {activeFilterCount > 0 && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.filtersRow}>
-        <View style={styles.filterHalf}>
-          <Dropdown options={categoryOptions} value={categoryId} onSelect={setCategoryId} placeholder={t('search.all')} />
-        </View>
-        <View style={styles.filterHalf}>
-          <Dropdown options={paymentMethodOptions} value={paymentMethodId} onSelect={setPaymentMethodId} placeholder={t('search.all')} />
-        </View>
-      </View>
+      {showFilters && (
+        <>
+          <View style={styles.filtersRow}>
+            <View style={styles.filterHalf}>
+              <Dropdown options={categoryOptions} value={categoryId} onSelect={setCategoryId} placeholder={t('search.all')} />
+            </View>
+            <View style={styles.filterHalf}>
+              <Dropdown options={paymentMethodOptions} value={paymentMethodId} onSelect={setPaymentMethodId} placeholder={t('search.all')} />
+            </View>
+          </View>
 
-      <View style={styles.filtersRow}>
-        <View style={styles.filterHalf}>
-          <DateField
-            compact
-            value={dateFrom}
-            placeholder={t('search.from')}
-            onChange={setDateFrom}
-          />
-        </View>
-        <View style={styles.filterHalf}>
-          <DateField compact value={dateTo} placeholder={t('search.to')} onChange={setDateTo} />
-        </View>
-      </View>
+          <View style={styles.filtersRow}>
+            <View style={styles.filterHalf}>
+              <DateField
+                compact
+                value={dateFrom}
+                placeholder={t('search.from')}
+                onChange={setDateFrom}
+              />
+            </View>
+            <View style={styles.filterHalf}>
+              <DateField compact value={dateTo} placeholder={t('search.to')} onChange={setDateTo} />
+            </View>
+          </View>
 
-      <View style={styles.filtersRow}>
-        <TextInput
-          style={[styles.amountInput, styles.filterHalf]}
-          value={minAmountStr}
-          onChangeText={setMinAmountStr}
-          placeholder={t('search.minAmount')}
-          placeholderTextColor={colors.secondaryText}
-          keyboardType="numeric"
-        />
-        <TextInput
-          style={[styles.amountInput, styles.filterHalf]}
-          value={maxAmountStr}
-          onChangeText={setMaxAmountStr}
-          placeholder={t('search.maxAmount')}
-          placeholderTextColor={colors.secondaryText}
-          keyboardType="numeric"
-        />
-      </View>
+          <View style={styles.filtersRow}>
+            <TextInput
+              style={[styles.amountInput, styles.filterHalf]}
+              value={minAmountStr}
+              onChangeText={setMinAmountStr}
+              placeholder={t('search.minAmount')}
+              placeholderTextColor={colors.secondaryText}
+              keyboardType="numeric"
+            />
+            <TextInput
+              style={[styles.amountInput, styles.filterHalf]}
+              value={maxAmountStr}
+              onChangeText={setMaxAmountStr}
+              placeholder={t('search.maxAmount')}
+              placeholderTextColor={colors.secondaryText}
+              keyboardType="numeric"
+            />
+          </View>
+        </>
+      )}
 
       {active && (
         <TouchableOpacity onPress={clearFilters} style={styles.clearBtn}>
@@ -167,16 +201,17 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
         renderItem={({ item }) => (
           <TransactionResultRow
             item={item}
-            envelopeName={envelopes.find(e => e.id === item.envelopeId)?.name ?? t('common.deletedEnvelope')}
+            envelopeName={envelopeLabelOf(item)}
             categoryName={categoryNameOf(item)}
             paymentMethodName={item.paymentMethodId ? paymentMethods.find(p => p.id === item.paymentMethodId)?.name ?? t('common.noMethod') : t('common.noMethod')}
             currency={envelopes.find(e => e.id === item.envelopeId)?.currency ?? 'CRC'}
             formatAmount={formatAmount}
             locale={locale}
-            onPress={() => {
-              if (item.type === 'transfer') return;
-              navigation.navigate('CreateTransaction', { envelopeId: item.envelopeId, transaction: item });
-            }}
+            onPress={() => (
+              item.type === 'transfer'
+                ? navigation.navigate('CreateTransfer', { envelopeId: item.envelopeId, transaction: item })
+                : navigation.navigate('CreateTransaction', { envelopeId: item.envelopeId, transaction: item })
+            )}
           />
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -201,7 +236,7 @@ const TransactionResultRow: React.FC<{
   const color = isTransfer ? colors.blue : item.type === 'expense' ? colors.red : colors.green;
 
   return (
-    <TouchableOpacity style={styles.resultItem} onPress={onPress} disabled={isTransfer} activeOpacity={0.7}>
+    <TouchableOpacity style={styles.resultItem} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.resultLeft}>
         <Text style={styles.resultDesc}>{item.description}</Text>
         <Text style={styles.resultMeta}>
@@ -228,6 +263,12 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 12, marginBottom: 12,
   },
   searchInput: { flex: 1, color: colors.white, fontSize: 15, padding: 0 },
+  filterToggle: { paddingLeft: 4, flexDirection: 'row', alignItems: 'center' },
+  filterBadge: {
+    minWidth: 16, height: 16, borderRadius: 8, backgroundColor: colors.green,
+    alignItems: 'center', justifyContent: 'center', marginLeft: 4, paddingHorizontal: 4,
+  },
+  filterBadgeText: { color: colors.bg, fontSize: 10, fontWeight: '700' },
   filtersRow: { flexDirection: 'row', gap: 10, marginHorizontal: 20, marginBottom: 12 },
   filterHalf: { flex: 1 },
   amountInput: {

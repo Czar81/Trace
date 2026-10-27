@@ -17,6 +17,7 @@ import { formatDebtCycle } from '../utils/recurrence';
 import { getGoalDeadlineInfo } from '../utils/savingsGoal';
 import { Transaction } from '../types';
 import { ReceiptViewer } from '../components/ReceiptViewer';
+import { hapticDelete } from '../utils/haptics';
 
 const PAGE_SIZE = 10;
 
@@ -25,6 +26,8 @@ type DialogState =
   | { type: 'deleteEnvelope' };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EnvelopeDetail'>;
+
+const UNDO_WINDOW_MS = 4000;
 
 export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
   const { colors } = useTheme();
@@ -93,31 +96,39 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [receiptsToView, setReceiptsToView] = useState<string[]>([]);
   const deleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Refs so the timer and the unmount cleanup always delete with the latest
+  // transactions list (a stale deleteTransaction would overwrite newer changes).
+  const pendingDeleteRef = useRef<string | null>(null);
+  const deleteTransactionRef = useRef(deleteTransaction);
+  deleteTransactionRef.current = deleteTransaction;
+
+  const setPendingDelete = (id: string | null) => {
+    pendingDeleteRef.current = id;
+    setPendingDeleteId(id);
+  };
 
   const commitPendingDelete = () => {
     if (deleteTimeoutRef.current) {
       clearTimeout(deleteTimeoutRef.current);
       deleteTimeoutRef.current = null;
     }
-    if (pendingDeleteId) {
-      deleteTransaction(pendingDeleteId);
-      setPendingDeleteId(null);
+    const id = pendingDeleteRef.current;
+    if (id) {
+      setPendingDelete(null);
+      deleteTransactionRef.current(id);
     }
   };
 
   const handleSwipeDelete = (id: string) => {
-    if (pendingDeleteId && pendingDeleteId !== id) {
+    if (pendingDeleteRef.current && pendingDeleteRef.current !== id) {
       commitPendingDelete();
     }
     if (deleteTimeoutRef.current) {
       clearTimeout(deleteTimeoutRef.current);
     }
-    setPendingDeleteId(id);
-    deleteTimeoutRef.current = setTimeout(() => {
-      deleteTransaction(id);
-      setPendingDeleteId(null);
-      deleteTimeoutRef.current = null;
-    }, 4000);
+    hapticDelete();
+    setPendingDelete(id);
+    deleteTimeoutRef.current = setTimeout(commitPendingDelete, UNDO_WINDOW_MS);
   };
 
   const handleUndoDelete = () => {
@@ -125,13 +136,18 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
       clearTimeout(deleteTimeoutRef.current);
       deleteTimeoutRef.current = null;
     }
-    setPendingDeleteId(null);
+    setPendingDelete(null);
   };
 
+  // Leaving the screen during the undo window confirms the delete instead of
+  // silently dropping it.
   useEffect(() => {
     return () => {
       if (deleteTimeoutRef.current) {
         clearTimeout(deleteTimeoutRef.current);
+      }
+      if (pendingDeleteRef.current) {
+        deleteTransactionRef.current(pendingDeleteRef.current);
       }
     };
   }, []);
@@ -252,7 +268,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
       />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <View style={styles.headerActions}>
@@ -260,6 +276,8 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
             style={styles.iconBtn}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             onPress={() => navigation.navigate('CreateTransfer', { envelopeId })}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.transfer')}
           >
             <ArrowLeftRight color={colors.secondaryText} size={20} />
           </TouchableOpacity>
@@ -267,14 +285,16 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
             style={styles.iconBtn}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             onPress={() => navigation.navigate('CreateEnvelope', { envelopeType: envelope.type, envelope })}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.editEnvelope')}
           >
             <Edit2 color={colors.secondaryText} size={20} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => setDialog({ type: 'reset' })}>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => setDialog({ type: 'reset' })} accessibilityRole="button" accessibilityLabel={t('a11y.resetEnvelope')}>
             <RefreshCw color={colors.secondaryText} size={20} />
           </TouchableOpacity>
           <View style={styles.headerDivider} />
-          <TouchableOpacity style={[styles.iconBtn, styles.deleteIconBtn]} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => setDialog({ type: 'deleteEnvelope' })}>
+          <TouchableOpacity style={[styles.iconBtn, styles.deleteIconBtn]} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => setDialog({ type: 'deleteEnvelope' })} accessibilityRole="button" accessibilityLabel={t('a11y.deleteEnvelope')}>
             <Trash2 color={colors.red} size={20} />
           </TouchableOpacity>
         </View>
@@ -406,7 +426,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
           <SafeAreaView style={styles.monthPickerContainer}>
             <View style={styles.monthPickerHeader}>
               <Text style={styles.monthPickerTitle}>{t('detail.pickMonth')}</Text>
-              <TouchableOpacity onPress={() => setMonthPickerOpen(false)} style={styles.monthPickerClose}>
+              <TouchableOpacity onPress={() => setMonthPickerOpen(false)} style={styles.monthPickerClose} accessibilityRole="button" accessibilityLabel={t('a11y.close')}>
                 <X color={colors.white} size={22} />
               </TouchableOpacity>
             </View>

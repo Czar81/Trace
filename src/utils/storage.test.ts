@@ -20,6 +20,10 @@ import {
   DEFAULT_AUTO_BACKUP_STATE,
   loadLanguagePreference,
   saveLanguagePreference,
+  loadMainDisplayCurrency,
+  saveMainDisplayCurrency,
+  loadReportsDisplayCurrency,
+  saveReportsDisplayCurrency,
 } from './storage';
 import { REPORT_SECTIONS } from './reports';
 
@@ -147,5 +151,40 @@ describe('language preference storage', () => {
   it('is not part of the settings object', async () => {
     await saveLanguagePreference('en');
     expect(Object.keys(await loadSettings())).not.toContain('language');
+  });
+});
+
+describe('main display currency storage', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('is null when nothing is stored', async () => {
+    await expect(loadMainDisplayCurrency()).resolves.toBeNull();
+  });
+
+  it('round-trips each currency', async () => {
+    for (const value of ['USD', 'EUR', 'CRC'] as const) {
+      await saveMainDisplayCurrency(value);
+      await expect(loadMainDisplayCurrency()).resolves.toBe(value);
+    }
+  });
+
+  it('ignores an unknown stored value', async () => {
+    await AsyncStorage.setItem('@trace_main_display_currency', JSON.stringify('GBP'));
+    await expect(loadMainDisplayCurrency()).resolves.toBeNull();
+  });
+});
+
+describe('reports display currency storage', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('is stored apart from the home total currency', async () => {
+    await expect(loadReportsDisplayCurrency()).resolves.toBeNull();
+    await saveReportsDisplayCurrency('USD');
+    await expect(loadReportsDisplayCurrency()).resolves.toBe('USD');
+    await expect(loadMainDisplayCurrency()).resolves.toBeNull();
   });
 });
