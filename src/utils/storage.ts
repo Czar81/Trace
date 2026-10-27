@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings, RecurringTransactionTemplate } from '../types';
+import { Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings, RecurringTransactionTemplate, Currency } from '../types';
 import { DEFAULT_THEME_ID } from '../theme/colors';
 import { LanguagePreference, DEFAULT_LANGUAGE_PREFERENCE, isLanguagePreference, translateActive } from '../i18n';
 import { ReportLayoutItem, parseReportLayout } from './reports';
@@ -18,6 +18,7 @@ const KEYS = {
   AUTO_BACKUP_LAST_SUCCESS_AT: '@trace_auto_backup_last_success_at',
   AUTO_BACKUP_LAST_ERROR: '@trace_auto_backup_last_error',
   LANGUAGE: '@trace_language',
+  MAIN_DISPLAY_CURRENCY: '@trace_main_display_currency',
 };
 
 export const DEFAULT_AUTO_BACKUP_INTERVAL_DAYS = 7;
@@ -154,4 +155,15 @@ export const saveLanguagePreference = (v: LanguagePreference) => saveData(KEYS.L
 export const loadLanguagePreference = async (): Promise<LanguagePreference> => {
   const stored = await loadData<unknown>(KEYS.LANGUAGE, DEFAULT_LANGUAGE_PREFERENCE);
   return isLanguagePreference(stored) ? stored : DEFAULT_LANGUAGE_PREFERENCE;
+};
+
+const CURRENCIES: Currency[] = ['CRC', 'USD', 'EUR'];
+
+// The currency the home total is shown in is a UI preference with its own key
+// (not in AppSettings), so it is not part of a backup. null means "use the
+// default currency".
+export const saveMainDisplayCurrency = (v: Currency) => saveData(KEYS.MAIN_DISPLAY_CURRENCY, v);
+export const loadMainDisplayCurrency = async (): Promise<Currency | null> => {
+  const stored = await loadData<unknown>(KEYS.MAIN_DISPLAY_CURRENCY, null);
+  return CURRENCIES.includes(stored as Currency) ? (stored as Currency) : null;
 };

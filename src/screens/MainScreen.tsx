@@ -14,6 +14,7 @@ import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
 import { TranslationKey } from '../i18n';
 import { formatCurrency } from '../utils/formatCurrency';
+import { loadMainDisplayCurrency, saveMainDisplayCurrency } from '../utils/storage';
 
 const { width } = Dimensions.get('window');
 
@@ -110,6 +111,15 @@ export const MainScreen = ({ navigation }: Props) => {
   const [displayCurrency, setDisplayCurrency] = useState<Currency>(settings.defaultCurrency);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
+  // Restore the currency the user last picked for the total.
+  useEffect(() => {
+    let cancelled = false;
+    loadMainDisplayCurrency().then(stored => {
+      if (!cancelled && stored) setDisplayCurrency(stored);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   const scrollX = useRef(new Animated.Value(0)).current;
   const listRef = useRef<FlatList>(null);
 
@@ -150,7 +160,9 @@ export const MainScreen = ({ navigation }: Props) => {
 
   const cycleCurrency = () => {
     const idx = CURRENCY_CYCLE.indexOf(displayCurrency);
-    setDisplayCurrency(CURRENCY_CYCLE[(idx + 1) % CURRENCY_CYCLE.length]);
+    const next = CURRENCY_CYCLE[(idx + 1) % CURRENCY_CYCLE.length];
+    setDisplayCurrency(next);
+    saveMainDisplayCurrency(next);
   };
 
 
