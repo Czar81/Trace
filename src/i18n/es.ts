@@ -318,6 +318,7 @@ export const es = {
   'split.envelope': 'Sobre',
   'split.addPart': 'Agregar parte',
   'split.equal': 'Repartir en partes iguales',
+  'split.equalHint': 'Escribe primero el monto total para repartirlo.',
   'split.balanced': 'Las partes suman el total',
   'split.missing': 'Faltan {amount} por asignar',
   'split.over': 'Te pasaste por {amount}',

@@ -13,11 +13,11 @@ export const getUnallocated = (total: number, parts: number[]): number =>
 /** Formats a number as a raw input string without trailing float noise (e.g. 0.1 + 0.2 -> "0.3"). */
 export const toInputString = (n: number): string => String(Math.round(n * 100) / 100);
 
-/** Splits `total` into `n` cent-exact amounts; leftover cents go to the first parts (100 / 3 -> 33.34, 33.33, 33.33). */
+/** Splits `total` into `n` cent-exact amounts; leftover cents go to the last parts (100 / 3 -> 33.33, 33.33, 33.34). */
 export const splitEqually = (total: number, n: number): number[] => {
   if (n <= 0) return [];
   const cents = toCents(total);
   const base = Math.floor(cents / n);
   const extra = cents - base * n;
-  return Array.from({ length: n }, (_, i) => (base + (i < extra ? 1 : 0)) / 100);
+  return Array.from({ length: n }, (_, i) => (base + (i >= n - extra ? 1 : 0)) / 100);
 };

@@ -20,10 +20,16 @@ describe('allocation helpers', () => {
 });
 
 describe('splitEqually', () => {
-  it('gives leftover cents to the first parts and always sums to the total', () => {
-    expect(splitEqually(100, 3)).toEqual([33.34, 33.33, 33.33]);
+  it('gives leftover cents to the last parts and always sums to the total', () => {
+    expect(splitEqually(100, 3)).toEqual([33.33, 33.33, 33.34]);
     expect(splitEqually(100, 4)).toEqual([25, 25, 25, 25]);
     expect(getUnallocated(100, splitEqually(100, 3))).toBe(0);
+  });
+
+  it('puts every leftover cent on the last parts for other sizes', () => {
+    expect(splitEqually(0.05, 3)).toEqual([0.01, 0.02, 0.02]);
+    expect(splitEqually(56, 3)).toEqual([18.66, 18.67, 18.67]);
+    expect(getUnallocated(56, splitEqually(56, 3))).toBe(0);
   });
 
   it('returns nothing for zero parts', () => {

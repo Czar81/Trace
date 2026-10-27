@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Equal, Plus, X } from 'lucide-react-native';
 import { Dropdown } from './Dropdown';
@@ -40,12 +40,35 @@ export const SplitEditor: React.FC<SplitEditorProps> = ({ parts, onChange, total
   const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
+  // After pressing "split equally", keep amounts equal while parts or the total change; a manual edit turns it off.
+  const [autoEqual, setAutoEqual] = useState(false);
+  const applyEqual = (list: SplitPart[]) => {
+    const amounts = splitEqually(total, list.length);
+    return list.map((p, i) => ({ ...p, amountStr: toInputString(amounts[i]) }));
+  };
+  const partsCount = parts.length;
+  useEffect(() => {
+    if (autoEqual && total > 0) onChange(applyEqual(parts));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total, partsCount, autoEqual]);
+
   const unallocated = getUnallocated(total, parts.map(p => parseAmount(p.amountStr)));
   const update = (key: string, patch: Partial<SplitPart>) =>
     onChange(parts.map(p => (p.key === key ? { ...p, ...patch } : p)));
+  const equalDisabled = total <= 0;
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity
+        style={[styles.equalBtn, equalDisabled && styles.equalBtnDisabled]}
+        onPress={() => { setAutoEqual(true); onChange(applyEqual(parts)); }}
+        disabled={equalDisabled}
+      >
+        <Equal color={colors.white} size={18} />
+        <Text style={styles.equalText}>{t('split.equal')}</Text>
+      </TouchableOpacity>
+      {equalDisabled && <Text style={styles.equalHint}>{t('split.equalHint')}</Text>}
+
       {parts.map((part, i) => (
         <View key={part.key} style={styles.part}>
           <View style={styles.partHeader}>
@@ -72,25 +95,13 @@ export const SplitEditor: React.FC<SplitEditorProps> = ({ parts, onChange, total
           <TextInput
             style={styles.input}
             value={part.amountStr}
-            onChangeText={(v) => update(part.key, { amountStr: v.replace(/[^0-9.]/g, '') })}
+            onChangeText={(v) => { setAutoEqual(false); update(part.key, { amountStr: v.replace(/[^0-9.]/g, '') }); }}
             placeholder={t('common.amount')}
             placeholderTextColor={colors.secondaryText}
             keyboardType="numeric"
           />
         </View>
       ))}
-
-      <TouchableOpacity
-        style={styles.addBtn}
-        onPress={() => {
-          const amounts = splitEqually(total, parts.length);
-          onChange(parts.map((p, i) => ({ ...p, amountStr: toInputString(amounts[i]) })));
-        }}
-        disabled={total <= 0}
-      >
-        <Equal color={colors.secondaryText} size={16} />
-        <Text style={styles.addText}>{t('split.equal')}</Text>
-      </TouchableOpacity>
 
       <TouchableOpacity style={styles.addBtn} onPress={() => onChange([...parts, newSplitPart(parts[0]?.envelopeId ?? '', '')])}>
         <Plus color={colors.secondaryText} size={16} />
@@ -114,6 +125,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   partHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md },
   partTitle: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '700' },
   input: { backgroundColor: colors.bg, borderRadius: RADIUS.sm, padding: SPACING.md, color: colors.white, fontSize: FONT_SIZE.lg },
+  equalBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, backgroundColor: colors.green, borderRadius: RADIUS.md, paddingVertical: SPACING.md, marginBottom: SPACING.md },
+  equalBtnDisabled: { opacity: 0.4 },
+  equalText: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '700' },
+  equalHint: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, marginTop: -4, marginBottom: SPACING.md },
   addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: SPACING.sm },
   addText: { color: colors.secondaryText, fontSize: FONT_SIZE.md, fontWeight: '600' },
   remaining: { color: colors.green, fontSize: FONT_SIZE.md, fontWeight: '600', marginTop: SPACING.xs },

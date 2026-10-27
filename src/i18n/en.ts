@@ -317,6 +317,7 @@ export const en: Record<TranslationKey, string> = {
   'split.envelope': 'Envelope',
   'split.addPart': 'Add part',
   'split.equal': 'Split equally',
+  'split.equalHint': 'Enter the total amount first to split it.',
   'split.balanced': 'Parts add up to the total',
   'split.missing': '{amount} left to assign',
   'split.over': 'Over by {amount}',
