@@ -14,6 +14,9 @@ import { EnvelopeDetailScreen } from './src/screens/EnvelopeDetailScreen';
 import { CreateEnvelopeScreen } from './src/screens/CreateEnvelopeScreen';
 import { CreateTransactionScreen } from './src/screens/CreateTransactionScreen';
 import { CreateTransferScreen } from './src/screens/CreateTransferScreen';
+import { AssignIncomeScreen } from './src/screens/AssignIncomeScreen';
+import { DebtPayoffPlanScreen } from './src/screens/DebtPayoffPlanScreen';
+import { ImportBankCsvScreen } from './src/screens/ImportBankCsvScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { CurrencySettingsScreen } from './src/screens/CurrencySettingsScreen';
 import { PaymentMethodsSettingsScreen } from './src/screens/PaymentMethodsSettingsScreen';
@@ -23,6 +26,7 @@ import { SearchTransactionsScreen } from './src/screens/SearchTransactionsScreen
 import { RecurringTransactionsScreen } from './src/screens/RecurringTransactionsScreen';
 import { CreateRecurringTransactionScreen } from './src/screens/CreateRecurringTransactionScreen';
 import { AppearanceSettingsScreen } from './src/screens/AppearanceSettingsScreen';
+import { AppLockGate } from './src/components/AppLockGate';
 import { RootStackParamList } from './src/navigation/types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -39,6 +43,9 @@ function ThemedNavigator() {
           <Stack.Screen name="CreateEnvelope" component={CreateEnvelopeScreen} />
           <Stack.Screen name="CreateTransaction" component={CreateTransactionScreen} />
           <Stack.Screen name="CreateTransfer" component={CreateTransferScreen} />
+          <Stack.Screen name="AssignIncome" component={AssignIncomeScreen} />
+          <Stack.Screen name="DebtPayoffPlan" component={DebtPayoffPlanScreen} />
+          <Stack.Screen name="ImportBankCsv" component={ImportBankCsvScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="AppearanceSettings" component={AppearanceSettingsScreen} />
           <Stack.Screen name="CurrencySettings" component={CurrencySettingsScreen} />
@@ -62,7 +69,9 @@ export default function App() {
           <LanguageProvider>
             <AppProvider>
               <ThemeProvider>
-                <ThemedNavigator />
+                <AppLockGate>
+                  <ThemedNavigator />
+                </AppLockGate>
               </ThemeProvider>
             </AppProvider>
           </LanguageProvider>

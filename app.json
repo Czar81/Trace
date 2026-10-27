@@ -32,7 +32,21 @@
           "backgroundColor": "#092230"
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Trace usa Face ID para desbloquear la app."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Trace usa la cámara para fotografiar tus recibos.",
+          "photosPermission": "Trace accede a tus fotos para adjuntar recibos e imágenes de sobres."
+        }
+      ],
+      "expo-sharing"
     ],
     "extra": {
       "eas": {

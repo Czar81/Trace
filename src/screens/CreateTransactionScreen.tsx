@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Switch, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -13,6 +13,10 @@ import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
 import { sortEnvelopesByTypeAndName } from '../utils/envelopeSorting';
+import { SplitEditor, SplitPart, newSplitPart } from '../components/SplitEditor';
+import { getUnallocated, parseAmount } from '../utils/allocation';
+import { ReceiptField } from '../components/ReceiptField';
+import { deleteReceiptImage } from '../utils/receipts';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransaction'>;
 
@@ -21,7 +25,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { envelopeId, transaction } = route.params;
-  const { envelopes, addTransaction, updateTransaction, paymentMethods, categories, incomeCategories, getEnvelopeBalance, formatAmount } = useAppData();
+  const { envelopes, addTransaction, addTransactions, updateTransaction, paymentMethods, categories, incomeCategories, getEnvelopeBalance, formatAmount } = useAppData();
 
   const envelope = envelopes.find(e => e.id === envelopeId);
   const isDebtEnvelope = envelope?.type === 'deuda';
@@ -42,11 +46,51 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   );
   const [useSavingsEnvelope, setUseSavingsEnvelope] = useState(!!transaction?.sourceSavingsEnvelopeId);
   const [sourceSavingsEnvelopeId, setSourceSavingsEnvelopeId] = useState(transaction?.sourceSavingsEnvelopeId ?? '');
+  const [notes, setNotes] = useState(transaction?.notes ?? '');
+  const [receiptUris, setReceiptUris] = useState<string[]>(transaction?.receiptUris ?? []);
+  // Receipts copied during this session but not saved yet; removed again if the user backs out.
+  const unsavedReceipts = useRef<Set<string>>(new Set());
+  const saved = useRef(false);
+  useEffect(() => () => {
+    if (!saved.current) unsavedReceipts.current.forEach(uri => { void deleteReceiptImage(uri); });
+  }, []);
+  const handleReceiptsChange = (uris: string[]) => {
+    // Photos added in this session and dropped again can be deleted right away; saved ones are cleaned up by the context.
+    receiptUris.filter(uri => !uris.includes(uri) && unsavedReceipts.current.has(uri)).forEach(uri => {
+      unsavedReceipts.current.delete(uri);
+      void deleteReceiptImage(uri);
+    });
+    uris.filter(uri => !receiptUris.includes(uri)).forEach(uri => unsavedReceipts.current.add(uri));
+    setReceiptUris(uris);
+  };
+  const [splitEnabled, setSplitEnabled] = useState(false);
+  const [splitParts, setSplitParts] = useState<SplitPart[]>([]);
+  const [splitError, setSplitError] = useState('');
   const [date, setDate] = useState(transaction ? new Date(transaction.date) : new Date());
 
   const handleSave = async () => {
     const amount = parseFloat(amountStr);
     if (!amountStr || isNaN(amount) || amount <= 0) return;
+
+    if (splitEnabled && !isEditing && type === 'expense' && !isDebtEnvelope) {
+      const partAmounts = splitParts.map(p => parseAmount(p.amountStr));
+      if (partAmounts.some(a => a <= 0)) { setSplitError(t('split.errorAmounts')); return; }
+      if (getUnallocated(amount, partAmounts) !== 0) { setSplitError(t('split.errorTotal')); return; }
+      await addTransactions(splitParts.map((p, i) => ({
+        envelopeId: p.envelopeId,
+        type: 'expense' as const,
+        amount: partAmounts[i],
+        description: description.trim() || t('tx.expense'),
+        notes: notes.trim() || undefined,
+        paymentMethodId,
+        categoryId: p.categoryId || undefined,
+        date: date.toISOString(),
+        receiptUris: receiptUris.length > 0 ? receiptUris : undefined,
+      })));
+      saved.current = true;
+      navigation.goBack();
+      return;
+    }
 
     const savedType = isDebtEnvelope && !isEditing ? 'income' : type;
     const data = {
@@ -65,8 +109,11 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
           ? sourceSavingsEnvelopeId
           : undefined,
       date: date.toISOString(),
+      receiptUris: receiptUris.length > 0 ? receiptUris : [],
+      notes: notes.trim() || undefined,
     };
 
+    saved.current = true;
     if (isEditing && transaction) {
       await updateTransaction(transaction.id, data);
     } else {
@@ -83,6 +130,13 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   // Explicit 'ahorro' check — already excludes 'deuda' envelopes as a funding source.
   const savingsEnvelopes = sortEnvelopesByTypeAndName(envelopes.filter(e => e.type === 'ahorro'));
   const savingsOptions = savingsEnvelopes.map(e => ({ label: e.name, value: e.id }));
+  const splitTargets = sortEnvelopesByTypeAndName(envelopes.filter(e => e.currency === envelope.currency && e.type !== 'deuda'));
+  const canSplit = !isEditing && type === 'expense' && !isDebtEnvelope;
+  const toggleSplit = (on: boolean) => {
+    setSplitEnabled(on);
+    setSplitError('');
+    if (on) setSplitParts([newSplitPart(envelopeId, categoryId, amountStr), newSplitPart(envelopeId, '')]);
+  };
   const isDebtPayment = isDebtEnvelope && (!transaction || transaction.type === 'income');
   const parsedAmount = parseFloat(amountStr);
   const hasValidAmount = amountStr !== '' && !isNaN(parsedAmount) && parsedAmount > 0;
@@ -213,6 +267,19 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
           placeholderTextColor={colors.secondaryText}
         />
 
+        <Text style={styles.label}>{t('common.notes')}</Text>
+        <TextInput
+          style={[styles.input, styles.notesInput]}
+          value={notes}
+          onChangeText={setNotes}
+          placeholder={t('common.notesPlaceholder')}
+          placeholderTextColor={colors.secondaryText}
+          multiline
+          textAlignVertical="top"
+        />
+
+        <ReceiptField value={receiptUris} onChange={handleReceiptsChange} />
+
         {/* ── Income category (income only, non-debt) ── */}
         {type === 'income' && !isDebtPayment && (
           <Dropdown
@@ -241,8 +308,34 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
               onSelect={setPaymentMethodId}
               placeholder={paymentMethods.length === 0 ? t('tx.addMethodsHint') : t('tx.selectMethod')}
             />
+            {canSplit && (
+              <>
+                <View style={styles.toggleRow}>
+                  <Text style={styles.toggleLabel}>{t('split.toggle')}</Text>
+                  <Switch
+                    value={splitEnabled}
+                    onValueChange={toggleSplit}
+                    trackColor={{ false: colors.cardBg, true: colors.green }}
+                    thumbColor={colors.white}
+                  />
+                </View>
+                {splitEnabled && (
+                  <>
+                    <SplitEditor
+                      parts={splitParts}
+                      onChange={(p) => { setSplitParts(p); setSplitError(''); }}
+                      total={parseAmount(amountStr)}
+                      currency={envelope.currency}
+                      envelopes={splitTargets}
+                      categories={categories}
+                    />
+                    {splitError ? <Text style={styles.splitError}>{splitError}</Text> : null}
+                  </>
+                )}
+              </>
+            )}
             {/* Explicit 'gasto' check — the funding-from-savings toggle is not offered for 'deuda' envelopes either. */}
-            {envelope.type === 'gasto' && (
+            {envelope.type === 'gasto' && !splitEnabled && (
               <>
                 <View style={styles.toggleRow}>
                   <Text style={styles.toggleLabel}>{t('tx.fromSavings')}</Text>
@@ -317,6 +410,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   label: { color: colors.white, fontSize: 16, fontWeight: '600', marginTop: 24, marginBottom: 8 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20, marginBottom: 16 },
   toggleLabel: { color: colors.white, fontSize: 15, flex: 1, paddingRight: 12 },
+  notesInput: { minHeight: 96 },
+  splitError: { color: colors.red, fontSize: 14, marginBottom: 16 },
   savingsPreview: { color: colors.secondaryText, fontSize: 13, marginTop: -8, marginBottom: 16 },
   input: {
     backgroundColor: colors.cardBg, borderRadius: 12, padding: 16,

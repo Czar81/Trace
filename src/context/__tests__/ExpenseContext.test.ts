@@ -131,6 +131,28 @@ describe('getEnvelopeBalance (via useAppData)', () => {
     return found.id;
   };
 
+  it('addTransactions saves every transaction with unique ids in one batch', async () => {
+    const { result } = await renderHook(() => useAppData(), { wrapper });
+
+    await act(async () => {
+      await result.current.addEnvelope(baseEnvelope({ name: 'Batch A', type: 'ahorro' }));
+    });
+    const id = findIdByName(result.current.envelopes, 'Batch A');
+    const date = new Date().toISOString();
+
+    await act(async () => {
+      await result.current.addTransactions([
+        { envelopeId: id, type: 'income', amount: 100, description: 'p1', date },
+        { envelopeId: id, type: 'income', amount: 50, description: 'p2', date },
+      ]);
+    });
+
+    const added = result.current.transactions.filter(t => t.envelopeId === id);
+    expect(added).toHaveLength(2);
+    expect(new Set(added.map(t => t.id)).size).toBe(2);
+    expect(result.current.getEnvelopeBalance(id)).toBe(150);
+  });
+
   it('reflects added expenses and income for a gasto envelope with no cutoff', async () => {
     const { result } = await renderHook(() => useAppData(), { wrapper });
 

@@ -1,3 +1,5 @@
+import { areRatesStale, fetchExchangeRates } from '../utils/exchangeRates';
+import { deleteUnreferencedReceipts } from '../utils/receipts';
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type * as ExpoNotifications from 'expo-notifications';
@@ -175,6 +177,8 @@ interface AppContextType {
   categories: TransactionCategory[];
   incomeCategories: TransactionCategory[];
   settings: AppSettings;
+  /** False until persisted settings have been read from storage. */
+  settingsLoaded: boolean;
   recurringTemplates: RecurringTransactionTemplate[];
   autoBackup: AutoBackupState;
   updateAutoBackup: (updates: Partial<Pick<AutoBackupState, 'enabled' | 'intervalDays'>>) => Promise<void>;
@@ -188,6 +192,8 @@ interface AppContextType {
 
   // Transaction CRUD
   addTransaction: (transaction: Omit<Transaction, 'id' | 'isArchived'>) => Promise<void>;
+  /** Adds several transactions with a single save (avoids stale-state clobbering from looping addTransaction). */
+  addTransactions: (transactions: Omit<Transaction, 'id' | 'isArchived'>[]) => Promise<void>;
   updateTransaction: (id: string, updates: Partial<Omit<Transaction, 'id'>>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   addTransfer: (transfer: {
@@ -195,6 +201,7 @@ interface AppContextType {
     toEnvelopeId: string;
     amount: number;
     description: string;
+    notes?: string;
     date?: string;
   }) => Promise<{ success: boolean; error?: string }>;
   updateTransfer: (id: string, updates: {
@@ -202,6 +209,7 @@ interface AppContextType {
     toEnvelopeId?: string;
     amount?: number;
     description?: string;
+    notes?: string;
     date?: string;
   }) => Promise<{ success: boolean; error?: string }>;
 
@@ -242,6 +250,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [incomeCategories, setIncomeCategories] = useState<TransactionCategory[]>([]);
   const [recurringTemplates, setRecurringTemplates] = useState<RecurringTransactionTemplate[]>([]);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [autoBackup, setAutoBackup] = useState<AutoBackupState>(DEFAULT_AUTO_BACKUP_STATE);
 
   useEffect(() => {
@@ -255,6 +264,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIncomeCategories(await loadIncomeCategories());
       const loadedSettings = await loadSettings();
       setSettings(loadedSettings);
+      setSettingsLoaded(true);
+
+      // Refresh exchange rates in the background; offline or API errors keep the saved rates.
+      if (loadedSettings.autoExchangeRates && areRatesStale(loadedSettings.exchangeRatesUpdatedAt)) {
+        void fetchExchangeRates().then(async rates => {
+          if (!rates) return;
+          const refreshed = { ...loadedSettings, exchangeRates: rates, exchangeRatesUpdatedAt: new Date().toISOString() };
+          setSettings(prev => ({ ...prev, exchangeRates: rates, exchangeRatesUpdatedAt: refreshed.exchangeRatesUpdatedAt }));
+          await saveSettings(refreshed);
+        });
+      }
 
       // ─── Automatic generation of due recurring transactions ──────────────
       const now = new Date();
@@ -767,6 +787,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updatedEnvelopes = envelopes.filter(e => e.id !== id);
     // Also remove associated transactions
     const updatedTransactions = transactions.filter(t => t.envelopeId !== id);
+    await deleteUnreferencedReceipts(
+      transactions.filter(t => t.envelopeId === id).flatMap(t => t.receiptUris ?? []),
+      updatedTransactions
+    );
     setEnvelopes(updatedEnvelopes);
     setTransactions(updatedTransactions);
     await saveEnvelopes(updatedEnvelopes);
@@ -803,10 +827,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [transactions, checkBudgetAlerts]);
 
+  const addTransactions = useCallback(async (list: Omit<Transaction, 'id' | 'isArchived'>[]) => {
+    if (list.length === 0) return;
+    const base = Date.now();
+    const created: Transaction[] = list.map((data, i) => ({
+      ...data,
+      id: String(base + i),
+      isArchived: false,
+      date: data.date || new Date().toISOString(),
+    }));
+    const updated = [...created.slice().reverse(), ...transactions];
+    setTransactions(updated);
+    await saveTransactions(updated);
+    const expenseEnvelopeIds = new Set(created.filter(c => c.type === 'expense').map(c => c.envelopeId));
+    for (const envelopeId of expenseEnvelopeIds) {
+      await checkBudgetAlerts(envelopeId, transactions, updated);
+    }
+  }, [transactions, checkBudgetAlerts]);
+
   const updateTransaction = useCallback(async (id: string, updates: Partial<Omit<Transaction, 'id'>>) => {
     const updated = transactions.map(t => (t.id === id ? { ...t, ...updates } : t));
     setTransactions(updated);
     await saveTransactions(updated);
+    if (updates.receiptUris !== undefined) {
+      const kept = new Set(updates.receiptUris);
+      await deleteUnreferencedReceipts(
+        transactions.find(t => t.id === id)?.receiptUris?.filter(uri => !kept.has(uri)),
+        updated
+      );
+    }
     const updatedTransaction = updated.find(t => t.id === id);
     if (updatedTransaction && updatedTransaction.type === 'expense') {
       await checkBudgetAlerts(updatedTransaction.envelopeId, transactions, updated);
@@ -817,6 +866,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = transactions.filter(t => t.id !== id);
     setTransactions(updated);
     await saveTransactions(updated);
+    await deleteUnreferencedReceipts(transactions.find(t => t.id === id)?.receiptUris, updated);
   }, [transactions]);
 
   /**
@@ -832,6 +882,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     toEnvelopeId: string;
     amount: number;
     description: string;
+    notes?: string;
     date?: string;
   }): Promise<{ success: boolean; error?: string }> => {
     if (transfer.envelopeId === transfer.toEnvelopeId) {
@@ -852,6 +903,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'transfer',
       amount: transfer.amount,
       description: transfer.description,
+      notes: transfer.notes,
       date: transfer.date ?? new Date().toISOString(),
     });
     return { success: true };
@@ -868,6 +920,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     toEnvelopeId?: string;
     amount?: number;
     description?: string;
+    notes?: string;
     date?: string;
   }): Promise<{ success: boolean; error?: string }> => {
     const existing = transactions.find(t => t.id === id);
@@ -1089,9 +1142,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [incomeCategories]);
 
   const value = useMemo(() => ({
-    envelopes, transactions, paymentMethods, categories, incomeCategories, settings, recurringTemplates, autoBackup, updateAutoBackup,
+    envelopes, transactions, paymentMethods, categories, incomeCategories, settings, settingsLoaded, recurringTemplates, autoBackup, updateAutoBackup,
     addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
-    addTransaction, updateTransaction, deleteTransaction, addTransfer, updateTransfer,
+    addTransaction, addTransactions, updateTransaction, deleteTransaction, addTransfer, updateTransfer,
     addRecurringTemplate, updateRecurringTemplate, deleteRecurringTemplate,
     addPaymentMethod, deletePaymentMethod,
     addCategory, deleteCategory,
@@ -1100,9 +1153,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     importFromBackup,
     getEnvelopeBalance, getTotalByType, convertToCRC, formatAmount,
   }), [
-    envelopes, transactions, paymentMethods, categories, incomeCategories, settings, recurringTemplates, autoBackup, updateAutoBackup,
+    envelopes, transactions, paymentMethods, categories, incomeCategories, settings, settingsLoaded, recurringTemplates, autoBackup, updateAutoBackup,
     addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
-    addTransaction, updateTransaction, deleteTransaction, addTransfer, updateTransfer,
+    addTransaction, addTransactions, updateTransaction, deleteTransaction, addTransfer, updateTransfer,
     addRecurringTemplate, updateRecurringTemplate, deleteRecurringTemplate,
     addPaymentMethod, deletePaymentMethod,
     addCategory, deleteCategory,

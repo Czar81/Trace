@@ -5,7 +5,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { EnvelopeType, Currency, Envelope } from '../types';
 import { RootStackParamList } from '../navigation/types';
-import { Settings, MoreVertical, RefreshCw, Search } from 'lucide-react-native';
+import { Settings, MoreVertical, RefreshCw, Search, Coins } from 'lucide-react-native';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
@@ -264,6 +264,9 @@ export const MainScreen = ({ navigation }: Props) => {
       <View style={styles.header}>
         <Text style={styles.title}>TRACE</Text>
         <View style={{ flexDirection: 'row' }}>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('AssignIncome')}>
+            <Coins color={colors.secondaryText} size={22} />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Search')}>
             <Search color={colors.secondaryText} size={22} />
           </TouchableOpacity>

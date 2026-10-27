@@ -31,6 +31,7 @@ export const CreateTransferScreen = ({ route, navigation }: Props) => {
   const [destinationId, setDestinationId] = useState(transaction?.toEnvelopeId ?? '');
   const [amountStr, setAmountStr] = useState(transaction ? String(transaction.amount) : '');
   const [description, setDescription] = useState(transaction?.description ?? '');
+  const [notes, setNotes] = useState(transaction?.notes ?? '');
   const [error, setError] = useState('');
 
   const source = envelopes.find(e => e.id === sourceId);
@@ -74,12 +75,14 @@ export const CreateTransferScreen = ({ route, navigation }: Props) => {
           toEnvelopeId: destinationId,
           amount: parsedAmount,
           description: description.trim() || t('transfer.defaultDescription'),
+          notes: notes.trim() || undefined,
         })
       : await addTransfer({
           envelopeId: sourceId,
           toEnvelopeId: destinationId,
           amount: parsedAmount,
           description: description.trim() || t('transfer.defaultDescription'),
+          notes: notes.trim() || undefined,
         });
 
     if (!result.success) {
@@ -141,6 +144,17 @@ export const CreateTransferScreen = ({ route, navigation }: Props) => {
             onChangeText={setDescription}
             placeholder={t('transfer.notePlaceholder')}
             placeholderTextColor={colors.secondaryText}
+          />
+
+          <Text style={styles.label}>{t('common.notes')}</Text>
+          <TextInput
+            style={[styles.input, { minHeight: 96 }]}
+            value={notes}
+            onChangeText={setNotes}
+            placeholder={t('common.notesPlaceholder')}
+            placeholderTextColor={colors.secondaryText}
+            multiline
+            textAlignVertical="top"
           />
 
           {source && destination && source.currency === destination.currency && (

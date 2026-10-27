@@ -25,6 +25,7 @@ export interface Envelope {
   icon: string;
   imageUri?: string;
   color: string;
+  goalDeadline?: string; // ISO date; savings goals only (type === 'ahorro' && !isUnlimited)
   // Debt-only fields (type === 'deuda' && !isUnlimited); undefined/unset otherwise.
   interestRate?: number; // percentage applied per cycle, e.g. 2.5 = 2.5%
   interestFrequency?: DebtInterestFrequency;
@@ -43,12 +44,16 @@ export interface Transaction {
   type: 'expense' | 'income' | 'transfer';
   amount: number; // Always positive, 'type' determines sign
   description: string;
+  /** Free-form multiline notes. */
+  notes?: string;
   date: string; // ISO string
   paymentMethodId?: string;
   categoryId?: string;
   sourceSavingsEnvelopeId?: string;
   /** Destination envelope id. Only set when type === 'transfer'; envelopeId is the source. */
   toEnvelopeId?: string;
+  /** file:// URIs of receipt photos stored in the app's documents folder (not included in backups). A split expense shares the same files across its parts. */
+  receiptUris?: string[];
   isArchived: boolean;
   archivedAt?: string;
 }
@@ -75,12 +80,27 @@ export interface RecurringTransactionTemplate {
   lastReminderScheduledPeriod: string | null; // occurrence key, same scheme as lastGeneratedPeriod
 }
 
+export interface SavedDebtPlan {
+  id: string;
+  name: string;
+  currency: Currency;
+  strategy: 'snowball' | 'avalanche';
+  /** Monthly payment for all debts; null means "just the minimum payments". */
+  monthlyBudget: number | null;
+  createdAt: string;
+}
+
 export interface AppSettings {
   defaultCurrency: Currency;
   exchangeRates: {
     USD_TO_CRC: number;
     EUR_TO_CRC: number;
   };
+  /** When on, rates are refreshed from the internet on app start if older than 12 hours. */
+  autoExchangeRates?: boolean;
+  exchangeRatesUpdatedAt?: string;
+  /** Requires the device's fingerprint/face/PIN to open the app. */
+  appLockEnabled?: boolean;
   expenseCutoffEnabled: boolean;
   expenseCutoffDay: number | null;
   budgetAlertsEnabled: boolean;

@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
-import { ArrowLeft, RefreshCw, Edit2, Trash2, Calendar, X, ArrowLeftRight } from 'lucide-react-native';
+import { ArrowLeft, RefreshCw, Edit2, Trash2, Calendar, X, ArrowLeftRight, Paperclip } from 'lucide-react-native';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
 import { RootStackParamList } from '../navigation/types';
@@ -14,7 +14,9 @@ import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
 import { groupTransactionsByDay } from '../utils/transactionGrouping';
 import { formatDebtCycle } from '../utils/recurrence';
+import { getGoalDeadlineInfo } from '../utils/savingsGoal';
 import { Transaction } from '../types';
+import { ReceiptViewer } from '../components/ReceiptViewer';
 
 const PAGE_SIZE = 10;
 
@@ -89,6 +91,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
   const [page, setPage] = useState(1);
 
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [receiptsToView, setReceiptsToView] = useState<string[]>([]);
   const deleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const commitPendingDelete = () => {
@@ -237,6 +240,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <ReceiptViewer uris={receiptsToView} onClose={() => setReceiptsToView([])} />
       <ConfirmDialog
         visible={!!dialog}
         title={dp.title}
@@ -336,6 +340,27 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
             </Text>
           </View>
         </View>
+
+        {type === 'ahorro' && !envelope.isUnlimited && envelope.goalDeadline ? (() => {
+          const info = getGoalDeadlineInfo(envelope.goalDeadline, envelope.limit, balance);
+          return (
+            <View style={styles.debtDetails}>
+              <Text style={styles.debtDetailText}>
+                {t('detail.goalDeadline', { date: new Date(envelope.goalDeadline).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }) })}
+              </Text>
+              {info.missing === 0 ? (
+                <Text style={styles.debtDetailText}>{t('detail.goalReached')}</Text>
+              ) : info.isOverdue ? (
+                <Text style={[styles.debtDetailText, { color: colors.red }]}>{t('detail.goalOverdue', { days: -info.daysLeft })}</Text>
+              ) : (
+                <>
+                  <Text style={styles.debtDetailText}>{t('detail.goalDaysLeft', { days: info.daysLeft })}</Text>
+                  <Text style={styles.debtDetailText}>{t('detail.goalPerMonth', { amount: formatAmount(info.perMonth ?? 0, envelope.currency) })}</Text>
+                </>
+              )}
+            </View>
+          );
+        })() : null}
 
         {type === 'deuda' && !envelope.isUnlimited && (envelope.interestRate || envelope.minimumPayment || envelope.dueDay) ? (
           <View style={styles.debtDetails}>
@@ -473,7 +498,15 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                   )}
                 >
                   <View style={styles.transactionLeft}>
-                    <Text style={styles.transactionDesc}>{item.description}</Text>
+                    <View style={styles.descRow}>
+                      <Text style={[styles.transactionDesc, { flexShrink: 1 }]}>{item.description}</Text>
+                      {item.receiptUris && item.receiptUris.length > 0 ? (
+                        <TouchableOpacity onPress={() => setReceiptsToView(item.receiptUris ?? [])} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={t('receipt.view')}>
+                          <Paperclip color={colors.secondaryText} size={14} />
+                          {item.receiptUris.length > 1 ? <Text style={styles.receiptCount}>{item.receiptUris.length}</Text> : null}
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
                     <Text style={styles.transactionDate}>
                       {[
                         cat?.name,
@@ -482,6 +515,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                         isTransfer ? `${isOutgoingTransfer ? '→' : '←'} ${otherEnvelopeName}` : null,
                       ].filter(Boolean).join(' · ')}
                     </Text>
+                    {item.notes ? <Text style={styles.transactionNotes} numberOfLines={2}>{item.notes}</Text> : null}
                   </View>
                   <Text style={[
                     styles.transactionAmount,
@@ -514,6 +548,9 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
 };
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  receiptCount: { color: colors.secondaryText, fontSize: 12, marginLeft: 2 },
+  transactionNotes: { color: colors.secondaryText, fontSize: 12, fontStyle: 'italic', marginTop: 4 },
+  descRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   iconBtn: { padding: 8 },

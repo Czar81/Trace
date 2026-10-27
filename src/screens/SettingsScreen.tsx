@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
-import { ArrowLeft, ChevronRight, ChevronDown, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat, Palette, Share2 } from 'lucide-react-native';
+import { authenticate, isDeviceAuthAvailable } from '../utils/deviceAuth';
+import { ArrowLeft, ChevronRight, ChevronDown, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat, TrendingDown, FileSpreadsheet, Palette, Share2 } from 'lucide-react-native';
 import { exportDataToCSV } from '../utils/exportData';
 import { getLatestAutomaticBackupUri, AUTO_BACKUP_INTERVAL_OPTIONS } from '../utils/autoBackup';
 import { isAvailableAsync, shareAsync } from 'expo-sharing';
@@ -39,6 +40,19 @@ export const SettingsScreen = ({ navigation }: Props) => {
   const [showInfoDialog, setShowInfoDialog] = useState(false);
   const [infoDialogTitle, setInfoDialogTitle] = useState('');
   const [infoDialogMessage, setInfoDialogMessage] = useState('');
+
+  const handleToggleAppLock = async () => {
+    if (settings.appLockEnabled) {
+      // Turning the lock off also requires proving it is the owner.
+      if (await authenticate(t('lock.prompt'), t('common.cancel'))) await updateSettings({ appLockEnabled: false });
+      return;
+    }
+    if (!(await isDeviceAuthAvailable())) {
+      showInfo(t('lock.title'), t('lock.unavailable'));
+      return;
+    }
+    if (await authenticate(t('lock.prompt'), t('common.cancel'))) await updateSettings({ appLockEnabled: true });
+  };
 
   const showInfo = (title: string, message: string) => {
     setInfoDialogTitle(title);
@@ -191,6 +205,21 @@ export const SettingsScreen = ({ navigation }: Props) => {
           <ChevronRight color={colors.secondaryText} size={20} />
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('DebtPayoffPlan')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <TrendingDown color={colors.white} size={18} />
+          </View>
+          <View style={styles.menuTextWrapper}>
+            <Text style={styles.menuTitle}>{t('settings.debtPayoff')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.debtPayoffSubtitle')}</Text>
+          </View>
+          <ChevronRight color={colors.secondaryText} size={20} />
+        </TouchableOpacity>
+
         <Text style={[styles.sectionTitle, { marginTop: 10 }]}>{t('settings.language')}</Text>
 
         <View style={styles.reminderCard}>
@@ -208,6 +237,21 @@ export const SettingsScreen = ({ navigation }: Props) => {
               ))}
             </View>
           </View>
+        </View>
+
+        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>{t('lock.section')}</Text>
+
+        <View style={styles.toggleRow}>
+          <View style={styles.toggleTextWrapper}>
+            <Text style={styles.menuTitle}>{t('lock.title')}</Text>
+            <Text style={styles.menuSubtitle}>{t('lock.subtitle')}</Text>
+          </View>
+          <Switch
+            value={!!settings.appLockEnabled}
+            onValueChange={handleToggleAppLock}
+            trackColor={{ false: colors.cardBg, true: colors.green }}
+            thumbColor={settings.appLockEnabled ? colors.green : colors.white}
+          />
         </View>
 
         <Text style={[styles.sectionTitle, { marginTop: 10 }]}>{t('settings.alerts')}</Text>
@@ -299,6 +343,20 @@ export const SettingsScreen = ({ navigation }: Props) => {
         </View>
 
         <Text style={[styles.sectionTitle, { marginTop: 10 }]}>{t('settings.backupSection')}</Text>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('ImportBankCsv')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <FileSpreadsheet color={colors.white} size={18} />
+          </View>
+          <View style={styles.menuTextWrapper}>
+            <Text style={styles.menuTitle}>{t('settings.importBankCsv')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.importBankCsvSubtitle')}</Text>
+          </View>
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.menuItem}
