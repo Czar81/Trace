@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
@@ -15,7 +15,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { LanguagePreference } from '../../i18n';
-import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
+import { SPACING } from '../../theme/tokens';
+import { makeStyles } from './SettingsScreen.styles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
@@ -536,32 +537,3 @@ export const SettingsScreen = ({ navigation }: Props) => {
     </SafeAreaView>
   );
 };
-
-const makeStyles = (colors: ThemeColors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.lg },
-  headerBtn: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: colors.white, fontSize: FONT_SIZE.xxl, fontWeight: 'bold' },
-  scroll: { paddingHorizontal: SPACING.xl, paddingBottom: 60 },
-  sectionTitle: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '700', marginBottom: SPACING.xl },
-  menuItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.cardBg, borderRadius: RADIUS.xl, padding: SPACING.lg, marginBottom: 14, borderWidth: 1, borderColor: colors.divider },
-  menuIconWrapper: { width: 44, height: 44, borderRadius: RADIUS.lg, backgroundColor: colors.cardHighlight, borderWidth: 1, borderColor: colors.divider, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
-  menuTextWrapper: { flex: 1 },
-  menuTitle: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '700', marginBottom: SPACING.xs },
-  menuSubtitle: { color: colors.secondaryText, fontSize: FONT_SIZE.md },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.cardBg, borderRadius: RADIUS.xl, padding: SPACING.lg, marginBottom: 14, borderWidth: 1, borderColor: colors.divider },
-  toggleTextWrapper: { flex: 1, paddingRight: SPACING.md },
-  reminderCard: { backgroundColor: colors.cardBg, borderRadius: RADIUS.xl, marginBottom: 14, borderWidth: 1, borderColor: colors.divider, overflow: 'hidden' },
-  reminderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: SPACING.lg },
-  reminderDivider: { height: 1, backgroundColor: colors.divider },
-  reminderRowStacked: { flexDirection: 'column', alignItems: 'flex-start', gap: SPACING.md },
-  stepperFull: { alignSelf: 'stretch', justifyContent: 'space-between' },
-  leadDaysLabel: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '600' },
-  stepper: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xxs, backgroundColor: colors.bg, borderRadius: RADIUS.pill, padding: SPACING.xs },
-  stepperBtn: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.cardHighlight },
-  intervalChip: { minWidth: 38, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 6 },
-  intervalChipActive: { backgroundColor: colors.cardHighlight },
-  dayPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.bg, borderRadius: RADIUS.lg, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md },
-  stepperBtnDisabled: { opacity: 0.35 },
-  stepperValue: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '700', minWidth: 26, textAlign: 'center' },
-});

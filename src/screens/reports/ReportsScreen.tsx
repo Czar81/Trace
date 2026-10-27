@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, Switch } from 'react-native';
 import { NestableScrollContainer, NestableDraggableFlatList, ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -28,7 +28,8 @@ import {
 } from '../../domain/reports/reports';
 import { loadReportLayout, saveReportLayout, loadReportsDisplayCurrency, saveReportsDisplayCurrency } from '../../services/storage/storage';
 import { formatCurrency } from '../../domain/shared/formatCurrency';
-import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
+import { SPACING } from '../../theme/tokens';
+import { makeStyles } from './ReportsScreen.styles';
 
 const TREND_MONTHS = 6;
 const CURRENCY_CYCLE: Currency[] = ['CRC', 'USD', 'EUR'];
@@ -497,52 +498,3 @@ export const ReportsScreen = ({ navigation }: Props) => {
     </SafeAreaView>
   );
 };
-
-const makeStyles = (colors: ThemeColors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.lg },
-  headerBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: colors.white, fontSize: FONT_SIZE.xxl, fontWeight: 'bold' },
-  currencyBtn: { paddingVertical: 6, paddingHorizontal: SPACING.md, borderRadius: RADIUS.pill, backgroundColor: colors.divider },
-  currencyText: { color: colors.white, fontSize: FONT_SIZE.md, fontWeight: '700' },
-  scroll: { paddingHorizontal: SPACING.xl, paddingBottom: 60 },
-  periodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.sm },
-  customRange: { marginTop: SPACING.xs },
-  customRangeRow: { flexDirection: 'row', gap: SPACING.sm },
-  dateBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: 10, paddingHorizontal: SPACING.md, borderRadius: RADIUS.md, backgroundColor: colors.cardBg, borderWidth: 1, borderColor: colors.divider },
-  dateBtnText: { color: colors.white, fontSize: FONT_SIZE.sm },
-  rangeError: { color: colors.red, fontSize: FONT_SIZE.sm, marginTop: SPACING.sm },
-  periodPill: { flex: 1, paddingVertical: 10, paddingHorizontal: SPACING.sm, borderRadius: RADIUS.md, backgroundColor: colors.cardBg, alignItems: 'center', borderWidth: 1, borderColor: colors.divider },
-  periodPillActive: { backgroundColor: colors.green, borderColor: colors.green },
-  periodPillText: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, fontWeight: '600' },
-  periodPillTextActive: { color: colors.bg },
-  sectionTitle: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '700', marginTop: SPACING.xxl, marginBottom: SPACING.md },
-  card: { backgroundColor: colors.cardBg, borderRadius: RADIUS.xl, padding: SPACING.lg, borderWidth: 1, borderColor: colors.divider },
-  emptyText: { color: colors.secondaryText, fontSize: FONT_SIZE.md, textAlign: 'center', paddingVertical: SPACING.sm },
-  row: { marginBottom: 14 },
-  rowHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  rowLabel: { color: colors.white, fontSize: FONT_SIZE.md, fontWeight: '600', flexShrink: 1 },
-  rowValue: { color: colors.secondaryText, fontSize: FONT_SIZE.sm },
-  barTrack: { height: 6, borderRadius: 3, backgroundColor: colors.divider, overflow: 'hidden' },
-  barFill: { height: 6, borderRadius: 3, backgroundColor: colors.blue },
-  trendLine: { marginTop: SPACING.xs, marginBottom: SPACING.xs },
-  trendIncomeLabel: { color: colors.green, fontSize: FONT_SIZE.xs, marginBottom: SPACING.xs },
-  trendExpenseLabel: { color: colors.red, fontSize: FONT_SIZE.xs, marginTop: 6, marginBottom: SPACING.xs },
-  topTxRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.lg },
-  summaryTile: { flexGrow: 1, flexBasis: '45%', backgroundColor: colors.cardBg, borderRadius: RADIUS.xl, padding: 14, borderWidth: 1, borderColor: colors.divider },
-  summaryLabel: { color: colors.secondaryText, fontSize: FONT_SIZE.xs, marginBottom: SPACING.xs },
-  summaryValue: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '700' },
-  layoutToggle: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.lg, alignSelf: 'flex-start' },
-  layoutToggleText: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, fontWeight: '600' },
-  layoutRowActive: { backgroundColor: colors.cardHighlight, borderRadius: RADIUS.md },
-  dragHint: { color: colors.secondaryText, fontSize: FONT_SIZE.xs, marginBottom: SPACING.md },
-  dragHandle: { paddingRight: SPACING.sm, paddingVertical: SPACING.xs },
-  layoutRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.md },
-  layoutLabel: { flex: 1 },
-  moveBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
-  moveBtnDisabled: { opacity: 0.3 },
-  resetBtn: { paddingVertical: 10, borderRadius: RADIUS.md, borderWidth: 1, borderColor: colors.divider, alignItems: 'center' },
-  resetBtnText: { color: colors.white, fontSize: FONT_SIZE.md, fontWeight: '600' },
-  topTxSubtitle: { color: colors.secondaryText, fontSize: FONT_SIZE.xs, marginTop: SPACING.xxs },
-});

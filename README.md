@@ -72,4 +72,5 @@ Capas con dependencias en un solo sentido (`screens → context → services →
 - `src/domain/` — lógica pura, sin I/O: `budget/`, `transactions/`, `recurring/`, `reports/`, `backup/`, `shared/`.
 - `src/services/` — efectos, por tema: `storage/`, `backup/`, `notifications/`, `scheduling/`, `device/` (bloqueo, háptico), `currency/`, `files/`.
 - `src/context/` — estado. `useDataStore` serializa los cambios (`runExclusive` + `commit`); `actions/` tiene un hook por área (sobres, transacciones, plantillas, catálogos); `ExpenseContext` los compone y expone `useAppData`.
+- `src/theme/` — colores por tema (`colors.ts`) y escalas compartidas (`tokens.ts`: espaciado, letra, radios).
 - `src/screens/` (`settings/`, `envelopes/`, `transactions/`, `reports/`) y `src/components/` (`forms/`, `feedback/`, `envelope/`, `layout/`) — UI.
