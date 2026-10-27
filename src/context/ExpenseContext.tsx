@@ -1,3 +1,4 @@
+import { deleteReceiptImage } from '../utils/receipts';
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type * as ExpoNotifications from 'expo-notifications';
@@ -769,6 +770,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updatedEnvelopes = envelopes.filter(e => e.id !== id);
     // Also remove associated transactions
     const updatedTransactions = transactions.filter(t => t.envelopeId !== id);
+    await Promise.all(transactions.filter(t => t.envelopeId === id).map(t => deleteReceiptImage(t.receiptUri)));
     setEnvelopes(updatedEnvelopes);
     setTransactions(updatedTransactions);
     await saveEnvelopes(updatedEnvelopes);
@@ -834,6 +836,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [transactions, checkBudgetAlerts]);
 
   const deleteTransaction = useCallback(async (id: string) => {
+    await deleteReceiptImage(transactions.find(t => t.id === id)?.receiptUri);
     const updated = transactions.filter(t => t.id !== id);
     setTransactions(updated);
     await saveTransactions(updated);

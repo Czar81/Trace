@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
-import { ArrowLeft, RefreshCw, Edit2, Trash2, Calendar, X, ArrowLeftRight } from 'lucide-react-native';
+import { ArrowLeft, RefreshCw, Edit2, Trash2, Calendar, X, ArrowLeftRight, Paperclip } from 'lucide-react-native';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
 import { RootStackParamList } from '../navigation/types';
@@ -16,6 +16,7 @@ import { groupTransactionsByDay } from '../utils/transactionGrouping';
 import { formatDebtCycle } from '../utils/recurrence';
 import { getGoalDeadlineInfo } from '../utils/savingsGoal';
 import { Transaction } from '../types';
+import { ReceiptViewer } from '../components/ReceiptViewer';
 
 const PAGE_SIZE = 10;
 
@@ -90,6 +91,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
   const [page, setPage] = useState(1);
 
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [receiptToView, setReceiptToView] = useState<string | null>(null);
   const deleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const commitPendingDelete = () => {
@@ -238,6 +240,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <ReceiptViewer uri={receiptToView} onClose={() => setReceiptToView(null)} />
       <ConfirmDialog
         visible={!!dialog}
         title={dp.title}
@@ -495,7 +498,14 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                   )}
                 >
                   <View style={styles.transactionLeft}>
-                    <Text style={styles.transactionDesc}>{item.description}</Text>
+                    <View style={styles.descRow}>
+                      <Text style={[styles.transactionDesc, { flexShrink: 1 }]}>{item.description}</Text>
+                      {item.receiptUri ? (
+                        <TouchableOpacity onPress={() => setReceiptToView(item.receiptUri ?? null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={t('receipt.view')}>
+                          <Paperclip color={colors.secondaryText} size={14} />
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
                     <Text style={styles.transactionDate}>
                       {[
                         cat?.name,
@@ -536,6 +546,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
 };
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  descRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   iconBtn: { padding: 8 },

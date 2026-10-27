@@ -50,6 +50,8 @@ export interface Transaction {
   sourceSavingsEnvelopeId?: string;
   /** Destination envelope id. Only set when type === 'transfer'; envelopeId is the source. */
   toEnvelopeId?: string;
+  /** file:// URI of a receipt photo stored in the app's documents folder (not included in backups). */
+  receiptUri?: string;
   isArchived: boolean;
   archivedAt?: string;
 }

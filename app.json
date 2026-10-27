@@ -32,7 +32,14 @@
           "backgroundColor": "#092230"
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Trace usa la cámara para fotografiar tus recibos.",
+          "photosPermission": "Trace accede a tus fotos para adjuntar recibos e imágenes de sobres."
+        }
+      ]
     ],
     "extra": {
       "eas": {

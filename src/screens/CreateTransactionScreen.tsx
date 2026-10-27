@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Switch, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -15,6 +15,8 @@ import { useTranslation } from '../context/LanguageContext';
 import { sortEnvelopesByTypeAndName } from '../utils/envelopeSorting';
 import { SplitEditor, SplitPart, newSplitPart } from '../components/SplitEditor';
 import { getUnallocated, parseAmount } from '../utils/allocation';
+import { ReceiptField } from '../components/ReceiptField';
+import { deleteReceiptImage } from '../utils/receipts';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransaction'>;
 
@@ -44,6 +46,21 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   );
   const [useSavingsEnvelope, setUseSavingsEnvelope] = useState(!!transaction?.sourceSavingsEnvelopeId);
   const [sourceSavingsEnvelopeId, setSourceSavingsEnvelopeId] = useState(transaction?.sourceSavingsEnvelopeId ?? '');
+  const [receiptUri, setReceiptUri] = useState<string | undefined>(transaction?.receiptUri);
+  // Receipts copied during this session but not saved yet; removed again if the user backs out.
+  const unsavedReceipts = useRef<Set<string>>(new Set());
+  const saved = useRef(false);
+  useEffect(() => () => {
+    if (!saved.current) unsavedReceipts.current.forEach(uri => { void deleteReceiptImage(uri); });
+  }, []);
+  const handleReceiptChange = (uri: string | undefined) => {
+    if (receiptUri && unsavedReceipts.current.has(receiptUri)) {
+      unsavedReceipts.current.delete(receiptUri);
+      void deleteReceiptImage(receiptUri);
+    }
+    if (uri) unsavedReceipts.current.add(uri);
+    setReceiptUri(uri);
+  };
   const [splitEnabled, setSplitEnabled] = useState(false);
   const [splitParts, setSplitParts] = useState<SplitPart[]>([]);
   const [splitError, setSplitError] = useState('');
@@ -65,7 +82,9 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
         paymentMethodId,
         categoryId: p.categoryId || undefined,
         date: date.toISOString(),
+        receiptUri: i === 0 ? receiptUri : undefined,
       })));
+      saved.current = true;
       navigation.goBack();
       return;
     }
@@ -87,9 +106,12 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
           ? sourceSavingsEnvelopeId
           : undefined,
       date: date.toISOString(),
+      receiptUri,
     };
 
+    saved.current = true;
     if (isEditing && transaction) {
+      if (transaction.receiptUri && transaction.receiptUri !== receiptUri) await deleteReceiptImage(transaction.receiptUri);
       await updateTransaction(transaction.id, data);
     } else {
       await addTransaction(data);
@@ -241,6 +263,8 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
           placeholder={isDebtEnvelope ? t('tx.descriptionPlaceholderDebt') : type === 'expense' ? t('tx.descriptionPlaceholderExpense') : t('tx.descriptionPlaceholderIncome')}
           placeholderTextColor={colors.secondaryText}
         />
+
+        <ReceiptField value={receiptUri} onChange={handleReceiptChange} />
 
         {/* ── Income category (income only, non-debt) ── */}
         {type === 'income' && !isDebtPayment && (
