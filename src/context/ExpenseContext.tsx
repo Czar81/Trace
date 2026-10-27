@@ -188,6 +188,8 @@ interface AppContextType {
 
   // Transaction CRUD
   addTransaction: (transaction: Omit<Transaction, 'id' | 'isArchived'>) => Promise<void>;
+  /** Adds several transactions with a single save (avoids stale-state clobbering from looping addTransaction). */
+  addTransactions: (transactions: Omit<Transaction, 'id' | 'isArchived'>[]) => Promise<void>;
   updateTransaction: (id: string, updates: Partial<Omit<Transaction, 'id'>>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   addTransfer: (transfer: {
@@ -803,6 +805,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [transactions, checkBudgetAlerts]);
 
+  const addTransactions = useCallback(async (list: Omit<Transaction, 'id' | 'isArchived'>[]) => {
+    if (list.length === 0) return;
+    const base = Date.now();
+    const created: Transaction[] = list.map((data, i) => ({
+      ...data,
+      id: String(base + i),
+      isArchived: false,
+      date: data.date || new Date().toISOString(),
+    }));
+    const updated = [...created.slice().reverse(), ...transactions];
+    setTransactions(updated);
+    await saveTransactions(updated);
+    const expenseEnvelopeIds = new Set(created.filter(c => c.type === 'expense').map(c => c.envelopeId));
+    for (const envelopeId of expenseEnvelopeIds) {
+      await checkBudgetAlerts(envelopeId, transactions, updated);
+    }
+  }, [transactions, checkBudgetAlerts]);
+
   const updateTransaction = useCallback(async (id: string, updates: Partial<Omit<Transaction, 'id'>>) => {
     const updated = transactions.map(t => (t.id === id ? { ...t, ...updates } : t));
     setTransactions(updated);
@@ -1091,7 +1111,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const value = useMemo(() => ({
     envelopes, transactions, paymentMethods, categories, incomeCategories, settings, recurringTemplates, autoBackup, updateAutoBackup,
     addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
-    addTransaction, updateTransaction, deleteTransaction, addTransfer, updateTransfer,
+    addTransaction, addTransactions, updateTransaction, deleteTransaction, addTransfer, updateTransfer,
     addRecurringTemplate, updateRecurringTemplate, deleteRecurringTemplate,
     addPaymentMethod, deletePaymentMethod,
     addCategory, deleteCategory,
@@ -1102,7 +1122,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }), [
     envelopes, transactions, paymentMethods, categories, incomeCategories, settings, recurringTemplates, autoBackup, updateAutoBackup,
     addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
-    addTransaction, updateTransaction, deleteTransaction, addTransfer, updateTransfer,
+    addTransaction, addTransactions, updateTransaction, deleteTransaction, addTransfer, updateTransfer,
     addRecurringTemplate, updateRecurringTemplate, deleteRecurringTemplate,
     addPaymentMethod, deletePaymentMethod,
     addCategory, deleteCategory,

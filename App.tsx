@@ -14,6 +14,7 @@ import { EnvelopeDetailScreen } from './src/screens/EnvelopeDetailScreen';
 import { CreateEnvelopeScreen } from './src/screens/CreateEnvelopeScreen';
 import { CreateTransactionScreen } from './src/screens/CreateTransactionScreen';
 import { CreateTransferScreen } from './src/screens/CreateTransferScreen';
+import { AssignIncomeScreen } from './src/screens/AssignIncomeScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { CurrencySettingsScreen } from './src/screens/CurrencySettingsScreen';
 import { PaymentMethodsSettingsScreen } from './src/screens/PaymentMethodsSettingsScreen';
@@ -39,6 +40,7 @@ function ThemedNavigator() {
           <Stack.Screen name="CreateEnvelope" component={CreateEnvelopeScreen} />
           <Stack.Screen name="CreateTransaction" component={CreateTransactionScreen} />
           <Stack.Screen name="CreateTransfer" component={CreateTransferScreen} />
+          <Stack.Screen name="AssignIncome" component={AssignIncomeScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="AppearanceSettings" component={AppearanceSettingsScreen} />
           <Stack.Screen name="CurrencySettings" component={CurrencySettingsScreen} />
