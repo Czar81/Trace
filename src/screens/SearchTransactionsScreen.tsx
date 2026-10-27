@@ -86,6 +86,13 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
     return catalog.find(c => c.id === item.categoryId)?.name ?? t('common.noCategory');
   };
 
+  const envelopeNameOf = (id?: string) => envelopes.find(e => e.id === id)?.name ?? t('common.deletedEnvelope');
+  // Transfers show "source → destination" so both sides are visible in results.
+  const envelopeLabelOf = (item: Transaction) =>
+    item.type === 'transfer'
+      ? `${envelopeNameOf(item.envelopeId)} → ${envelopeNameOf(item.toEnvelopeId)}`
+      : envelopeNameOf(item.envelopeId);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -194,16 +201,17 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
         renderItem={({ item }) => (
           <TransactionResultRow
             item={item}
-            envelopeName={envelopes.find(e => e.id === item.envelopeId)?.name ?? t('common.deletedEnvelope')}
+            envelopeName={envelopeLabelOf(item)}
             categoryName={categoryNameOf(item)}
             paymentMethodName={item.paymentMethodId ? paymentMethods.find(p => p.id === item.paymentMethodId)?.name ?? t('common.noMethod') : t('common.noMethod')}
             currency={envelopes.find(e => e.id === item.envelopeId)?.currency ?? 'CRC'}
             formatAmount={formatAmount}
             locale={locale}
-            onPress={() => {
-              if (item.type === 'transfer') return;
-              navigation.navigate('CreateTransaction', { envelopeId: item.envelopeId, transaction: item });
-            }}
+            onPress={() => (
+              item.type === 'transfer'
+                ? navigation.navigate('CreateTransfer', { envelopeId: item.envelopeId, transaction: item })
+                : navigation.navigate('CreateTransaction', { envelopeId: item.envelopeId, transaction: item })
+            )}
           />
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -228,7 +236,7 @@ const TransactionResultRow: React.FC<{
   const color = isTransfer ? colors.blue : item.type === 'expense' ? colors.red : colors.green;
 
   return (
-    <TouchableOpacity style={styles.resultItem} onPress={onPress} disabled={isTransfer} activeOpacity={0.7}>
+    <TouchableOpacity style={styles.resultItem} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.resultLeft}>
         <Text style={styles.resultDesc}>{item.description}</Text>
         <Text style={styles.resultMeta}>
