@@ -16,6 +16,7 @@ import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
 import { TranslationKey } from '../i18n';
+import { hapticSave } from '../utils/haptics';
 
 const CURRENCY_OPTIONS = [
   { label: 'CRC', value: 'CRC' },
@@ -109,6 +110,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
         ...debtFields,
       });
     }
+    hapticSave();
     navigation.goBack();
   };
 

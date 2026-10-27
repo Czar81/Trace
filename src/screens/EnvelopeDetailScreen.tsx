@@ -15,6 +15,7 @@ import { useTranslation } from '../context/LanguageContext';
 import { groupTransactionsByDay } from '../utils/transactionGrouping';
 import { formatDebtCycle } from '../utils/recurrence';
 import { Transaction } from '../types';
+import { hapticDelete } from '../utils/haptics';
 
 const PAGE_SIZE = 10;
 
@@ -122,6 +123,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
     if (deleteTimeoutRef.current) {
       clearTimeout(deleteTimeoutRef.current);
     }
+    hapticDelete();
     setPendingDelete(id);
     deleteTimeoutRef.current = setTimeout(commitPendingDelete, UNDO_WINDOW_MS);
   };

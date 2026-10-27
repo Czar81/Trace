@@ -14,6 +14,7 @@ import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
 import { sortEnvelopesByTypeAndName } from '../utils/envelopeSorting';
 import { mostUsedCategories } from '../utils/categoryUsage';
+import { hapticSave } from '../utils/haptics';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransaction'>;
 
@@ -73,6 +74,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
     } else {
       await addTransaction(data);
     }
+    hapticSave();
     navigation.goBack();
   };
 

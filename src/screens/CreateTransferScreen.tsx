@@ -14,6 +14,7 @@ import { useTranslation } from '../context/LanguageContext';
 import { TranslationKey } from '../i18n';
 import { EnvelopeType } from '../types';
 import { sortEnvelopesByTypeAndName } from '../utils/envelopeSorting';
+import { hapticSave } from '../utils/haptics';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransfer'>;
 
@@ -86,6 +87,7 @@ export const CreateTransferScreen = ({ route, navigation }: Props) => {
       setError(result.error ?? (isEditing ? t('transfer.updateFailed') : t('transfer.createFailed')));
       return;
     }
+    hapticSave();
     navigation.goBack();
   };
 

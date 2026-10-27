@@ -17,6 +17,7 @@ import { TranslationKey } from '../i18n';
 import { Envelope, RecurrenceFrequency } from '../types';
 import { sortEnvelopesByTypeAndName } from '../utils/envelopeSorting';
 import { clampDayOfMonth } from '../utils/recurrence';
+import { hapticSave } from '../utils/haptics';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateRecurringTransaction'>;
 
@@ -161,6 +162,7 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
     } else {
       await addRecurringTemplate(data);
     }
+    hapticSave();
     navigation.goBack();
   };
 
