@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
-import { AppData } from '../../services/appData';
+import { AppData } from '../../services/storage/appData';
 import { Store } from '../useDataStore';
-import { newId } from '../../domain/helpers';
+import { newId } from '../../domain/shared/helpers';
 
 type CatalogKey = 'paymentMethods' | 'categories' | 'incomeCategories';
 

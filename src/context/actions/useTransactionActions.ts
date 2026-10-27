@@ -1,12 +1,12 @@
 import { useCallback, useMemo } from 'react';
 import { Transaction } from '../../types';
 import { Store } from '../useDataStore';
-import { newId } from '../../domain/helpers';
-import { roundMoney, calculateEnvelopeBalance } from '../../domain/balance';
-import { validateTransfer } from '../../domain/transfer';
+import { newId } from '../../domain/shared/helpers';
+import { roundMoney, calculateEnvelopeBalance } from '../../domain/budget/balance';
+import { validateTransfer } from '../../domain/transactions/transfer';
 import { translateActive } from '../../i18n';
-import { deleteUnreferencedReceipts } from '../../services/receipts';
-import { isExpoGo, notifyBudgetThreshold } from '../../services/notifications';
+import { deleteUnreferencedReceipts } from '../../services/files/receipts';
+import { isExpoGo, notifyBudgetThreshold } from '../../services/notifications/notifications';
 
 type NewTransaction = Omit<Transaction, 'id' | 'isArchived'>;
 type TransferResult = Promise<{ success: boolean; error?: string }>;

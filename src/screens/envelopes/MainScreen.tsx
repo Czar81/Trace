@@ -1,0 +1,393 @@
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, FlatList, Animated, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useAppData } from '../../context/ExpenseContext';
+import { EnvelopeType, Currency, Envelope } from '../../types';
+import { RootStackParamList } from '../../navigation/types';
+import { Settings, MoreVertical, RefreshCw, Search, Coins, BarChart3, Repeat } from 'lucide-react-native';
+import { EnvelopeAvatar } from '../../components/envelope/EnvelopeAvatar';
+import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
+import { EmptyState } from '../../components/feedback/EmptyState';
+import { useTheme } from '../../context/ThemeContext';
+import { ThemeColors } from '../../theme/colors';
+import { useTranslation } from '../../context/LanguageContext';
+import { TranslationKey } from '../../i18n';
+import { formatCurrency } from '../../domain/shared/formatCurrency';
+import { loadMainDisplayCurrency, saveMainDisplayCurrency } from '../../services/storage/storage';
+
+const { width } = Dimensions.get('window');
+
+const CURRENCY_CYCLE: Currency[] = ['CRC', 'USD', 'EUR'];
+const TAB_TYPES: EnvelopeType[] = ['gasto', 'ahorro', 'deuda'];
+const TAB_LABELS: Record<EnvelopeType, TranslationKey> = { gasto: 'main.tabExpenses', ahorro: 'main.tabSavings', deuda: 'main.tabDebts' };
+
+interface EnvelopeCardProps {
+  envelope: Envelope;
+  remaining: number;
+  textColor: string;
+  progress: number;
+  progressColor: string;
+  subtext: string;
+  index: number;
+  onPress: () => void;
+  formatAmount: (amount: number, currency: Currency) => string;
+}
+
+/** Fades/slides in on mount (staggered by list position) and squishes slightly on press. */
+const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
+  envelope, remaining, textColor, progress, progressColor, subtext, index, onPress, formatAmount,
+}) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const entrance = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.timing(entrance, {
+      toValue: 1,
+      duration: 280,
+      delay: Math.min(index, 6) * 45,
+      useNativeDriver: true,
+    }).start();
+    // Only animate in once, on mount — not on every re-render (e.g. balance updates).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handlePressIn = () => {
+    Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 40, bounciness: 6 }).start();
+  };
+  const handlePressOut = () => {
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 8 }).start();
+  };
+
+  return (
+    <Animated.View
+      style={{
+        opacity: entrance,
+        transform: [
+          { translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) },
+          { scale },
+        ],
+      }}
+    >
+      <Pressable
+        style={styles.envelopeCard}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        <View style={{ marginRight: 16 }}>
+          <EnvelopeAvatar
+            icon={envelope.icon ?? 'box'}
+            imageUri={envelope.imageUri}
+            color={envelope.color}
+            size={52}
+            progress={progress}
+            progressColor={progressColor}
+            iconColor={envelope.color}
+          />
+        </View>
+        <Text style={styles.envelopeName} numberOfLines={1}>{envelope.name}</Text>
+        <View style={styles.envelopeValues}>
+          <Text style={[styles.envelopeAmount, { color: textColor }]}>
+            {formatAmount(Math.abs(remaining), envelope.currency)}
+          </Text>
+          <Text style={styles.envelopeSubtext}>{subtext}</Text>
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+};
+
+type Props = NativeStackScreenProps<RootStackParamList, 'Main'>;
+
+export const MainScreen = ({ navigation }: Props) => {
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { envelopes, getTotalByType, getEnvelopeBalance, formatAmount, settings, convertToCRC, resetAllEnvelopes, paymentMethods, categories, transactions } = useAppData();
+  const [activeTab, setActiveTab] = useState<EnvelopeType>('gasto');
+  const [displayCurrency, setDisplayCurrency] = useState<Currency>(settings.defaultCurrency);
+  // Settings load after the first render (and can change), so follow the saved default.
+  useEffect(() => { setDisplayCurrency(settings.defaultCurrency); }, [settings.defaultCurrency]);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  // Restore the currency the user last picked for the total.
+  useEffect(() => {
+    let cancelled = false;
+    loadMainDisplayCurrency().then(stored => {
+      if (!cancelled && stored) setDisplayCurrency(stored);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const listRef = useRef<FlatList>(null);
+
+  const handleTabPress = (tab: EnvelopeType) => {
+    const index = TAB_TYPES.indexOf(tab);
+    setActiveTab(tab);
+    listRef.current?.scrollToIndex({ index, animated: true });
+  };
+
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+    { useNativeDriver: false }
+  );
+
+  const onMomentumScrollEnd = (e: any) => {
+    const contentOffsetX = e.nativeEvent.contentOffset.x;
+    const index = Math.round(contentOffsetX / width);
+    setActiveTab(TAB_TYPES[index] ?? TAB_TYPES[0]);
+  };
+
+  const onScrollEndDrag = (e: any) => {
+    const contentOffsetX = e.nativeEvent.contentOffset.x;
+    const index = Math.round(contentOffsetX / width);
+    if (index !== TAB_TYPES.indexOf(activeTab)) {
+      setActiveTab(TAB_TYPES[index] ?? TAB_TYPES[0]);
+    }
+  };
+
+  const totalCRC = getTotalByType(activeTab);
+  const totalDisplay = convertDisplayTotal(totalCRC, displayCurrency, settings.exchangeRates);
+
+  function convertDisplayTotal(crc: number, to: Currency, rates: { USD_TO_CRC: number; EUR_TO_CRC: number }): string {
+    let amount = crc;
+    if (to === 'USD') amount = crc / rates.USD_TO_CRC;
+    else if (to === 'EUR') amount = crc / rates.EUR_TO_CRC;
+    return formatCurrency(Math.abs(amount), to);
+  }
+
+  const cycleCurrency = () => {
+    const idx = CURRENCY_CYCLE.indexOf(displayCurrency);
+    const next = CURRENCY_CYCLE[(idx + 1) % CURRENCY_CYCLE.length];
+    setDisplayCurrency(next);
+    saveMainDisplayCurrency(next);
+  };
+
+
+  const renderEnvelope = ({ item, index }: { item: Envelope; index: number }) => {
+    const balance = getEnvelopeBalance(item.id);
+    const type = item.type;
+
+    // Balance available logic
+    let remaining = balance;
+    if (type === 'gasto') remaining = item.limit + balance;
+    else if (type === 'deuda') remaining = item.limit - balance;
+    const isOver = (type === 'gasto' || type === 'deuda') && !item.isUnlimited && remaining < 0;
+
+    // 1. Balance Text Color
+    let textColor = colors.white;
+    if (remaining < 0) {
+      textColor = colors.red;
+    } else if (type === 'gasto' && remaining > 0) {
+      textColor = colors.green;
+    } else {
+      textColor = colors.white;
+    }
+
+    // 2. Progress Circle Logic
+    let progress = 0;
+    let progressColor = colors.green;
+
+    if (type === 'gasto') {
+      if (item.isUnlimited) {
+        progress = 1;
+        progressColor = colors.blue;
+      } else {
+        // Spent / Limit
+        const spent = -balance;
+        progress = Math.max(0, spent / item.limit);
+        progressColor = remaining < 0 ? colors.red : colors.green;
+      }
+    } else if (type === 'deuda') {
+      if (item.isUnlimited) {
+        progress = 1;
+        progressColor = colors.blue;
+      } else {
+        // Progress fills as the debt is paid down (same direction as ahorro)
+        progress = item.limit > 0 ? balance / item.limit : 1;
+        progressColor = remaining < 0 ? colors.red : colors.green;
+      }
+    } else {
+      // Savings
+      progress = item.limit > 0 ? balance / item.limit : 1;
+      progressColor = colors.green;
+    }
+
+    const subtext =
+      type === 'gasto'
+        ? t(item.isUnlimited ? 'main.spent' : (isOver ? 'main.exceeded' : 'main.available'))
+        : type === 'deuda'
+        ? t(item.isUnlimited ? 'main.owed' : (isOver ? 'main.debtExceeded' : 'main.remainingToPay'))
+        : t('main.saved');
+
+    return (
+      <EnvelopeCard
+        envelope={item}
+        remaining={remaining}
+        textColor={textColor}
+        progress={progress}
+        progressColor={progressColor}
+        subtext={subtext}
+        index={index}
+        onPress={() => navigation.navigate('EnvelopeDetail', { envelopeId: item.id })}
+        formatAmount={formatAmount}
+      />
+    );
+  };
+
+  const renderSection = (type: EnvelopeType) => {
+    const data = envelopes.filter(e => e.type === type);
+    return (
+      <View style={{ width, flex: 1 }}>
+        <FlatList
+          data={data}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <EmptyState message={t('main.emptyEnvelopes')} />
+          }
+          renderItem={renderEnvelope}
+        />
+      </View>
+    );
+  };
+
+  const indicatorWidth = (width - 40 - 8) / TAB_TYPES.length;
+  const translateX = scrollX.interpolate({
+    inputRange: [0, width * (TAB_TYPES.length - 1)],
+    outputRange: [0, indicatorWidth * (TAB_TYPES.length - 1)],
+    extrapolate: 'clamp',
+  });
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ConfirmDialog
+        visible={showResetConfirm}
+        onConfirm={async () => { await resetAllEnvelopes(); setShowResetConfirm(false); }}
+        onCancel={() => setShowResetConfirm(false)}
+        title={t('main.resetAllTitle')}
+        message={t('main.resetAllMessage')}
+        confirmLabel={t('main.resetAllConfirm')}
+        destructive
+      />
+
+      <View style={styles.header}>
+        <Text style={styles.title}>TRACE</Text>
+        <View style={{ flexDirection: 'row' }}>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('AssignIncome')}>
+            <Coins color={colors.secondaryText} size={22} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Search')} accessibilityRole="button" accessibilityLabel={t('search.title')}>
+            <Search color={colors.secondaryText} size={22} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }} onPress={() => navigation.navigate('Reports')} accessibilityRole="button" accessibilityLabel={t('settings.reports')}>
+            <BarChart3 color={colors.secondaryText} size={22} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }} onPress={() => navigation.navigate('Recurring')} accessibilityRole="button" accessibilityLabel={t('settings.recurring')}>
+            <Repeat color={colors.secondaryText} size={22} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Settings')} accessibilityRole="button" accessibilityLabel={t('settings.title')}>
+            <MoreVertical color={colors.secondaryText} size={24} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.tabContainer}>
+        <Animated.View style={[styles.tabIndicator, { width: indicatorWidth, transform: [{ translateX }] }]} />
+        {TAB_TYPES.map((tab, index) => {
+          const tabTextColor = scrollX.interpolate({
+            inputRange: [
+              width * (index - 1),
+              width * index,
+              width * (index + 1),
+            ],
+            outputRange: [colors.secondaryText, colors.bg, colors.secondaryText],
+            extrapolate: 'clamp',
+          });
+          return (
+            <TouchableOpacity key={tab} style={styles.tab} onPress={() => handleTabPress(tab)}>
+              <Animated.Text style={[styles.tabText, { color: tabTextColor }]}>{t(TAB_LABELS[tab])}</Animated.Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <View style={styles.summaryCard}>
+        <View style={styles.cardFlap} pointerEvents="none" />
+        <TouchableOpacity
+          onPress={cycleCurrency}
+          style={styles.currencyBtn}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={t('a11y.changeCurrency', { currency: displayCurrency })}
+        >
+          <Text style={styles.currencyText}>{displayCurrency}</Text>
+        </TouchableOpacity>
+        <View style={styles.summaryValues}>
+          <Text style={styles.summaryLabel}>
+            {activeTab === 'gasto'
+              ? t(totalCRC < 0 ? 'main.totalExceeded' : 'main.totalAvailable')
+              : activeTab === 'deuda'
+              ? t('main.totalToPay')
+              : t('main.totalSaved')}
+          </Text>
+          <Text style={[styles.summaryTotal, totalCRC < 0 && { color: colors.red }]}>
+            {totalDisplay}
+          </Text>
+        </View>
+      </View>
+
+      <FlatList
+        ref={listRef}
+        data={TAB_TYPES}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={handleScroll}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        onScrollEndDrag={onScrollEndDrag}
+        keyExtractor={item => item}
+        renderItem={({ item }) => renderSection(item)}
+      />
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('CreateEnvelope', { envelopeType: activeTab })}
+      >
+        <Text style={styles.fabText}>{t('main.createEnvelope')}</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
+  );
+};
+
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
+  title: { color: colors.white, fontSize: 18, fontWeight: 'bold', letterSpacing: 1 },
+  iconBtn: { padding: 8 },
+  tabContainer: { flexDirection: 'row', marginHorizontal: 20, height: 48, position: 'relative', marginBottom: 16, backgroundColor: colors.cardBg, borderRadius: 24, padding: 4 },
+  tab: { flex: 1, justifyContent: 'center', alignItems: 'center', zIndex: 1 },
+  tabIndicator: { position: 'absolute', top: 4, bottom: 4, left: 4, backgroundColor: colors.green, borderRadius: 20 },
+  tabText: { color: colors.secondaryText, fontSize: 16, fontWeight: '600' },
+  summaryCard: { backgroundColor: colors.cardBg, marginHorizontal: 20, borderRadius: 16, padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, overflow: 'hidden' },
+  cardFlap: { position: 'absolute', top: -20, left: '50%', width: 40, height: 40, marginLeft: -20, backgroundColor: colors.cardHighlight, transform: [{ rotate: '45deg' }] },
+  currencyBtn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, backgroundColor: colors.divider },
+  currencyText: { color: colors.white, fontSize: 15, fontWeight: '700' },
+  summaryValues: { alignItems: 'flex-end' },
+  summaryLabel: { color: colors.secondaryText, fontSize: 13, marginBottom: 4 },
+  summaryTotal: { color: colors.white, fontSize: 22, fontWeight: 'bold' },
+  list: { paddingHorizontal: 20, paddingBottom: 120 },
+  emptyText: { color: colors.secondaryText, fontSize: 15, textAlign: 'center', marginTop: 40, fontStyle: 'italic' },
+  envelopeCard: { backgroundColor: colors.cardBg, borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  envelopeName: { flex: 1, color: colors.white, fontSize: 17, fontWeight: '600' },
+  envelopeValues: { alignItems: 'flex-end' },
+  envelopeAmount: { fontSize: 18, fontWeight: 'bold', marginBottom: 2 },
+  envelopeSubtext: { color: colors.secondaryText, fontSize: 13 },
+  fab: { position: 'absolute', bottom: 30, right: 20, backgroundColor: colors.green, paddingVertical: 16, paddingHorizontal: 24, borderRadius: 30 },
+  fabText: { color: colors.bg, fontSize: 16, fontWeight: 'bold' },
+});

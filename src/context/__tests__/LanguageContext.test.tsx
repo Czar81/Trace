@@ -6,7 +6,7 @@ import React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { renderHook, waitFor, act } from '@testing-library/react-native';
 import { LanguageProvider, useTranslation } from '../LanguageContext';
-import { loadLanguagePreference } from '../../services/storage';
+import { loadLanguagePreference } from '../../services/storage/storage';
 
 const wrapper = ({ children }: { children: React.ReactNode }) =>
   React.createElement(LanguageProvider, null, children);

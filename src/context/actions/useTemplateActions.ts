@@ -1,10 +1,10 @@
 import { useCallback, useMemo } from 'react';
 import { RecurringTransactionTemplate } from '../../types';
 import { Store } from '../useDataStore';
-import { listChanged, newId } from '../../domain/helpers';
-import { roundMoney } from '../../domain/balance';
-import { cancelTemplateReminder, scheduleBillReminders } from '../../services/notifications';
-import { anyFieldChanged } from '../../services/reminders';
+import { listChanged, newId } from '../../domain/shared/helpers';
+import { roundMoney } from '../../domain/budget/balance';
+import { cancelTemplateReminder, scheduleBillReminders } from '../../services/notifications/notifications';
+import { anyFieldChanged } from '../../services/notifications/reminders';
 
 // Anything that moves the reminder's date or changes what it says invalidates the pending one.
 const REMINDER_FIELDS: (keyof RecurringTransactionTemplate)[] = [

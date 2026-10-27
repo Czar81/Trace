@@ -16,7 +16,7 @@ import React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import { AppProvider, useAppData } from '../ExpenseContext';
-import { saveAutoBackupEnabled, saveAutoBackupIntervalDays } from '../../services/storage';
+import { saveAutoBackupEnabled, saveAutoBackupIntervalDays } from '../../services/storage/storage';
 
 const wrapper = ({ children }: { children: React.ReactNode }) =>
   React.createElement(AppProvider, null, children);

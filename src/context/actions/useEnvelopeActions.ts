@@ -1,11 +1,11 @@
 import { useCallback, useMemo } from 'react';
 import { Envelope } from '../../types';
 import { Store } from '../useDataStore';
-import { listChanged, newId } from '../../domain/helpers';
-import { removeEnvelopeReferences } from '../../domain/envelopeRemoval';
-import { deleteUnreferencedReceipts } from '../../services/receipts';
-import { cancelDebtReminder, cancelTemplateReminder, scheduleDebtReminders } from '../../services/notifications';
-import { anyFieldChanged } from '../../services/reminders';
+import { listChanged, newId } from '../../domain/shared/helpers';
+import { removeEnvelopeReferences } from '../../domain/budget/envelopeRemoval';
+import { deleteUnreferencedReceipts } from '../../services/files/receipts';
+import { cancelDebtReminder, cancelTemplateReminder, scheduleDebtReminders } from '../../services/notifications/notifications';
+import { anyFieldChanged } from '../../services/notifications/reminders';
 
 // Fields that move a pending debt reminder's date or change what it says.
 const REMINDER_FIELDS: (keyof Envelope)[] = [
