@@ -1,5 +1,5 @@
 import { areRatesStale, fetchExchangeRates } from '../utils/exchangeRates';
-import { deleteReceiptImage } from '../utils/receipts';
+import { deleteUnreferencedReceipts } from '../utils/receipts';
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type * as ExpoNotifications from 'expo-notifications';
@@ -785,7 +785,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updatedEnvelopes = envelopes.filter(e => e.id !== id);
     // Also remove associated transactions
     const updatedTransactions = transactions.filter(t => t.envelopeId !== id);
-    await Promise.all(transactions.filter(t => t.envelopeId === id).map(t => deleteReceiptImage(t.receiptUri)));
+    await deleteUnreferencedReceipts(
+      transactions.filter(t => t.envelopeId === id).flatMap(t => t.receiptUris ?? []),
+      updatedTransactions
+    );
     setEnvelopes(updatedEnvelopes);
     setTransactions(updatedTransactions);
     await saveEnvelopes(updatedEnvelopes);
@@ -844,6 +847,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = transactions.map(t => (t.id === id ? { ...t, ...updates } : t));
     setTransactions(updated);
     await saveTransactions(updated);
+    if (updates.receiptUris !== undefined) {
+      const kept = new Set(updates.receiptUris);
+      await deleteUnreferencedReceipts(
+        transactions.find(t => t.id === id)?.receiptUris?.filter(uri => !kept.has(uri)),
+        updated
+      );
+    }
     const updatedTransaction = updated.find(t => t.id === id);
     if (updatedTransaction && updatedTransaction.type === 'expense') {
       await checkBudgetAlerts(updatedTransaction.envelopeId, transactions, updated);
@@ -851,10 +861,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [transactions, checkBudgetAlerts]);
 
   const deleteTransaction = useCallback(async (id: string) => {
-    await deleteReceiptImage(transactions.find(t => t.id === id)?.receiptUri);
     const updated = transactions.filter(t => t.id !== id);
     setTransactions(updated);
     await saveTransactions(updated);
+    await deleteUnreferencedReceipts(transactions.find(t => t.id === id)?.receiptUris, updated);
   }, [transactions]);
 
   /**

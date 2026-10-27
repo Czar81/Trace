@@ -30,7 +30,7 @@ export const en: Record<TranslationKey, string> = {
   'lock.prompt': 'Unlock Trace',
   'lock.unlock': 'Unlock',
   'lock.unavailable': 'Set up a fingerprint, face or PIN in your phone settings to use the lock.',
-  'receipt.label': 'Receipt photo (optional)',
+  'receipt.label': 'Receipt photos (optional)',
   'receipt.takePhoto': 'Take photo',
   'receipt.gallery': 'Gallery',
   'receipt.remove': 'Remove photo',

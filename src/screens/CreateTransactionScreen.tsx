@@ -46,20 +46,21 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   );
   const [useSavingsEnvelope, setUseSavingsEnvelope] = useState(!!transaction?.sourceSavingsEnvelopeId);
   const [sourceSavingsEnvelopeId, setSourceSavingsEnvelopeId] = useState(transaction?.sourceSavingsEnvelopeId ?? '');
-  const [receiptUri, setReceiptUri] = useState<string | undefined>(transaction?.receiptUri);
+  const [receiptUris, setReceiptUris] = useState<string[]>(transaction?.receiptUris ?? []);
   // Receipts copied during this session but not saved yet; removed again if the user backs out.
   const unsavedReceipts = useRef<Set<string>>(new Set());
   const saved = useRef(false);
   useEffect(() => () => {
     if (!saved.current) unsavedReceipts.current.forEach(uri => { void deleteReceiptImage(uri); });
   }, []);
-  const handleReceiptChange = (uri: string | undefined) => {
-    if (receiptUri && unsavedReceipts.current.has(receiptUri)) {
-      unsavedReceipts.current.delete(receiptUri);
-      void deleteReceiptImage(receiptUri);
-    }
-    if (uri) unsavedReceipts.current.add(uri);
-    setReceiptUri(uri);
+  const handleReceiptsChange = (uris: string[]) => {
+    // Photos added in this session and dropped again can be deleted right away; saved ones are cleaned up by the context.
+    receiptUris.filter(uri => !uris.includes(uri) && unsavedReceipts.current.has(uri)).forEach(uri => {
+      unsavedReceipts.current.delete(uri);
+      void deleteReceiptImage(uri);
+    });
+    uris.filter(uri => !receiptUris.includes(uri)).forEach(uri => unsavedReceipts.current.add(uri));
+    setReceiptUris(uris);
   };
   const [splitEnabled, setSplitEnabled] = useState(false);
   const [splitParts, setSplitParts] = useState<SplitPart[]>([]);
@@ -82,7 +83,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
         paymentMethodId,
         categoryId: p.categoryId || undefined,
         date: date.toISOString(),
-        receiptUri: i === 0 ? receiptUri : undefined,
+        receiptUris: receiptUris.length > 0 ? receiptUris : undefined,
       })));
       saved.current = true;
       navigation.goBack();
@@ -106,12 +107,11 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
           ? sourceSavingsEnvelopeId
           : undefined,
       date: date.toISOString(),
-      receiptUri,
+      receiptUris: receiptUris.length > 0 ? receiptUris : [],
     };
 
     saved.current = true;
     if (isEditing && transaction) {
-      if (transaction.receiptUri && transaction.receiptUri !== receiptUri) await deleteReceiptImage(transaction.receiptUri);
       await updateTransaction(transaction.id, data);
     } else {
       await addTransaction(data);
@@ -264,7 +264,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
           placeholderTextColor={colors.secondaryText}
         />
 
-        <ReceiptField value={receiptUri} onChange={handleReceiptChange} />
+        <ReceiptField value={receiptUris} onChange={handleReceiptsChange} />
 
         {/* ── Income category (income only, non-debt) ── */}
         {type === 'income' && !isDebtPayment && (

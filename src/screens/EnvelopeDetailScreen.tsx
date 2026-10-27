@@ -91,7 +91,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
   const [page, setPage] = useState(1);
 
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-  const [receiptToView, setReceiptToView] = useState<string | null>(null);
+  const [receiptsToView, setReceiptsToView] = useState<string[]>([]);
   const deleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const commitPendingDelete = () => {
@@ -240,7 +240,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ReceiptViewer uri={receiptToView} onClose={() => setReceiptToView(null)} />
+      <ReceiptViewer uris={receiptsToView} onClose={() => setReceiptsToView([])} />
       <ConfirmDialog
         visible={!!dialog}
         title={dp.title}
@@ -500,9 +500,10 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                   <View style={styles.transactionLeft}>
                     <View style={styles.descRow}>
                       <Text style={[styles.transactionDesc, { flexShrink: 1 }]}>{item.description}</Text>
-                      {item.receiptUri ? (
-                        <TouchableOpacity onPress={() => setReceiptToView(item.receiptUri ?? null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={t('receipt.view')}>
+                      {item.receiptUris && item.receiptUris.length > 0 ? (
+                        <TouchableOpacity onPress={() => setReceiptsToView(item.receiptUris ?? [])} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={t('receipt.view')}>
                           <Paperclip color={colors.secondaryText} size={14} />
+                          {item.receiptUris.length > 1 ? <Text style={styles.receiptCount}>{item.receiptUris.length}</Text> : null}
                         </TouchableOpacity>
                       ) : null}
                     </View>
@@ -546,6 +547,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
 };
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  receiptCount: { color: colors.secondaryText, fontSize: 12, marginLeft: 2 },
   descRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },

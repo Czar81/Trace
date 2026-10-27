@@ -11,6 +11,19 @@ export const saveReceiptImage = async (sourceUri: string): Promise<string> => {
   return dest;
 };
 
+/**
+ * Deletes the `candidates` that no transaction in `remaining` still references
+ * (a split expense shares its photos across several transactions).
+ */
+export const deleteUnreferencedReceipts = async (
+  candidates: string[] | undefined,
+  remaining: { receiptUris?: string[] }[]
+): Promise<void> => {
+  if (!candidates || candidates.length === 0) return;
+  const inUse = new Set(remaining.flatMap(t => t.receiptUris ?? []));
+  await Promise.all(candidates.filter(uri => !inUse.has(uri)).map(deleteReceiptImage));
+};
+
 /** Best-effort removal; only touches files inside the receipts folder. */
 export const deleteReceiptImage = async (uri?: string): Promise<void> => {
   if (!uri || !uri.startsWith(RECEIPTS_DIR)) return;

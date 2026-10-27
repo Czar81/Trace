@@ -31,7 +31,7 @@ export const es = {
   'lock.prompt': 'Desbloquea Trace',
   'lock.unlock': 'Desbloquear',
   'lock.unavailable': 'Configura una huella, un rostro o un PIN en los ajustes del teléfono para usar el bloqueo.',
-  'receipt.label': 'Foto del recibo (opcional)',
+  'receipt.label': 'Fotos del recibo (opcional)',
   'receipt.takePhoto': 'Tomar foto',
   'receipt.gallery': 'Galería',
   'receipt.remove': 'Quitar foto',
