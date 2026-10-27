@@ -276,10 +276,10 @@ export const MainScreen = ({ navigation }: Props) => {
       <View style={styles.header}>
         <Text style={styles.title}>TRACE</Text>
         <View style={{ flexDirection: 'row' }}>
-          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Search')}>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Search')} accessibilityRole="button" accessibilityLabel={t('search.title')}>
             <Search color={colors.secondaryText} size={22} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Settings')}>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Settings')} accessibilityRole="button" accessibilityLabel={t('settings.title')}>
             <MoreVertical color={colors.secondaryText} size={24} />
           </TouchableOpacity>
         </View>
@@ -307,7 +307,13 @@ export const MainScreen = ({ navigation }: Props) => {
 
       <View style={styles.summaryCard}>
         <View style={styles.cardFlap} pointerEvents="none" />
-        <TouchableOpacity onPress={cycleCurrency} style={styles.currencyBtn} activeOpacity={0.7}>
+        <TouchableOpacity
+          onPress={cycleCurrency}
+          style={styles.currencyBtn}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={t('a11y.changeCurrency', { currency: displayCurrency })}
+        >
           <Text style={styles.currencyText}>{displayCurrency}</Text>
         </TouchableOpacity>
         <View style={styles.summaryValues}>

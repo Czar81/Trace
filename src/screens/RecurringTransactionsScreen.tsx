@@ -35,7 +35,7 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('recurring.title')}</Text>
@@ -69,6 +69,8 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
               <TouchableOpacity
                 style={styles.iconBtn}
                 onPress={() => handleToggleActive(item)}
+                accessibilityRole="button"
+                accessibilityLabel={item.isActive ? t('a11y.pause') : t('a11y.resume')}
               >
                 {item.isActive ? (
                   <Pause color={colors.secondaryText} size={20} />
@@ -79,6 +81,8 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
               <TouchableOpacity
                 style={styles.iconBtn}
                 onPress={() => setTemplateToDelete(item)}
+                accessibilityRole="button"
+                accessibilityLabel={t('recurring.deleteTitle')}
               >
                 <Trash2 color={colors.red} size={20} />
               </TouchableOpacity>

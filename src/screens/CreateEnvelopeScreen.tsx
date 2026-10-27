@@ -125,7 +125,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
       />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
@@ -133,7 +133,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
             ? t('envelope.edit')
             : t(envelopeType === 'gasto' ? 'envelope.newExpense' : envelopeType === 'deuda' ? 'envelope.newDebt' : 'envelope.newSaving')}
         </Text>
-        <TouchableOpacity onPress={handleSave} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity onPress={handleSave} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={t('common.save')}>
           <Check color={colors.green} size={24} />
         </TouchableOpacity>
       </View>

@@ -389,6 +389,17 @@ export const es = {
   'import.error.incomeNotArray': 'Formato de backup inválido. incomeCategories debe ser una lista (array)',
   'import.error.badAmount': 'Formato de backup inválido. Todas las transacciones deben tener un monto (amount) numérico válido',
   'import.error.corrupt': 'El archivo no es un backup válido (JSON corrupto).',
+  // accessibility labels for icon-only buttons
+  'a11y.back': 'Volver',
+  'a11y.close': 'Cerrar',
+  'a11y.clearSearch': 'Borrar búsqueda',
+  'a11y.transfer': 'Transferir',
+  'a11y.editEnvelope': 'Editar sobre',
+  'a11y.resetEnvelope': 'Reiniciar sobre',
+  'a11y.deleteEnvelope': 'Eliminar sobre',
+  'a11y.pause': 'Pausar',
+  'a11y.resume': 'Reanudar',
+  'a11y.changeCurrency': 'Cambiar moneda del total (actual: {currency})',
 } as const;
 
 export type TranslationKey = keyof typeof es;

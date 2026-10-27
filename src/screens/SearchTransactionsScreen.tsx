@@ -96,7 +96,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('search.title')}</Text>
@@ -113,7 +113,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
           placeholderTextColor={colors.secondaryText}
         />
         {text !== '' && (
-          <TouchableOpacity onPress={() => setText('')}>
+          <TouchableOpacity onPress={() => setText('')} accessibilityRole="button" accessibilityLabel={t('a11y.clearSearch')}>
             <X color={colors.secondaryText} size={18} />
           </TouchableOpacity>
         )}

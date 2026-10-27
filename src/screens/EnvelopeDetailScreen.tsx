@@ -248,7 +248,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
       />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <View style={styles.headerActions}>
@@ -256,6 +256,8 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
             style={styles.iconBtn}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             onPress={() => navigation.navigate('CreateTransfer', { envelopeId })}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.transfer')}
           >
             <ArrowLeftRight color={colors.secondaryText} size={20} />
           </TouchableOpacity>
@@ -263,14 +265,16 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
             style={styles.iconBtn}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             onPress={() => navigation.navigate('CreateEnvelope', { envelopeType: envelope.type, envelope })}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.editEnvelope')}
           >
             <Edit2 color={colors.secondaryText} size={20} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => setDialog({ type: 'reset' })}>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => setDialog({ type: 'reset' })} accessibilityRole="button" accessibilityLabel={t('a11y.resetEnvelope')}>
             <RefreshCw color={colors.secondaryText} size={20} />
           </TouchableOpacity>
           <View style={styles.headerDivider} />
-          <TouchableOpacity style={[styles.iconBtn, styles.deleteIconBtn]} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => setDialog({ type: 'deleteEnvelope' })}>
+          <TouchableOpacity style={[styles.iconBtn, styles.deleteIconBtn]} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => setDialog({ type: 'deleteEnvelope' })} accessibilityRole="button" accessibilityLabel={t('a11y.deleteEnvelope')}>
             <Trash2 color={colors.red} size={20} />
           </TouchableOpacity>
         </View>
@@ -381,7 +385,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
           <SafeAreaView style={styles.monthPickerContainer}>
             <View style={styles.monthPickerHeader}>
               <Text style={styles.monthPickerTitle}>{t('detail.pickMonth')}</Text>
-              <TouchableOpacity onPress={() => setMonthPickerOpen(false)} style={styles.monthPickerClose}>
+              <TouchableOpacity onPress={() => setMonthPickerOpen(false)} style={styles.monthPickerClose} accessibilityRole="button" accessibilityLabel={t('a11y.close')}>
                 <X color={colors.white} size={22} />
               </TouchableOpacity>
             </View>

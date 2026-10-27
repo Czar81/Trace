@@ -49,6 +49,7 @@ const ListSection: React.FC<ListSectionConfig & { onRequestDelete: (p: PendingDe
   groupTitle, existingSectionTitle, addSectionTitle, addPlaceholder, items, onAdd, onDelete, onRequestDelete, styles,
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [newItemName, setNewItemName] = useState('');
 
   const handleAdd = async () => {
@@ -67,6 +68,8 @@ const ListSection: React.FC<ListSectionConfig & { onRequestDelete: (p: PendingDe
           <TouchableOpacity
             hitSlop={{ top: 10, bottom: 10, left: 16, right: 10 }}
             onPress={() => onRequestDelete({ id: item.id, name: item.name, onDelete })}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.deleteNamed', { name: item.name })}
           >
             <Trash2 color={colors.red} size={20} />
           </TouchableOpacity>
@@ -84,7 +87,7 @@ const ListSection: React.FC<ListSectionConfig & { onRequestDelete: (p: PendingDe
           onSubmitEditing={handleAdd}
           returnKeyType="done"
         />
-        <TouchableOpacity style={styles.addBtn} onPress={handleAdd}>
+        <TouchableOpacity style={styles.addBtn} onPress={handleAdd} accessibilityRole="button" accessibilityLabel={t('common.add')}>
           <Plus color={colors.bg} size={22} />
         </TouchableOpacity>
       </View>
@@ -129,7 +132,7 @@ export const SimpleListSettingsScreen: React.FC<SimpleListSettingsScreenProps> =
       />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{title}</Text>
