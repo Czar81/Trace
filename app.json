@@ -45,7 +45,8 @@
           "cameraPermission": "Trace usa la cámara para fotografiar tus recibos.",
           "photosPermission": "Trace accede a tus fotos para adjuntar recibos e imágenes de sobres."
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "extra": {
       "eas": {
