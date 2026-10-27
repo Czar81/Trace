@@ -16,7 +16,7 @@ import {
   saveAutoBackupEnabled,
   saveAutoBackupIntervalDays,
   saveAutoBackupLastSuccessAt,
-  saveAutoBackupLastError,
+  saveAutoBackupLastError, saveAutoBackupFolderUri,
   DEFAULT_AUTO_BACKUP_STATE,
   loadLanguagePreference,
   saveLanguagePreference,
@@ -108,7 +108,7 @@ describe('automatic backup state storage', () => {
 
   it('defaults to disabled with a 7-day interval and no history', async () => {
     await expect(loadAutoBackupState()).resolves.toEqual(DEFAULT_AUTO_BACKUP_STATE);
-    expect(DEFAULT_AUTO_BACKUP_STATE).toEqual({ enabled: false, intervalDays: 7, lastSuccessAt: null, lastError: null });
+    expect(DEFAULT_AUTO_BACKUP_STATE).toEqual({ enabled: false, intervalDays: 7, lastSuccessAt: null, lastError: null, folderUri: null });
   });
 
   it('round-trips every field', async () => {
@@ -116,12 +116,14 @@ describe('automatic backup state storage', () => {
     await saveAutoBackupIntervalDays(15);
     await saveAutoBackupLastSuccessAt('2026-01-01T00:00:00.000Z');
     await saveAutoBackupLastError('disk full');
+    await saveAutoBackupFolderUri('content://tree/primary%3ADocuments');
 
     await expect(loadAutoBackupState()).resolves.toEqual({
       enabled: true,
       intervalDays: 15,
       lastSuccessAt: '2026-01-01T00:00:00.000Z',
       lastError: 'disk full',
+      folderUri: 'content://tree/primary%3ADocuments',
     });
   });
 });

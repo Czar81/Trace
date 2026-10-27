@@ -1,4 +1,5 @@
 import { Currency, Envelope, PaymentMethod, Transaction, TransactionCategory } from '../types';
+import { roundMoney } from './balance';
 import { TranslateFn, translateDefault } from '../i18n';
 
 /** Language-dependent pieces of a report: fallback names and month labels. */
@@ -90,7 +91,7 @@ export const getSpendingByCategory = (
     .map(([categoryId, totalCRC]) => ({
       categoryId,
       name: categoryId === NONE_BUCKET_ID ? t('common.noCategory') : categoryById.get(categoryId)?.name ?? t('common.noCategory'),
-      totalCRC,
+      totalCRC: roundMoney(totalCRC),
       percentage: grandTotal > 0 ? (totalCRC / grandTotal) * 100 : 0,
     }))
     .sort((a, b) => b.totalCRC - a.totalCRC);
@@ -126,7 +127,7 @@ export const getSpendingByMonth = (
   }
 
   return Array.from(totals.entries())
-    .map(([monthKey, { totalCRC, date }]) => ({ monthKey, label: monthLabelOf(date, locale), totalCRC }))
+    .map(([monthKey, { totalCRC, date }]) => ({ monthKey, label: monthLabelOf(date, locale), totalCRC: roundMoney(totalCRC) }))
     .sort((a, b) => a.monthKey.localeCompare(b.monthKey));
 };
 
@@ -164,7 +165,7 @@ export const getSpendingByEnvelope = (
       return {
         envelopeId,
         name: envelope?.name ?? t('common.deletedEnvelope'),
-        totalCRC,
+        totalCRC: roundMoney(totalCRC),
         percentOfLimit,
       };
     })
@@ -199,7 +200,7 @@ export const getSpendingByPaymentMethod = (
     .map(([paymentMethodId, totalCRC]) => ({
       paymentMethodId,
       name: paymentMethodId === NONE_BUCKET_ID ? t('common.noMethod') : paymentMethodById.get(paymentMethodId)?.name ?? t('common.noMethod'),
-      totalCRC,
+      totalCRC: roundMoney(totalCRC),
     }))
     .sort((a, b) => b.totalCRC - a.totalCRC);
 };
@@ -239,7 +240,7 @@ export const getMonthlyTrend = (
     else if (t.type === 'expense') bucket.expenseCRC += amountCRC;
   }
 
-  return buckets;
+  return buckets.map(b => ({ ...b, incomeCRC: roundMoney(b.incomeCRC), expenseCRC: roundMoney(b.expenseCRC) }));
 };
 
 export const TOP_TRANSACTIONS_LIMIT = 10;
@@ -308,10 +309,10 @@ export const getSummary = (
   }
 
   return {
-    income,
-    expenses,
-    net: income - expenses,
-    averageExpense: expenseCount > 0 ? expenses / expenseCount : null,
+    income: roundMoney(income),
+    expenses: roundMoney(expenses),
+    net: roundMoney(income - expenses),
+    averageExpense: expenseCount > 0 ? roundMoney(expenses / expenseCount) : null,
     expenseCount,
   };
 };

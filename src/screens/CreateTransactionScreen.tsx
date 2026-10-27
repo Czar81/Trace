@@ -125,36 +125,14 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
     navigation.goBack();
   };
 
-  if (!envelope) return null;
-
-  const pmOptions = paymentMethods.map(pm => ({ label: pm.name, value: pm.id }));
-  const catOptions = categories.map(c => ({ label: c.name, value: c.id }));
-  const incomeCatOptions = incomeCategories.map(c => ({ label: c.name, value: c.id }));
   // Explicit 'ahorro' check — already excludes 'deuda' envelopes as a funding source.
-  const savingsEnvelopes = sortEnvelopesByTypeAndName(envelopes.filter(e => e.type === 'ahorro'));
-  const savingsOptions = savingsEnvelopes.map(e => ({ label: e.name, value: e.id }));
-  const splitTargets = sortEnvelopesByTypeAndName(envelopes.filter(e => e.currency === envelope.currency && e.type !== 'deuda'));
-  const canSplit = !isEditing && type === 'expense' && !isDebtEnvelope;
-  const toggleSplit = (on: boolean) => {
-    setSplitEnabled(on);
-    setSplitError('');
-    if (on) setSplitParts([newSplitPart(envelopeId, categoryId, amountStr), newSplitPart(envelopeId, '')]);
-  };
-  const isDebtPayment = isDebtEnvelope && (!transaction || transaction.type === 'income');
-  const parsedAmount = parseFloat(amountStr);
-  const hasValidAmount = amountStr !== '' && !isNaN(parsedAmount) && parsedAmount > 0;
-  const transactionBalanceImpact = transaction?.envelopeId === envelopeId
-    ? transaction.type === 'income' ? transaction.amount : transaction.type === 'expense' ? -transaction.amount : 0
-    : 0;
-  const balanceBeforeCurrentTransaction = getEnvelopeBalance(envelopeId) - transactionBalanceImpact;
-  const debtOutstanding = envelope.limit - balanceBeforeCurrentTransaction;
-  const projectedDebtOutstanding = debtOutstanding - (hasValidAmount ? parsedAmount : 0);
-  const debtPreviewLabel = hasValidAmount
-    ? projectedDebtOutstanding < 0 ? t('tx.balanceInFavorAfter') : t('tx.balancePendingAfter')
-    : debtOutstanding < 0 ? t('tx.balanceInFavor') : t('tx.balancePending');
+  const savingsEnvelopes = useMemo(
+    () => sortEnvelopesByTypeAndName(envelopes.filter(e => e.type === 'ahorro')),
+    [envelopes]
+  );
 
   useEffect(() => {
-    if (type !== 'expense' || envelope.type !== 'gasto') {
+    if (type !== 'expense' || envelope?.type !== 'gasto') {
       setUseSavingsEnvelope(false);
       return;
     }
@@ -162,7 +140,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
     if (useSavingsEnvelope && !sourceSavingsEnvelopeId && savingsEnvelopes.length > 0) {
       setSourceSavingsEnvelopeId(savingsEnvelopes[0].id);
     }
-  }, [type, envelope.type, useSavingsEnvelope, sourceSavingsEnvelopeId, savingsEnvelopes]);
+  }, [type, envelope?.type, useSavingsEnvelope, sourceSavingsEnvelopeId, savingsEnvelopes]);
 
   // Category options come from the catalog matching the active type: income
   // categories for income, expense categories for expense. Their ids never
@@ -174,10 +152,38 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
     setCategoryId(activeCategories[0]?.id ?? '');
   }, [isDebtEnvelope, activeCategories, categoryId]);
 
+  const isDebtPayment = isDebtEnvelope && (!transaction || transaction.type === 'income');
+
   const topCategories = useMemo(
     () => mostUsedCategories(transactions, activeCategories, type),
     [transactions, activeCategories, type]
   );
+
+  // After every hook: the envelope can disappear while this screen is open (e.g. deleted or replaced by an import).
+  if (!envelope) return null;
+
+  const pmOptions = paymentMethods.map(pm => ({ label: pm.name, value: pm.id }));
+  const catOptions = categories.map(c => ({ label: c.name, value: c.id }));
+  const incomeCatOptions = incomeCategories.map(c => ({ label: c.name, value: c.id }));
+  const savingsOptions = savingsEnvelopes.map(e => ({ label: e.name, value: e.id }));
+  const splitTargets = sortEnvelopesByTypeAndName(envelopes.filter(e => e.currency === envelope.currency && e.type !== 'deuda'));
+  const canSplit = !isEditing && type === 'expense' && !isDebtEnvelope;
+  const toggleSplit = (on: boolean) => {
+    setSplitEnabled(on);
+    setSplitError('');
+    if (on) setSplitParts([newSplitPart(envelopeId, categoryId, amountStr), newSplitPart(envelopeId, '')]);
+  };
+  const parsedAmount = parseFloat(amountStr);
+  const hasValidAmount = amountStr !== '' && !isNaN(parsedAmount) && parsedAmount > 0;
+  const transactionBalanceImpact = transaction?.envelopeId === envelopeId
+    ? transaction.type === 'income' ? transaction.amount : transaction.type === 'expense' ? -transaction.amount : 0
+    : 0;
+  const balanceBeforeCurrentTransaction = getEnvelopeBalance(envelopeId) - transactionBalanceImpact;
+  const debtOutstanding = envelope.limit - balanceBeforeCurrentTransaction;
+  const projectedDebtOutstanding = debtOutstanding - (hasValidAmount ? parsedAmount : 0);
+  const debtPreviewLabel = hasValidAmount
+    ? projectedDebtOutstanding < 0 ? t('tx.balanceInFavorAfter') : t('tx.balancePendingAfter')
+    : debtOutstanding < 0 ? t('tx.balanceInFavor') : t('tx.balancePending');
 
   // One-tap shortcuts for the most used categories, shown under the dropdown.
   const renderCategoryChips = () => topCategories.length === 0 ? null : (

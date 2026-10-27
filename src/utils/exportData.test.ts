@@ -16,7 +16,9 @@ import { DEFAULT_SETTINGS } from './storage';
 
 describe('buildFullBackupJson', () => {
   it('keeps the backup shape unchanged and excludes the language preference', () => {
-    const json = buildFullBackupJson([], [], [], [], [], DEFAULT_SETTINGS, new Date('2026-01-01T00:00:00.000Z'));
+    const json = buildFullBackupJson({
+      envelopes: [], transactions: [], paymentMethods: [], categories: [], incomeCategories: [], recurringTemplates: [], settings: DEFAULT_SETTINGS,
+    }, new Date('2026-01-01T00:00:00.000Z'));
     const parsed = JSON.parse(json);
 
     expect(Object.keys(parsed).sort()).toEqual([
@@ -25,6 +27,7 @@ describe('buildFullBackupJson', () => {
       'exportedAt',
       'incomeCategories',
       'paymentMethods',
+      'recurringTemplates',
       'settings',
       'transactions',
       'version',
