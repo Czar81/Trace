@@ -505,6 +505,7 @@ export const en: Record<TranslationKey, string> = {
   'import.error.corrupt': 'The file is not a valid backup (corrupt JSON).',
   // accessibility labels for icon-only buttons
   'a11y.back': 'Back',
+  'a11y.moreOptions': 'More options',
   'a11y.close': 'Close',
   'a11y.clearSearch': 'Clear search',
   'a11y.transfer': 'Transfer',

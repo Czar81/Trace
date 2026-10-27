@@ -506,6 +506,7 @@ export const es = {
   'import.error.corrupt': 'El archivo no es un backup válido (JSON corrupto).',
   // accessibility labels for icon-only buttons
   'a11y.back': 'Volver',
+  'a11y.moreOptions': 'Más opciones',
   'a11y.close': 'Cerrar',
   'a11y.clearSearch': 'Borrar búsqueda',
   'a11y.transfer': 'Transferir',

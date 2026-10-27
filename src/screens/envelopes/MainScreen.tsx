@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Pressable, FlatList, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, FlatList, Animated, Dimensions, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
@@ -113,6 +113,7 @@ export const MainScreen = ({ navigation }: Props) => {
   // Settings load after the first render (and can change), so follow the saved default.
   useEffect(() => { setDisplayCurrency(settings.defaultCurrency); }, [settings.defaultCurrency]);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
 
   // Restore the currency the user last picked for the total.
   useEffect(() => {
@@ -285,17 +286,34 @@ export const MainScreen = ({ navigation }: Props) => {
           <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Search')} accessibilityRole="button" accessibilityLabel={t('search.title')}>
             <Search color={colors.secondaryText} size={22} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }} onPress={() => navigation.navigate('Reports')} accessibilityRole="button" accessibilityLabel={t('settings.reports')}>
-            <BarChart3 color={colors.secondaryText} size={22} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }} onPress={() => navigation.navigate('Recurring')} accessibilityRole="button" accessibilityLabel={t('settings.recurring')}>
-            <Repeat color={colors.secondaryText} size={22} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Settings')} accessibilityRole="button" accessibilityLabel={t('settings.title')}>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => setMenuVisible(true)} accessibilityRole="button" accessibilityLabel={t('a11y.moreOptions')}>
             <MoreVertical color={colors.secondaryText} size={24} />
           </TouchableOpacity>
         </View>
       </View>
+
+      <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
+        <Pressable style={styles.menuBackdrop} onPress={() => setMenuVisible(false)} accessibilityLabel={t('a11y.back')}>
+          <View style={styles.menu}>
+            {([
+              ['Reports', BarChart3, 'settings.reports'],
+              ['Recurring', Repeat, 'settings.recurring'],
+              ['Settings', Settings, 'settings.title'],
+            ] as const).map(([route, Icon, label]) => (
+              <TouchableOpacity
+                key={route}
+                style={styles.menuItem}
+                onPress={() => { setMenuVisible(false); navigation.navigate(route); }}
+                accessibilityRole="button"
+                accessibilityLabel={t(label)}
+              >
+                <Icon color={colors.secondaryText} size={20} />
+                <Text style={styles.menuText}>{t(label)}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
 
       <View style={styles.tabContainer}>
         <Animated.View style={[styles.tabIndicator, { width: indicatorWidth, transform: [{ translateX }] }]} />
@@ -371,6 +389,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingTop: SPACING.lg, paddingBottom: SPACING.sm },
   title: { color: colors.white, fontSize: FONT_SIZE.xl, fontWeight: 'bold', letterSpacing: 1 },
   iconBtn: { padding: SPACING.sm },
+  menuBackdrop: { flex: 1 },
+  menu: { position: 'absolute', top: 56, right: SPACING.xl, minWidth: 190, backgroundColor: colors.cardBg, borderRadius: RADIUS.lg, paddingVertical: SPACING.xs, elevation: 8, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg },
+  menuText: { color: colors.white, fontSize: FONT_SIZE.lg },
   tabContainer: { flexDirection: 'row', marginHorizontal: SPACING.xl, height: 48, position: 'relative', marginBottom: SPACING.lg, backgroundColor: colors.cardBg, borderRadius: RADIUS.sheet, padding: SPACING.xs },
   tab: { flex: 1, justifyContent: 'center', alignItems: 'center', zIndex: 1 },
   tabIndicator: { position: 'absolute', top: 4, bottom: 4, left: 4, backgroundColor: colors.green, borderRadius: RADIUS.pill },
