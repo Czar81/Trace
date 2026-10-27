@@ -177,6 +177,8 @@ interface AppContextType {
   categories: TransactionCategory[];
   incomeCategories: TransactionCategory[];
   settings: AppSettings;
+  /** False until persisted settings have been read from storage. */
+  settingsLoaded: boolean;
   recurringTemplates: RecurringTransactionTemplate[];
   autoBackup: AutoBackupState;
   updateAutoBackup: (updates: Partial<Pick<AutoBackupState, 'enabled' | 'intervalDays'>>) => Promise<void>;
@@ -246,6 +248,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [incomeCategories, setIncomeCategories] = useState<TransactionCategory[]>([]);
   const [recurringTemplates, setRecurringTemplates] = useState<RecurringTransactionTemplate[]>([]);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [autoBackup, setAutoBackup] = useState<AutoBackupState>(DEFAULT_AUTO_BACKUP_STATE);
 
   useEffect(() => {
@@ -259,6 +262,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIncomeCategories(await loadIncomeCategories());
       const loadedSettings = await loadSettings();
       setSettings(loadedSettings);
+      setSettingsLoaded(true);
 
       // Refresh exchange rates in the background; offline or API errors keep the saved rates.
       if (loadedSettings.autoExchangeRates && areRatesStale(loadedSettings.exchangeRatesUpdatedAt)) {
@@ -1123,7 +1127,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [incomeCategories]);
 
   const value = useMemo(() => ({
-    envelopes, transactions, paymentMethods, categories, incomeCategories, settings, recurringTemplates, autoBackup, updateAutoBackup,
+    envelopes, transactions, paymentMethods, categories, incomeCategories, settings, settingsLoaded, recurringTemplates, autoBackup, updateAutoBackup,
     addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
     addTransaction, addTransactions, updateTransaction, deleteTransaction, addTransfer, updateTransfer,
     addRecurringTemplate, updateRecurringTemplate, deleteRecurringTemplate,
@@ -1134,7 +1138,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     importFromBackup,
     getEnvelopeBalance, getTotalByType, convertToCRC, formatAmount,
   }), [
-    envelopes, transactions, paymentMethods, categories, incomeCategories, settings, recurringTemplates, autoBackup, updateAutoBackup,
+    envelopes, transactions, paymentMethods, categories, incomeCategories, settings, settingsLoaded, recurringTemplates, autoBackup, updateAutoBackup,
     addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
     addTransaction, addTransactions, updateTransaction, deleteTransaction, addTransfer, updateTransfer,
     addRecurringTemplate, updateRecurringTemplate, deleteRecurringTemplate,

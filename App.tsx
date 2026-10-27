@@ -26,6 +26,7 @@ import { SearchTransactionsScreen } from './src/screens/SearchTransactionsScreen
 import { RecurringTransactionsScreen } from './src/screens/RecurringTransactionsScreen';
 import { CreateRecurringTransactionScreen } from './src/screens/CreateRecurringTransactionScreen';
 import { AppearanceSettingsScreen } from './src/screens/AppearanceSettingsScreen';
+import { AppLockGate } from './src/components/AppLockGate';
 import { RootStackParamList } from './src/navigation/types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -68,7 +69,9 @@ export default function App() {
           <LanguageProvider>
             <AppProvider>
               <ThemeProvider>
-                <ThemedNavigator />
+                <AppLockGate>
+                  <ThemedNavigator />
+                </AppLockGate>
               </ThemeProvider>
             </AppProvider>
           </LanguageProvider>

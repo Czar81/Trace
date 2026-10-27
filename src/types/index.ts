@@ -87,6 +87,8 @@ export interface AppSettings {
   /** When on, rates are refreshed from the internet on app start if older than 12 hours. */
   autoExchangeRates?: boolean;
   exchangeRatesUpdatedAt?: string;
+  /** Requires the device's fingerprint/face/PIN to open the app. */
+  appLockEnabled?: boolean;
   expenseCutoffEnabled: boolean;
   expenseCutoffDay: number | null;
   budgetAlertsEnabled: boolean;
