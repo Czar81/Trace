@@ -1,7 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, SectionList, Modal, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Swipeable } from 'react-native-gesture-handler';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Animated, {
+  FadeIn, FadeOut, LinearTransition, interpolate, Extrapolation,
+  useAnimatedReaction, useAnimatedStyle, SharedValue,
+} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
 import { ArrowLeft, RefreshCw, Edit2, Trash2, Calendar, X, ArrowLeftRight, Paperclip } from 'lucide-react-native';
@@ -17,7 +22,7 @@ import { formatDebtCycle } from '../../domain/recurring/recurrence';
 import { getGoalDeadlineInfo } from '../../domain/budget/savingsGoal';
 import { Transaction } from '../../types';
 import { ReceiptViewer } from '../../components/feedback/ReceiptViewer';
-import { hapticDelete } from '../../services/device/haptics';
+import { hapticDelete, hapticLight } from '../../services/device/haptics';
 import { SPACING } from '../../theme/tokens';
 import { makeStyles } from './EnvelopeDetailScreen.styles';
 
@@ -30,6 +35,33 @@ type DialogState =
 type Props = NativeStackScreenProps<RootStackParamList, 'EnvelopeDetail'>;
 
 const UNDO_WINDOW_MS = 4000;
+
+/** Trash button revealed by the swipe: grows with the drag and ticks once when it is fully open. */
+const SwipeDeleteAction: React.FC<{
+  progress: SharedValue<number>;
+  styles: ReturnType<typeof makeStyles>;
+  iconColor: string;
+  label: string;
+  onPress: () => void;
+}> = ({ progress, styles, iconColor, label, onPress }) => {
+  const buttonStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 0.4, 1], [0, 0.6, 1], Extrapolation.CLAMP),
+    transform: [{ scale: interpolate(progress.value, [0, 1], [0.5, 1], Extrapolation.CLAMP) }],
+  }));
+  useAnimatedReaction(
+    () => progress.value >= 0.95,
+    (open, wasOpen) => {
+      if (open && !wasOpen) scheduleOnRN(hapticLight);
+    },
+  );
+  return (
+    <TouchableOpacity style={styles.deleteAction} onPress={onPress} accessibilityRole="button" accessibilityLabel={label}>
+      <Animated.View style={[styles.deleteActionButton, buttonStyle]}>
+        <Trash2 color={iconColor} size={19} />
+      </Animated.View>
+    </TouchableOpacity>
+  );
+};
 
 export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
   const { colors } = useTheme();
@@ -497,18 +529,21 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
             const otherEnvelopeName = envelopes.find(e => e.id === otherEnvelopeId)?.name ?? t('detail.deletedEnvelopeLower');
 
             return (
-              <Swipeable
-                renderRightActions={() => (
-                  <TouchableOpacity
-                    style={styles.deleteAction}
+              <Animated.View
+                entering={FadeIn.duration(220)}
+                exiting={FadeOut.duration(180)}
+                layout={LinearTransition.duration(220)}
+              >
+              <ReanimatedSwipeable
+                overshootRight={false}
+                renderRightActions={(progress) => (
+                  <SwipeDeleteAction
+                    progress={progress}
+                    styles={styles}
+                    iconColor={colors.white}
+                    label={t('detail.deleteTransaction')}
                     onPress={() => handleSwipeDelete(item.id)}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('detail.deleteTransaction')}
-                  >
-                    <View style={styles.deleteActionButton}>
-                      <Trash2 color={colors.white} size={19} />
-                    </View>
-                  </TouchableOpacity>
+                  />
                 )}
               >
                 <TouchableOpacity
@@ -546,7 +581,8 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                     {isTransfer ? (isOutgoingTransfer ? '→ ' : '← ') : ''}{formatAmount(item.amount, envelope.currency)}
                   </Text>
                 </TouchableOpacity>
-              </Swipeable>
+              </ReanimatedSwipeable>
+              </Animated.View>
             );
           }}
           ItemSeparatorComponent={() => <View style={styles.perforationDivider} />}
