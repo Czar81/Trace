@@ -64,11 +64,44 @@ const defaultIncomeCategories = (): TransactionCategory[] => [
 /** Spanish defaults, kept for tests and imports that need a fixed reference. */
 export const DEFAULT_INCOME_CATEGORIES: TransactionCategory[] = defaultIncomeCategories();
 
+/** Thrown when stored data exists but can't be read, so callers never mistake it for "empty". */
+export class StorageReadError extends Error {
+  constructor(public readonly key: string, cause: unknown) {
+    super(`Could not read ${key}: ${cause instanceof Error ? cause.message : String(cause)}`);
+    this.name = 'StorageReadError';
+  }
+}
+
+/** Persists `data` under `key`. Rejects when the write fails, so callers can tell the user. */
 async function saveData(key: string, data: any) {
   try {
     await AsyncStorage.setItem(key, JSON.stringify(data));
   } catch (e) {
     console.error(`Error saving ${key}`, e);
+    throw e;
+  }
+}
+
+/** saveData for preferences whose loss is harmless: logs instead of rejecting. */
+const saveDataQuietly = (key: string, data: any) => saveData(key, data).catch(() => undefined);
+
+/**
+ * Like loadData, but only falls back to `defaultValue` when nothing is stored:
+ * a read or parse failure throws StorageReadError instead of returning the
+ * default, which a later save would write over the user's real data.
+ */
+async function loadCriticalData<T>(key: string, defaultValue: T): Promise<T> {
+  let jsonValue: string | null;
+  try {
+    jsonValue = await AsyncStorage.getItem(key);
+  } catch (e) {
+    throw new StorageReadError(key, e);
+  }
+  if (jsonValue == null) return defaultValue;
+  try {
+    return JSON.parse(jsonValue);
+  } catch (e) {
+    throw new StorageReadError(key, e);
   }
 }
 
@@ -83,26 +116,26 @@ async function loadData<T>(key: string, defaultValue: T): Promise<T> {
 }
 
 export const saveEnvelopes = (data: Envelope[]) => saveData(KEYS.ENVELOPES, data);
-export const loadEnvelopes = () => loadData<Envelope[]>(KEYS.ENVELOPES, []);
+export const loadEnvelopes = () => loadCriticalData<Envelope[]>(KEYS.ENVELOPES, []);
 
 export const saveTransactions = (data: Transaction[]) => saveData(KEYS.TRANSACTIONS, data);
-export const loadTransactions = () => loadData<Transaction[]>(KEYS.TRANSACTIONS, []);
+export const loadTransactions = () => loadCriticalData<Transaction[]>(KEYS.TRANSACTIONS, []);
 
 export const savePaymentMethods = (data: PaymentMethod[]) => saveData(KEYS.PAYMENT_METHODS, data);
-export const loadPaymentMethods = () => loadData<PaymentMethod[]>(KEYS.PAYMENT_METHODS, defaultPaymentMethods());
+export const loadPaymentMethods = () => loadCriticalData<PaymentMethod[]>(KEYS.PAYMENT_METHODS, defaultPaymentMethods());
 
 export const saveCategories = (data: TransactionCategory[]) => saveData(KEYS.CATEGORIES, data);
-export const loadCategories = () => loadData<TransactionCategory[]>(KEYS.CATEGORIES, defaultCategories());
+export const loadCategories = () => loadCriticalData<TransactionCategory[]>(KEYS.CATEGORIES, defaultCategories());
 
 export const saveIncomeCategories = (data: TransactionCategory[]) => saveData(KEYS.INCOME_CATEGORIES, data);
-export const loadIncomeCategories = () => loadData<TransactionCategory[]>(KEYS.INCOME_CATEGORIES, defaultIncomeCategories());
+export const loadIncomeCategories = () => loadCriticalData<TransactionCategory[]>(KEYS.INCOME_CATEGORIES, defaultIncomeCategories());
 
 export const saveRecurringTemplates = (data: RecurringTransactionTemplate[]) => saveData(KEYS.RECURRING_TEMPLATES, data);
-export const loadRecurringTemplates = () => loadData<RecurringTransactionTemplate[]>(KEYS.RECURRING_TEMPLATES, []);
+export const loadRecurringTemplates = () => loadCriticalData<RecurringTransactionTemplate[]>(KEYS.RECURRING_TEMPLATES, []);
 
 export const saveSettings = (data: AppSettings) => saveData(KEYS.SETTINGS, data);
 export const loadSettings = async (): Promise<AppSettings> => {
-  const loaded = await loadData<Partial<AppSettings> & { expenseCutoffDate?: string }>(KEYS.SETTINGS, DEFAULT_SETTINGS);
+  const loaded = await loadCriticalData<Partial<AppSettings> & { expenseCutoffDate?: string }>(KEYS.SETTINGS, DEFAULT_SETTINGS);
   const mergedSettings = { ...DEFAULT_SETTINGS, ...loaded };
   if (loaded.expenseCutoffDate && mergedSettings.expenseCutoffDay == null) {
     mergedSettings.expenseCutoffDay = new Date(loaded.expenseCutoffDate).getDate();
@@ -110,7 +143,7 @@ export const loadSettings = async (): Promise<AppSettings> => {
   return mergedSettings;
 };
 
-export const saveReportLayout = (data: ReportLayoutItem[]) => saveData(KEYS.REPORT_LAYOUT, data);
+export const saveReportLayout = (data: ReportLayoutItem[]) => saveDataQuietly(KEYS.REPORT_LAYOUT, data);
 export const loadReportLayout = async (): Promise<ReportLayoutItem[]> => {
   try {
     return parseReportLayout(await AsyncStorage.getItem(KEYS.REPORT_LAYOUT));
@@ -143,14 +176,14 @@ export const loadAutoBackupState = async (): Promise<AutoBackupState> => ({
   lastError: await loadData<string | null>(KEYS.AUTO_BACKUP_LAST_ERROR, null),
 });
 
-export const saveAutoBackupEnabled = (v: boolean) => saveData(KEYS.AUTO_BACKUP_ENABLED, v);
-export const saveAutoBackupIntervalDays = (v: number) => saveData(KEYS.AUTO_BACKUP_INTERVAL_DAYS, v);
-export const saveAutoBackupLastSuccessAt = (v: string | null) => saveData(KEYS.AUTO_BACKUP_LAST_SUCCESS_AT, v);
-export const saveAutoBackupLastError = (v: string | null) => saveData(KEYS.AUTO_BACKUP_LAST_ERROR, v);
+export const saveAutoBackupEnabled = (v: boolean) => saveDataQuietly(KEYS.AUTO_BACKUP_ENABLED, v);
+export const saveAutoBackupIntervalDays = (v: number) => saveDataQuietly(KEYS.AUTO_BACKUP_INTERVAL_DAYS, v);
+export const saveAutoBackupLastSuccessAt = (v: string | null) => saveDataQuietly(KEYS.AUTO_BACKUP_LAST_SUCCESS_AT, v);
+export const saveAutoBackupLastError = (v: string | null) => saveDataQuietly(KEYS.AUTO_BACKUP_LAST_ERROR, v);
 
 // The language preference has its own key (not in AppSettings) so it is never
 // part of a backup and a restore cannot overwrite it.
-export const saveLanguagePreference = (v: LanguagePreference) => saveData(KEYS.LANGUAGE, v);
+export const saveLanguagePreference = (v: LanguagePreference) => saveDataQuietly(KEYS.LANGUAGE, v);
 export const loadLanguagePreference = async (): Promise<LanguagePreference> => {
   const stored = await loadData<unknown>(KEYS.LANGUAGE, DEFAULT_LANGUAGE_PREFERENCE);
   return isLanguagePreference(stored) ? stored : DEFAULT_LANGUAGE_PREFERENCE;

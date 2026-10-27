@@ -378,6 +378,11 @@ export const es = {
   'transfer.error.envelopeNotFound': 'Sobre no encontrado.',
   'transfer.error.currencyMismatch': 'Los sobres deben tener la misma moneda.',
   'transfer.error.notFound': 'Transferencia no encontrada.',
+  'storage.loadFailedTitle': 'No se pudieron leer tus datos',
+  'storage.loadFailedBody': 'Para no perder nada, la app no guardará cambios hasta que la cierres y la vuelvas a abrir. Si el problema sigue, restaura un backup desde Ajustes.',
+  'storage.saveFailedTitle': 'No se pudo guardar',
+  'storage.saveFailedBody': 'El último cambio no se guardó en el teléfono. Revisa el espacio disponible e inténtalo de nuevo.',
+  'settings.exportFailed': 'No se pudo exportar el backup. Inténtalo de nuevo.',
   'import.cancelled': 'Importación cancelada',
   'import.fileErrors': 'Hay errores en el archivo',
   'import.restored': 'Backup restaurado: {envelopes} sobres, {transactions} transacciones, {categories} categorías, {incomeCategories} categorías de ingreso, {paymentMethods} métodos de pago',
@@ -386,6 +391,11 @@ export const es = {
   'import.error.notArrays': 'Formato de backup inválido. envelopes, transactions, paymentMethods y categories deben ser listas (arrays)',
   'import.error.incomeNotArray': 'Formato de backup inválido. incomeCategories debe ser una lista (array)',
   'import.error.badAmount': 'Formato de backup inválido. Todas las transacciones deben tener un monto (amount) numérico válido',
+  'import.error.templatesNotArray': 'Formato de backup inválido. recurringTemplates debe ser una lista (array)',
+  'import.error.badEnvelope': 'Formato de backup inválido. Hay sobres sin id, nombre, tipo, moneda o límite válidos',
+  'import.error.badTransaction': 'Formato de backup inválido. Hay transacciones sin id, sobre, tipo o fecha válidos',
+  'import.error.badCatalog': 'Formato de backup inválido. Hay métodos de pago o categorías sin id o nombre',
+  'import.error.badTemplate': 'Formato de backup inválido. Hay transacciones recurrentes incompletas',
   'import.error.corrupt': 'El archivo no es un backup válido (JSON corrupto).',
 } as const;
 

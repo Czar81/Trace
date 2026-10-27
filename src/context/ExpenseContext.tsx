@@ -1,6 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import Constants, { ExecutionEnvironment } from 'expo-constants';
-import type * as ExpoNotifications from 'expo-notifications';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Alert, AppState } from 'react-native';
 import { Envelope, Transaction, EnvelopeType, PaymentMethod, TransactionCategory, AppSettings, Currency, RecurringTransactionTemplate } from '../types';
 import {
   loadEnvelopes, saveEnvelopes,
@@ -17,41 +16,66 @@ import { pickAndImportBackup } from '../utils/importData';
 import { createAutomaticBackup, isBackupDue } from '../utils/autoBackup';
 import { translateActive } from '../i18n';
 import { formatCurrency } from '../utils/formatCurrency';
-import {
-  clampDayOfMonth, getNextDueDate, getOccurrenceKey,
-  getDebtCycleDate, getDebtCycleOccurrenceKey, getPreviousDebtCycleDate, DebtCycleAnchor,
-} from '../utils/recurrence';
-import { calculateEnvelopeBalance, computeEnvelopeBalances, getCutoffPeriodStart } from '../utils/balance';
+import { clampDayOfMonth } from '../utils/recurrence';
+import { calculateEnvelopeBalance, computeEnvelopeBalances, getCutoffPeriodStart, roundMoney } from '../utils/balance';
 import { accrueDebtInterest, generateRecurringTransactions } from '../utils/recurringGeneration';
+import { removeEnvelopeReferences } from '../utils/envelopeRemoval';
+import {
+  isExpoGo, requestNotificationPermissions, notifyBudgetThreshold,
+  cancelTemplateReminder, scheduleBillReminders, checkMinimumPayments, cancelDebtReminder, scheduleDebtReminders,
+} from '../utils/notifications';
 
 // Re-exported for backward compatibility — other modules and tests import these from here.
 export { clampDayOfMonth, calculateEnvelopeBalance, getCutoffPeriodStart, accrueDebtInterest };
 
-/** Strips the time component, keeping year/month/day in local time. */
-function dateOnly(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+/** Local calendar day, used to notice the date changing while the app stays open. */
+const dayKey = (date: Date) => `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+
+// Ids are creation timestamps; bumping past the last one keeps two records
+// created in the same millisecond from sharing an id.
+let lastIdTime = 0;
+const newId = (): string => {
+  lastIdTime = Math.max(Date.now(), lastIdTime + 1);
+  return String(lastIdTime);
+};
+
+/** True when two lists hold different items (by reference) or a different count. */
+const listChanged = <T,>(a: T[], b: T[]) => a.length !== b.length || a.some((item, i) => item !== b[i]);
+
+/** Translated error for an invalid transfer, or null when it's valid. */
+function validateTransfer(envelopes: Envelope[], envelopeId: string, toEnvelopeId: string | undefined): string | null {
+  if (envelopeId === toEnvelopeId) return translateActive('transfer.error.sameEnvelope');
+  const source = envelopes.find(e => e.id === envelopeId);
+  const destination = envelopes.find(e => e.id === toEnvelopeId);
+  if (!source || !destination) return translateActive('transfer.error.envelopeNotFound');
+  if (source.currency !== destination.currency) return translateActive('transfer.error.currencyMismatch');
+  return null;
 }
 
-const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
-const loadNotifications = () => isExpoGo ? Promise.resolve(null) : import('expo-notifications');
-const dateTriggerType = 'date' as ExpoNotifications.SchedulableTriggerInputTypes.DATE;
+interface AppData {
+  envelopes: Envelope[];
+  transactions: Transaction[];
+  paymentMethods: PaymentMethod[];
+  categories: TransactionCategory[];
+  incomeCategories: TransactionCategory[];
+  recurringTemplates: RecurringTransactionTemplate[];
+  settings: AppSettings;
+}
 
-const scheduleNotification = async (
-  request: Parameters<typeof ExpoNotifications.scheduleNotificationAsync>[0]
-): Promise<string | null> => {
-  const notifications = await loadNotifications();
-  return notifications ? notifications.scheduleNotificationAsync(request) : null;
+const EMPTY_DATA: AppData = {
+  envelopes: [], transactions: [], paymentMethods: [], categories: [], incomeCategories: [], recurringTemplates: [],
+  settings: DEFAULT_SETTINGS,
 };
 
-const cancelScheduledNotification = async (identifier: string) => {
-  const notifications = await loadNotifications();
-  if (notifications) await notifications.cancelScheduledNotificationAsync(identifier);
-};
-
-const requestNotificationPermissions = async () => {
-  const notifications = await loadNotifications();
-  if (notifications) await notifications.requestPermissionsAsync();
-};
+const loadAppData = async (): Promise<AppData> => ({
+  envelopes: await loadEnvelopes(),
+  transactions: await loadTransactions(),
+  paymentMethods: await loadPaymentMethods(),
+  categories: await loadCategories(),
+  incomeCategories: await loadIncomeCategories(),
+  recurringTemplates: await loadRecurringTemplates(),
+  settings: await loadSettings(),
+});
 
 interface AppContextType {
   envelopes: Envelope[];
@@ -61,6 +85,8 @@ interface AppContextType {
   incomeCategories: TransactionCategory[];
   settings: AppSettings;
   recurringTemplates: RecurringTransactionTemplate[];
+  /** False until stored data has been read; changes made before then wait for it. */
+  isLoaded: boolean;
   autoBackup: AutoBackupState;
   updateAutoBackup: (updates: Partial<Pick<AutoBackupState, 'enabled' | 'intervalDays'>>) => Promise<void>;
 
@@ -127,100 +153,149 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [incomeCategories, setIncomeCategories] = useState<TransactionCategory[]>([]);
   const [recurringTemplates, setRecurringTemplates] = useState<RecurringTransactionTemplate[]>([]);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [autoBackup, setAutoBackup] = useState<AutoBackupState>(DEFAULT_AUTO_BACKUP_STATE);
+  const [today, setToday] = useState(() => dayKey(new Date()));
+
+  // ─── Serialized access to the data ────────────────────────────────────────
+  // `data` always holds the latest committed values. Every change reads from it
+  // (never from a render's closure) and runs through `runExclusive`, one at a
+  // time, starting only after the initial load — so a change made before the
+  // load finishes, or two quick changes in a row, never overwrite each other.
+  const data = useRef<AppData>(EMPTY_DATA);
+  // Set when stored data couldn't be read: saving then would replace the
+  // user's real data with whatever is in memory.
+  const writesBlocked = useRef(false);
+  const initGate = useRef<{ promise: Promise<void>; resolve: () => void } | null>(null);
+  if (!initGate.current) {
+    let resolve: () => void = () => undefined;
+    const promise = new Promise<void>(r => { resolve = r; });
+    initGate.current = { promise, resolve };
+  }
+  const queue = useRef<Promise<unknown>>(initGate.current.promise);
+  const lastSaveErrorAt = useRef(0);
+
+  const runExclusive = useCallback(<T,>(task: () => Promise<T>): Promise<T> => {
+    const run = queue.current.then(task);
+    queue.current = run.catch(() => undefined);
+    return run;
+  }, []);
+
+  /** Applies changes to memory and state, then persists them (unless writes are blocked). */
+  const commit = useCallback(async (changes: Partial<AppData>) => {
+    data.current = { ...data.current, ...changes };
+    const saves: Promise<unknown>[] = [];
+    const persist = !writesBlocked.current;
+    if (changes.envelopes) { setEnvelopes(changes.envelopes); if (persist) saves.push(saveEnvelopes(changes.envelopes)); }
+    if (changes.transactions) { setTransactions(changes.transactions); if (persist) saves.push(saveTransactions(changes.transactions)); }
+    if (changes.paymentMethods) { setPaymentMethods(changes.paymentMethods); if (persist) saves.push(savePaymentMethods(changes.paymentMethods)); }
+    if (changes.categories) { setCategories(changes.categories); if (persist) saves.push(saveCategories(changes.categories)); }
+    if (changes.incomeCategories) { setIncomeCategories(changes.incomeCategories); if (persist) saves.push(saveIncomeCategories(changes.incomeCategories)); }
+    if (changes.recurringTemplates) { setRecurringTemplates(changes.recurringTemplates); if (persist) saves.push(saveRecurringTemplates(changes.recurringTemplates)); }
+    if (changes.settings) { setSettings(changes.settings); if (persist) saves.push(saveSettings(changes.settings)); }
+
+    const results = await Promise.allSettled(saves);
+    // One alert per burst of failures, not one per collection.
+    if (results.some(r => r.status === 'rejected') && Date.now() - lastSaveErrorAt.current > 10_000) {
+      lastSaveErrorAt.current = Date.now();
+      Alert.alert(translateActive('storage.saveFailedTitle'), translateActive('storage.saveFailedBody'));
+    }
+  }, []);
+
+  // ─── Recurring generation, debt interest and reminders ────────────────────
+  /**
+   * Generates due recurring transactions (catching up missed periods), accrues
+   * debt interest, checks minimum payments and schedules upcoming reminders.
+   * Runs on launch, when the app returns to the foreground and after an import.
+   */
+  const processScheduledWork = useCallback(async (now: Date) => {
+    const d = data.current;
+    const { updatedTemplates, newTransactions } = generateRecurringTransactions(d.recurringTemplates, now);
+    const transactionsBeforeDebt = newTransactions.length > 0 ? [...newTransactions, ...d.transactions] : d.transactions;
+    const { updatedEnvelopes, newTransactions: interestTransactions } =
+      accrueDebtInterest(d.envelopes, transactionsBeforeDebt, now);
+    const allTransactions = interestTransactions.length > 0
+      ? [...interestTransactions, ...transactionsBeforeDebt]
+      : transactionsBeforeDebt;
+
+    const { billRemindersEnabled, billReminderLeadDays } = d.settings;
+    const envelopesAfterMinCheck = await checkMinimumPayments(updatedEnvelopes, allTransactions, billRemindersEnabled, now);
+    const envelopesWithReminders = await scheduleDebtReminders(envelopesAfterMinCheck, allTransactions, billRemindersEnabled, billReminderLeadDays);
+    const templatesWithReminders = await scheduleBillReminders(updatedTemplates, envelopesWithReminders, billRemindersEnabled, billReminderLeadDays);
+
+    const changes: Partial<AppData> = {};
+    if (allTransactions !== d.transactions) changes.transactions = allTransactions;
+    if (listChanged(envelopesWithReminders, d.envelopes)) changes.envelopes = envelopesWithReminders;
+    if (listChanged(templatesWithReminders, d.recurringTemplates)) changes.recurringTemplates = templatesWithReminders;
+    if (Object.keys(changes).length > 0) await commit(changes);
+  }, [commit]);
+
+  // ─── Automatic backup (never blocks or rejects the caller) ────────────────
+  const runAutoBackup = useCallback(async (now: Date) => {
+    if (writesBlocked.current) return;
+    try {
+      const backupState = await loadAutoBackupState();
+      setAutoBackup(backupState);
+      if (!backupState.enabled || !isBackupDue(backupState.lastSuccessAt, backupState.intervalDays, now)) return;
+      try {
+        await createAutomaticBackup(data.current, now);
+        const lastSuccessAt = now.toISOString();
+        await saveAutoBackupLastSuccessAt(lastSuccessAt);
+        await saveAutoBackupLastError(null);
+        setAutoBackup(prev => ({ ...prev, lastSuccessAt, lastError: null }));
+      } catch (e) {
+        const lastError = e instanceof Error ? e.message : String(e);
+        console.error('Automatic backup failed', e);
+        await saveAutoBackupLastError(lastError);
+        setAutoBackup(prev => ({ ...prev, lastError }));
+      }
+    } catch (e) {
+      console.error('Automatic backup check failed', e);
+    }
+  }, []);
 
   useEffect(() => {
     const initData = async () => {
-      const loadedEnvelopes = await loadEnvelopes();
-      setEnvelopes(loadedEnvelopes);
-      const loadedTransactions = await loadTransactions();
-      const loadedTemplates = await loadRecurringTemplates();
-      setPaymentMethods(await loadPaymentMethods());
-      setCategories(await loadCategories());
-      setIncomeCategories(await loadIncomeCategories());
-      const loadedSettings = await loadSettings();
-      setSettings(loadedSettings);
-
-      // ─── Automatic generation of due recurring transactions ──────────────
       const now = new Date();
-      const { updatedTemplates: finalTemplates, newTransactions } = generateRecurringTransactions(loadedTemplates, now);
-
-      // ─── Debt envelope interest accrual ────────────────────────────────────
-      const transactionsBeforeDebtProcessing = [...newTransactions, ...loadedTransactions];
-      const { updatedEnvelopes: envelopesAfterAccrual, newTransactions: interestTransactions } =
-        accrueDebtInterest(loadedEnvelopes, transactionsBeforeDebtProcessing, now);
-      const allNewTransactions = [...interestTransactions, ...newTransactions];
-      const transactionsAfterAccrual = [...interestTransactions, ...transactionsBeforeDebtProcessing];
-
-      // ─── Debt envelope minimum-payment shortfall check ─────────────────────
-      const envelopesAfterMinCheck = await checkMinimumPayments(
-        envelopesAfterAccrual,
-        transactionsAfterAccrual,
-        loadedSettings.billRemindersEnabled,
-        now
-      );
-
-      // ─── Debt envelope due-date reminder scheduling ─────────────────────────
-      const envelopesWithDebtReminders = await scheduleDebtReminders(
-        envelopesAfterMinCheck,
-        transactionsAfterAccrual,
-        loadedSettings.billRemindersEnabled,
-        loadedSettings.billReminderLeadDays
-      );
-      await saveEnvelopes(envelopesWithDebtReminders);
-      setEnvelopes(envelopesWithDebtReminders);
-
-      // ─── Bill reminder scheduling for active templates ────────────────────
-      const templatesWithReminders = await scheduleBillReminders(
-        finalTemplates,
-        envelopesWithDebtReminders,
-        loadedSettings.billRemindersEnabled,
-        loadedSettings.billReminderLeadDays
-      );
-      await saveRecurringTemplates(templatesWithReminders);
-      setRecurringTemplates(templatesWithReminders);
-
-      const finalTransactions = allNewTransactions.length > 0
-        ? [...allNewTransactions, ...loadedTransactions]
-        : loadedTransactions;
-      if (allNewTransactions.length > 0) {
-        await saveTransactions(finalTransactions);
-      }
-      setTransactions(finalTransactions);
-
-      // ─── Automatic backup (never blocks or rejects the initial load) ──────
       try {
-        const backupState = await loadAutoBackupState();
-        setAutoBackup(backupState);
-        if (backupState.enabled && isBackupDue(backupState.lastSuccessAt, backupState.intervalDays, now)) {
-          try {
-            await createAutomaticBackup(
-              envelopesWithDebtReminders,
-              finalTransactions,
-              await loadPaymentMethods(),
-              await loadCategories(),
-              await loadIncomeCategories(),
-              loadedSettings,
-              now
-            );
-            const lastSuccessAt = now.toISOString();
-            await saveAutoBackupLastSuccessAt(lastSuccessAt);
-            await saveAutoBackupLastError(null);
-            setAutoBackup(prev => ({ ...prev, lastSuccessAt, lastError: null }));
-          } catch (e) {
-            const lastError = e instanceof Error ? e.message : String(e);
-            console.error('Automatic backup failed', e);
-            await saveAutoBackupLastError(lastError);
-            setAutoBackup(prev => ({ ...prev, lastError }));
-          }
+        let loaded: AppData;
+        try {
+          loaded = await loadAppData();
+        } catch {
+          // A failed read is often transient right after launch; try once more.
+          await new Promise(r => setTimeout(r, 300));
+          loaded = await loadAppData();
         }
+        await commit(loaded);
+        await processScheduledWork(now);
       } catch (e) {
-        console.error('Automatic backup check failed', e);
+        console.error('Could not load stored data', e);
+        writesBlocked.current = true;
+        Alert.alert(translateActive('storage.loadFailedTitle'), translateActive('storage.loadFailedBody'));
+      } finally {
+        setIsLoaded(true);
+        initGate.current?.resolve();
       }
+      await runExclusive(() => runAutoBackup(now));
     };
     initData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [commit, processScheduledWork, runAutoBackup, runExclusive]);
+
+  // Returning to the app on a later day (or after a while) generates what
+  // came due meanwhile and refreshes date-based balances such as the cutoff.
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', state => {
+      if (state !== 'active') return;
+      const now = new Date();
+      setToday(dayKey(now));
+      if (writesBlocked.current) return;
+      runExclusive(async () => {
+        await processScheduledWork(now);
+        await runAutoBackup(now);
+      }).catch(e => console.error('Error processing scheduled work', e));
+    });
+    return () => subscription.remove();
+  }, [processScheduledWork, runAutoBackup, runExclusive]);
 
   const updateAutoBackup = useCallback(async (updates: Partial<Pick<AutoBackupState, 'enabled' | 'intervalDays'>>) => {
     setAutoBackup(prev => ({ ...prev, ...updates }));
@@ -241,10 +316,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   // ─── Balance computation ───────────────────────────────────────────────────
-  /** Envelope id -> balance, computed once per change so per-envelope lookups are O(1). */
+  /** Envelope id -> balance, computed once per change (and per day) so lookups are O(1). */
   const envelopeBalanceMap = useMemo(
     () => computeEnvelopeBalances(transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay),
-    [transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay]
+    // `today` recomputes the cutoff window when the date changes while the app is open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay, today]
   );
 
   const getEnvelopeBalance = useCallback((envelopeId: string): number => {
@@ -260,7 +337,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
    * For 'deuda': sum of (limit - balance) per non-unlimited envelope — total por pagar.
    */
   const getTotalByType = useCallback((type: EnvelopeType): number => {
-    return envelopes
+    return roundMoney(envelopes
       .filter(e => e.type === type)
       .reduce((total, env) => {
         // Exclude unlimited envelopes from the 'Total Disponible' / 'Total por pagar' totals
@@ -273,379 +350,122 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ? env.limit - balance
           : balance;
         return total + convertToCRC(displayValue, env.currency);
-      }, 0);
+      }, 0));
   }, [envelopes, getEnvelopeBalance, convertToCRC]);
 
   // ─── Budget alerts (spent-percentage transition detection) ─────────────────
   /**
-   * Same formula as getEnvelopeBalance/spent, but takes an explicit transactions
-   * array so it can be computed for a "before" and "after" snapshot of a mutation
-   * without touching state.
+   * Compares an envelope's spent fraction before/after a transaction mutation
+   * and notifies on the transition into the 80% or 100% band, per budget-alerts
+   * spec. No-op for non-'gasto' envelopes (a growing debt balance is not
+   * "overspending"), unlimited ones, or when the setting is off.
    */
-  const computeSpentPercentage = useCallback((envelopeId: string, txns: Transaction[]): number => {
-    const envelope = envelopes.find(e => e.id === envelopeId);
-    if (!envelope || !envelope.limit) return 0;
+  const checkBudgetAlerts = useCallback(async (envelopeId: string, beforeTxns: Transaction[], afterTxns: Transaction[]) => {
+    const { envelopes: envs, settings: s } = data.current;
+    if (!s.budgetAlertsEnabled || isExpoGo) return;
 
-    const balance = calculateEnvelopeBalance(envelopeId, txns, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay);
+    const envelope = envs.find(e => e.id === envelopeId);
+    if (!envelope || envelope.type !== 'gasto' || envelope.isUnlimited || !envelope.limit) return;
 
-    const spent = -balance;
-    return spent / envelope.limit;
-  }, [envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay]);
-
-  /**
-   * Compares an envelope's spent-percentage before/after a transaction mutation
-   * and fires a local notification only on the transition into the 80% or 100%
-   * band, per budget-alerts spec. No-op for ahorro envelopes, unlimited gasto
-   * envelopes, or when the setting is off.
-   */
-  const checkBudgetAlerts = useCallback(async (
-    envelopeId: string,
-    beforeTxns: Transaction[],
-    afterTxns: Transaction[]
-  ) => {
-    if (!settings.budgetAlertsEnabled || isExpoGo) return;
-
-    const envelope = envelopes.find(e => e.id === envelopeId);
-    // Explicit 'gasto' check — already excludes 'ahorro' and 'deuda' envelopes;
-    // a growing debt balance is not "overspending" in the budget-alerts sense.
-    if (!envelope || envelope.type !== 'gasto' || envelope.isUnlimited) return;
-
-    const before = computeSpentPercentage(envelopeId, beforeTxns);
-    const after = computeSpentPercentage(envelopeId, afterTxns);
-
-    try {
-      if (before < 0.8 && after >= 0.8) {
-        await scheduleNotification({
-          content: {
-            title: translateActive('notif.budget80Title'),
-            body: translateActive('notif.budget80Body', { name: envelope.name, percent: Math.round(after * 100) }),
-          },
-          trigger: null,
-        });
-      }
-
-      if (before < 1.0 && after >= 1.0) {
-        await scheduleNotification({
-          content: {
-            title: translateActive('notif.budgetExceededTitle'),
-            body: translateActive('notif.budgetExceededBody', { name: envelope.name, percent: Math.round(after * 100) }),
-          },
-          trigger: null,
-        });
-      }
-    } catch (e) {
-      console.error('Error scheduling budget alert notification', e);
-    }
-  }, [envelopes, settings.budgetAlertsEnabled, computeSpentPercentage]);
-
-  // ─── Bill reminders (scheduled ahead of a recurring template's due date) ───
-  /**
-   * Cancels a template's pending scheduled reminder, if any, and clears the
-   * bookkeeping fields so the next scheduling pass treats it as unscheduled.
-   * Safe to call on a template with no pending reminder (no-op).
-   */
-  const cancelTemplateReminder = useCallback(async (
-    template: RecurringTransactionTemplate
-  ): Promise<RecurringTransactionTemplate> => {
-    if (isExpoGo || !template.reminderNotificationId) return template;
-    try {
-      await cancelScheduledNotification(template.reminderNotificationId);
-    } catch (e) {
-      console.error('Error cancelling bill reminder notification', e);
-    }
-    return { ...template, reminderNotificationId: null, lastReminderScheduledPeriod: null };
-  }, []);
-
-  /**
-   * Schedules a local notification `leadDays` days before each active template's
-   * clamped due date for the current period, skipping templates that already
-   * have a reminder scheduled for that occurrence or whose reminder date has
-   * already passed. Takes settings/envelopes explicitly (rather than reading
-   * component state) so it can be called from app-launch code before the
-   * corresponding state has finished updating.
-   */
-  const scheduleBillReminders = useCallback(async (
-    templates: RecurringTransactionTemplate[],
-    envelopesList: Envelope[],
-    billRemindersEnabled: boolean,
-    leadDays: number
-  ): Promise<RecurringTransactionTemplate[]> => {
-    if (!billRemindersEnabled || isExpoGo) return templates;
-
-    const now = new Date();
-
-    return Promise.all(templates.map(async (template) => {
-      if (!template.isActive) return template;
-
-      const dueDate = getNextDueDate(template, now);
-      const occurrenceKey = getOccurrenceKey(template, dueDate);
-      if (template.lastReminderScheduledPeriod === occurrenceKey) return template;
-
-      const reminderDate = new Date(dueDate);
-      reminderDate.setDate(reminderDate.getDate() - leadDays);
-
-      if (reminderDate.getTime() <= now.getTime()) return template;
-
-      const envelope = envelopesList.find(e => e.id === template.envelopeId);
-      const amountLabel = envelope ? formatCurrency(template.amount, envelope.currency) : String(template.amount);
-
-      try {
-        const notificationId = await scheduleNotification({
-          content: {
-            title: translateActive('notif.billTitle'),
-            body: translateActive('notif.billBody', { name: template.description, amount: amountLabel, days: leadDays }),
-          },
-          trigger: { type: dateTriggerType, date: reminderDate },
-        });
-        if (!notificationId) return template;
-        return { ...template, reminderNotificationId: notificationId, lastReminderScheduledPeriod: occurrenceKey };
-      } catch (e) {
-        console.error('Error scheduling bill reminder notification', e);
-        return template;
-      }
-    }));
-  }, []);
-
-  // ─── Debt envelope minimum-payment shortfall alert ─────────────────────────
-  /**
-   * For each debt envelope with a set `minimumPayment` whose current cycle has
-   * been reached and not yet checked, sums that cycle's income (payment)
-   * transactions and sends a local notification once per cycle if they fall
-   * short. Skipped entirely (tracking field left untouched) while reminders
-   * are disabled, so a shortfall is still reported once they're turned back on.
-   */
-  const checkMinimumPayments = useCallback(async (
-    envelopesList: Envelope[],
-    transactionsList: Transaction[],
-    billRemindersEnabled: boolean,
-    now: Date
-  ): Promise<Envelope[]> => {
-    if (isExpoGo) return envelopesList;
-    const today = dateOnly(now);
-
-    return Promise.all(envelopesList.map(async (envelope) => {
-      if (
-        envelope.type !== 'deuda' || envelope.isUnlimited ||
-        !envelope.minimumPayment || envelope.minimumPayment <= 0 ||
-        !envelope.interestFrequency || !envelope.dueDay || !billRemindersEnabled
-      ) {
-        return envelope;
-      }
-
-      const anchor: DebtCycleAnchor = {
-        interestFrequency: envelope.interestFrequency,
-        dueDay: envelope.dueDay,
-        dueAnchorMonth: envelope.dueAnchorMonth,
-      };
-      const cycleDate = getDebtCycleDate(anchor, now);
-      if (cycleDate.getTime() > today.getTime()) return envelope;
-
-      const occurrenceKey = getDebtCycleOccurrenceKey(anchor, cycleDate);
-      if (envelope.lastMinPaymentCheckPeriod === occurrenceKey) return envelope;
-
-      const windowStart = getPreviousDebtCycleDate(anchor, cycleDate);
-      const totalPayments = transactionsList.reduce((sum, t) => {
-        if (t.isArchived || t.envelopeId !== envelope.id || t.type !== 'income') return sum;
-        const d = new Date(t.date);
-        return d.getTime() >= windowStart.getTime() && d.getTime() < cycleDate.getTime() ? sum + t.amount : sum;
-      }, 0);
-
-      if (totalPayments < envelope.minimumPayment) {
-        try {
-          await scheduleNotification({
-            content: {
-              title: translateActive('notif.minPaymentTitle'),
-              body: translateActive('notif.minPaymentBody', { name: envelope.name }),
-            },
-            trigger: null,
-          });
-        } catch (e) {
-          console.error('Error scheduling minimum payment notification', e);
-        }
-      }
-
-      return { ...envelope, lastMinPaymentCheckPeriod: occurrenceKey };
-    }));
-  }, []);
-
-  // ─── Debt envelope due-date reminders (extends bill-reminders) ─────────────
-  /**
-   * Cancels a debt envelope's pending scheduled due-date reminder, if any, and
-   * clears the bookkeeping fields. Mirrors cancelTemplateReminder. Safe to call
-   * on an envelope with no pending reminder (no-op).
-   */
-  const cancelDebtReminder = useCallback(async (envelope: Envelope): Promise<Envelope> => {
-    if (isExpoGo || !envelope.dueReminderNotificationId) return envelope;
-    try {
-      await cancelScheduledNotification(envelope.dueReminderNotificationId);
-    } catch (e) {
-      console.error('Error cancelling debt due-date reminder notification', e);
-    }
-    return { ...envelope, dueReminderNotificationId: null, lastDueReminderScheduledPeriod: null };
-  }, []);
-
-  /**
-   * Schedules a local notification `leadDays` days before each debt envelope's
-   * next cycle occurrence, naming the envelope and the amount due (its
-   * `minimumPayment` if set, otherwise the amount still owed). Mirrors
-   * scheduleBillReminders' shape/dedup logic exactly, applied to envelopes'
-   * `dueDay` cycle instead of a recurring template's due date.
-   */
-  const scheduleDebtReminders = useCallback(async (
-    envelopesList: Envelope[],
-    transactionsList: Transaction[],
-    billRemindersEnabled: boolean,
-    leadDays: number
-  ): Promise<Envelope[]> => {
-    if (!billRemindersEnabled || isExpoGo) return envelopesList;
-
-    const now = new Date();
-
-    return Promise.all(envelopesList.map(async (envelope) => {
-      if (
-        envelope.type !== 'deuda' || envelope.isUnlimited ||
-        !envelope.interestFrequency || !envelope.dueDay
-      ) {
-        return envelope;
-      }
-
-      const anchor: DebtCycleAnchor = {
-        interestFrequency: envelope.interestFrequency,
-        dueDay: envelope.dueDay,
-        dueAnchorMonth: envelope.dueAnchorMonth,
-      };
-      const cycleDate = getDebtCycleDate(anchor, now);
-      const occurrenceKey = getDebtCycleOccurrenceKey(anchor, cycleDate);
-      if (envelope.lastDueReminderScheduledPeriod === occurrenceKey) return envelope;
-
-      const reminderDate = new Date(cycleDate);
-      reminderDate.setDate(reminderDate.getDate() - leadDays);
-      if (reminderDate.getTime() <= now.getTime()) return envelope;
-
-      const amountDue = envelope.minimumPayment && envelope.minimumPayment > 0
-        ? envelope.minimumPayment
-        : Math.max(0, envelope.limit - calculateEnvelopeBalance(envelope.id, transactionsList, envelopesList, false, null));
-      const amountLabel = formatCurrency(amountDue, envelope.currency);
-
-      try {
-        const notificationId = await scheduleNotification({
-          content: {
-            title: translateActive('notif.debtDueTitle'),
-            body: translateActive('notif.debtDueBody', { name: envelope.name, days: leadDays, amount: amountLabel }),
-          },
-          trigger: { type: dateTriggerType, date: reminderDate },
-        });
-        if (!notificationId) return envelope;
-        return { ...envelope, dueReminderNotificationId: notificationId, lastDueReminderScheduledPeriod: occurrenceKey };
-      } catch (e) {
-        console.error('Error scheduling debt due-date reminder notification', e);
-        return envelope;
-      }
-    }));
+    const spent = (txns: Transaction[]) =>
+      -calculateEnvelopeBalance(envelopeId, txns, envs, s.expenseCutoffEnabled, s.expenseCutoffDay) / envelope.limit;
+    await notifyBudgetThreshold(envelope, spent(beforeTxns), spent(afterTxns));
   }, []);
 
   // ─── Envelope CRUD ─────────────────────────────────────────────────────────
-  const addEnvelope = useCallback(async (envelopeData: Omit<Envelope, 'id'>) => {
-    const newEnvelope: Envelope = { ...envelopeData, id: Date.now().toString() };
-    const updated = [newEnvelope, ...envelopes];
-    setEnvelopes(updated);
-    await saveEnvelopes(updated);
-    const withReminders = await scheduleDebtReminders(updated, transactions, settings.billRemindersEnabled, settings.billReminderLeadDays);
-    setEnvelopes(withReminders);
-    await saveEnvelopes(withReminders);
-  }, [envelopes, transactions, settings.billRemindersEnabled, settings.billReminderLeadDays, scheduleDebtReminders]);
+  const addEnvelope = useCallback((envelopeData: Omit<Envelope, 'id'>) => runExclusive(async () => {
+    const d = data.current;
+    const newEnvelope: Envelope = { ...envelopeData, id: newId() };
+    const updated = [newEnvelope, ...d.envelopes];
+    await commit({ envelopes: updated });
+    const withReminders = await scheduleDebtReminders(updated, d.transactions, d.settings.billRemindersEnabled, d.settings.billReminderLeadDays);
+    if (listChanged(withReminders, updated)) await commit({ envelopes: withReminders });
+  }), [runExclusive, commit]);
 
-  const updateEnvelope = useCallback(async (id: string, updates: Partial<Omit<Envelope, 'id'>>) => {
-    // Fields that change which cycle a pending debt reminder was scheduled for.
-    const changesDebtCycle =
-      updates.dueDay !== undefined ||
-      updates.interestFrequency !== undefined ||
-      updates.dueAnchorMonth !== undefined ||
-      updates.isUnlimited !== undefined ||
-      updates.type !== undefined;
+  const updateEnvelope = useCallback((id: string, updates: Partial<Omit<Envelope, 'id'>>) => runExclusive(async () => {
+    const d = data.current;
+    const target = d.envelopes.find(e => e.id === id);
+    if (!target) return;
 
-    let workingEnvelopes = envelopes;
-    if (changesDebtCycle) {
-      const target = envelopes.find(e => e.id === id);
-      if (target) {
-        const cancelled = await cancelDebtReminder(target);
-        workingEnvelopes = envelopes.map(e => (e.id === id ? cancelled : e));
-      }
-    }
+    // Fields that move a pending debt reminder's date or change what it says.
+    const reminderFields: (keyof Envelope)[] = [
+      'dueDay', 'interestFrequency', 'dueAnchorMonth', 'isUnlimited', 'type', 'minimumPayment', 'limit', 'name', 'currency',
+    ];
+    const merged = { ...target, ...updates };
+    const base = reminderFields.some(k => merged[k] !== target[k]) ? await cancelDebtReminder(target) : target;
 
-    const updated = workingEnvelopes.map(e => (e.id === id ? { ...e, ...updates } : e));
-    const withReminders = await scheduleDebtReminders(updated, transactions, settings.billRemindersEnabled, settings.billReminderLeadDays);
-    setEnvelopes(withReminders);
-    await saveEnvelopes(withReminders);
-  }, [envelopes, transactions, settings.billRemindersEnabled, settings.billReminderLeadDays, cancelDebtReminder, scheduleDebtReminders]);
+    const updated = d.envelopes.map(e => (e.id === id ? { ...base, ...updates } : e));
+    const withReminders = await scheduleDebtReminders(updated, d.transactions, d.settings.billRemindersEnabled, d.settings.billReminderLeadDays);
+    await commit({ envelopes: withReminders });
+  }), [runExclusive, commit]);
 
-  const deleteEnvelope = useCallback(async (id: string) => {
-    const target = envelopes.find(e => e.id === id);
-    if (target) {
-      await cancelDebtReminder(target);
-    }
-    const updatedEnvelopes = envelopes.filter(e => e.id !== id);
-    // Also remove associated transactions
-    const updatedTransactions = transactions.filter(t => t.envelopeId !== id);
-    setEnvelopes(updatedEnvelopes);
-    setTransactions(updatedTransactions);
-    await saveEnvelopes(updatedEnvelopes);
-    await saveTransactions(updatedTransactions);
-  }, [envelopes, transactions, cancelDebtReminder]);
+  const deleteEnvelope = useCallback((id: string) => runExclusive(async () => {
+    const d = data.current;
+    const target = d.envelopes.find(e => e.id === id);
+    if (target) await cancelDebtReminder(target);
 
-  const archiveTransactions = useCallback(async (envelopeId?: string) => {
-    const updatedTransactions = transactions.map(t =>
+    const { transactions: keptTransactions, templates, removedTemplates } =
+      removeEnvelopeReferences(id, d.transactions, d.recurringTemplates);
+    await Promise.all(removedTemplates.map(cancelTemplateReminder));
+
+    await commit({
+      envelopes: d.envelopes.filter(e => e.id !== id),
+      transactions: keptTransactions,
+      recurringTemplates: templates,
+    });
+  }), [runExclusive, commit]);
+
+  const archiveTransactions = useCallback((envelopeId?: string) => runExclusive(async () => {
+    const archivedAt = new Date().toISOString();
+    const updatedTransactions = data.current.transactions.map(t =>
       !t.isArchived && (envelopeId == null || t.envelopeId === envelopeId)
-        ? { ...t, isArchived: true, archivedAt: new Date().toISOString() }
+        ? { ...t, isArchived: true, archivedAt }
         : t
     );
-    setTransactions(updatedTransactions);
-    await saveTransactions(updatedTransactions);
-  }, [transactions]);
+    await commit({ transactions: updatedTransactions });
+  }), [runExclusive, commit]);
 
   const resetEnvelope = useCallback((envelopeId: string) => archiveTransactions(envelopeId), [archiveTransactions]);
 
   const resetAllEnvelopes = useCallback(() => archiveTransactions(), [archiveTransactions]);
 
   // ─── Transaction CRUD ──────────────────────────────────────────────────────
-  const addTransaction = useCallback(async (transactionData: Omit<Transaction, 'id' | 'isArchived'>) => {
+  const addTransaction = useCallback((transactionData: Omit<Transaction, 'id' | 'isArchived'>) => runExclusive(async () => {
+    const before = data.current.transactions;
     const newTransaction: Transaction = {
       ...transactionData,
-      id: Date.now().toString(),
+      amount: roundMoney(transactionData.amount),
+      id: newId(),
       isArchived: false,
       date: transactionData.date || new Date().toISOString(),
     };
-    const updated = [newTransaction, ...transactions];
-    setTransactions(updated);
-    await saveTransactions(updated);
+    const updated = [newTransaction, ...before];
+    await commit({ transactions: updated });
     if (newTransaction.type === 'expense') {
-      await checkBudgetAlerts(newTransaction.envelopeId, transactions, updated);
+      await checkBudgetAlerts(newTransaction.envelopeId, before, updated);
     }
-  }, [transactions, checkBudgetAlerts]);
+  }), [runExclusive, commit, checkBudgetAlerts]);
 
-  const updateTransaction = useCallback(async (id: string, updates: Partial<Omit<Transaction, 'id'>>) => {
-    const updated = transactions.map(t => (t.id === id ? { ...t, ...updates } : t));
-    setTransactions(updated);
-    await saveTransactions(updated);
+  const updateTransaction = useCallback((id: string, updates: Partial<Omit<Transaction, 'id'>>) => runExclusive(async () => {
+    const before = data.current.transactions;
+    const normalized = updates.amount !== undefined ? { ...updates, amount: roundMoney(updates.amount) } : updates;
+    const updated = before.map(t => (t.id === id ? { ...t, ...normalized } : t));
+    await commit({ transactions: updated });
     const updatedTransaction = updated.find(t => t.id === id);
     if (updatedTransaction && updatedTransaction.type === 'expense') {
-      await checkBudgetAlerts(updatedTransaction.envelopeId, transactions, updated);
+      await checkBudgetAlerts(updatedTransaction.envelopeId, before, updated);
     }
-  }, [transactions, checkBudgetAlerts]);
+  }), [runExclusive, commit, checkBudgetAlerts]);
 
-  const deleteTransaction = useCallback(async (id: string) => {
-    const updated = transactions.filter(t => t.id !== id);
-    setTransactions(updated);
-    await saveTransactions(updated);
-  }, [transactions]);
+  const deleteTransaction = useCallback((id: string) => runExclusive(async () => {
+    await commit({ transactions: data.current.transactions.filter(t => t.id !== id) });
+  }), [runExclusive, commit]);
 
   /**
    * Creates a transfer transaction moving `amount` from `envelopeId` (source)
    * to `toEnvelopeId` (destination). Validates same-envelope and currency-match
-   * defensively (the UI is expected to validate first, but this guards against
-   * any caller that skips that), and never triggers budget alerts since it
-   * routes through addTransaction with type 'transfer', which addTransaction
-   * only checks alerts for on type === 'expense'.
+   * defensively (the UI is expected to validate first), and never triggers
+   * budget alerts since addTransaction only checks them for expenses.
    */
   const addTransfer = useCallback(async (transfer: {
     envelopeId: string;
@@ -654,17 +474,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     description: string;
     date?: string;
   }): Promise<{ success: boolean; error?: string }> => {
-    if (transfer.envelopeId === transfer.toEnvelopeId) {
-      return { success: false, error: translateActive('transfer.error.sameEnvelope') };
-    }
-    const source = envelopes.find(e => e.id === transfer.envelopeId);
-    const destination = envelopes.find(e => e.id === transfer.toEnvelopeId);
-    if (!source || !destination) {
-      return { success: false, error: translateActive('transfer.error.envelopeNotFound') };
-    }
-    if (source.currency !== destination.currency) {
-      return { success: false, error: translateActive('transfer.error.currencyMismatch') };
-    }
+    // Validate against the data as it will be once earlier queued changes land.
+    await runExclusive(async () => undefined);
+    const error = validateTransfer(data.current.envelopes, transfer.envelopeId, transfer.toEnvelopeId);
+    if (error) return { success: false, error };
 
     await addTransaction({
       envelopeId: transfer.envelopeId,
@@ -675,13 +488,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       date: transfer.date ?? new Date().toISOString(),
     });
     return { success: true };
-  }, [envelopes, addTransaction]);
+  }, [runExclusive, addTransaction]);
 
   /**
-   * Updates an existing transfer transaction. Mirrors addTransfer's
-   * validate-then-delegate shape: looks up the existing transaction, merges
-   * the given updates, re-validates (same-envelope, currency-match) using the
-   * merged result, and only then delegates to updateTransaction.
+   * Updates an existing transfer transaction: merges the updates into the
+   * existing one, re-validates the result with the same rules as addTransfer,
+   * and only then delegates to updateTransaction.
    */
   const updateTransfer = useCallback(async (id: string, updates: {
     envelopeId?: string;
@@ -690,23 +502,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     description?: string;
     date?: string;
   }): Promise<{ success: boolean; error?: string }> => {
-    const existing = transactions.find(t => t.id === id);
+    await runExclusive(async () => undefined);
+    const existing = data.current.transactions.find(t => t.id === id);
     if (!existing) {
       return { success: false, error: translateActive('transfer.error.notFound') };
     }
     const merged = { ...existing, ...updates };
-
-    if (merged.envelopeId === merged.toEnvelopeId) {
-      return { success: false, error: translateActive('transfer.error.sameEnvelope') };
-    }
-    const source = envelopes.find(e => e.id === merged.envelopeId);
-    const destination = envelopes.find(e => e.id === merged.toEnvelopeId);
-    if (!source || !destination) {
-      return { success: false, error: translateActive('transfer.error.envelopeNotFound') };
-    }
-    if (source.currency !== destination.currency) {
-      return { success: false, error: translateActive('transfer.error.currencyMismatch') };
-    }
+    const error = validateTransfer(data.current.envelopes, merged.envelopeId, merged.toEnvelopeId);
+    if (error) return { success: false, error };
 
     await updateTransaction(id, {
       envelopeId: merged.envelopeId,
@@ -716,209 +519,192 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       date: merged.date,
     });
     return { success: true };
-  }, [transactions, envelopes, updateTransaction]);
+  }, [runExclusive, updateTransaction]);
 
   // ─── Recurring Transaction Template CRUD ───────────────────────────────────
-  const addRecurringTemplate = useCallback(async (
+  const addRecurringTemplate = useCallback((
     templateData: Omit<RecurringTransactionTemplate, 'id' | 'lastGeneratedPeriod' | 'reminderNotificationId' | 'lastReminderScheduledPeriod'>
-  ) => {
+  ) => runExclusive(async () => {
+    const d = data.current;
     const newTemplate: RecurringTransactionTemplate = {
       ...templateData,
-      id: Date.now().toString(),
+      amount: roundMoney(templateData.amount),
+      id: newId(),
       activeSince: new Date().toISOString(),
       lastGeneratedPeriod: null,
       reminderNotificationId: null,
       lastReminderScheduledPeriod: null,
     };
-    const updated = [newTemplate, ...recurringTemplates];
-    setRecurringTemplates(updated);
-    await saveRecurringTemplates(updated);
-    const withReminders = await scheduleBillReminders(updated, envelopes, settings.billRemindersEnabled, settings.billReminderLeadDays);
-    setRecurringTemplates(withReminders);
-    await saveRecurringTemplates(withReminders);
-  }, [recurringTemplates, envelopes, settings.billRemindersEnabled, settings.billReminderLeadDays, scheduleBillReminders]);
+    const updated = [newTemplate, ...d.recurringTemplates];
+    await commit({ recurringTemplates: updated });
+    const withReminders = await scheduleBillReminders(updated, d.envelopes, d.settings.billRemindersEnabled, d.settings.billReminderLeadDays);
+    if (listChanged(withReminders, updated)) await commit({ recurringTemplates: withReminders });
+  }), [runExclusive, commit]);
 
-  const updateRecurringTemplate = useCallback(async (id: string, updates: Partial<Omit<RecurringTransactionTemplate, 'id'>>) => {
-    const changesReminderWindow =
-      updates.dayOfMonth !== undefined ||
-      updates.dayOfWeek !== undefined ||
-      updates.anchorDate !== undefined ||
-      updates.month !== undefined ||
-      updates.frequency !== undefined ||
-      updates.isActive === false;
+  const updateRecurringTemplate = useCallback((id: string, updates: Partial<Omit<RecurringTransactionTemplate, 'id'>>) => runExclusive(async () => {
+    const d = data.current;
+    const target = d.recurringTemplates.find(t => t.id === id);
+    if (!target) return;
 
-    let workingTemplates = recurringTemplates;
-    if (changesReminderWindow) {
-      const target = recurringTemplates.find(t => t.id === id);
-      if (target) {
-        const cancelled = await cancelTemplateReminder(target);
-        workingTemplates = recurringTemplates.map(t => (t.id === id ? cancelled : t));
-      }
-    }
+    const normalized = updates.amount !== undefined ? { ...updates, amount: roundMoney(updates.amount) } : updates;
+    const merged: RecurringTransactionTemplate = { ...target, ...normalized };
+    // Anything that moves the reminder's date or changes what it says invalidates the pending one.
+    const reminderFields: (keyof RecurringTransactionTemplate)[] = [
+      'dayOfMonth', 'dayOfWeek', 'anchorDate', 'month', 'frequency', 'isActive', 'amount', 'description', 'envelopeId',
+    ];
+    const base = reminderFields.some(k => merged[k] !== target[k]) ? await cancelTemplateReminder(target) : target;
 
-    const updated = workingTemplates.map(t => {
-      if (t.id !== id) return t;
-      const merged = { ...t, ...updates };
-      // Reactivating, or switching to a frequency whose period keys differ, starts
-      // generation over from today instead of backfilling the paused/old schedule.
-      const restartsSchedule = (updates.isActive === true && !t.isActive) ||
-        (updates.frequency !== undefined && updates.frequency !== t.frequency);
-      return restartsSchedule ? { ...merged, lastGeneratedPeriod: null, activeSince: new Date().toISOString() } : merged;
-    });
-    const withReminders = await scheduleBillReminders(updated, envelopes, settings.billRemindersEnabled, settings.billReminderLeadDays);
-    setRecurringTemplates(withReminders);
-    await saveRecurringTemplates(withReminders);
-  }, [recurringTemplates, envelopes, settings.billRemindersEnabled, settings.billReminderLeadDays, cancelTemplateReminder, scheduleBillReminders]);
+    // Reactivating, or switching to a frequency whose period keys differ, starts
+    // generation over from today instead of backfilling the paused/old schedule.
+    const restartsSchedule = (merged.isActive && !target.isActive) || merged.frequency !== target.frequency;
+    const next: RecurringTransactionTemplate = {
+      ...base,
+      ...normalized,
+      ...(restartsSchedule ? { lastGeneratedPeriod: null, activeSince: new Date().toISOString() } : {}),
+    };
 
-  const deleteRecurringTemplate = useCallback(async (id: string) => {
-    const target = recurringTemplates.find(t => t.id === id);
-    if (target) {
-      await cancelTemplateReminder(target);
-    }
-    const updated = recurringTemplates.filter(t => t.id !== id);
-    setRecurringTemplates(updated);
-    await saveRecurringTemplates(updated);
-  }, [recurringTemplates, cancelTemplateReminder]);
+    const updated = d.recurringTemplates.map(t => (t.id === id ? next : t));
+    const withReminders = await scheduleBillReminders(updated, d.envelopes, d.settings.billRemindersEnabled, d.settings.billReminderLeadDays);
+    await commit({ recurringTemplates: withReminders });
+  }), [runExclusive, commit]);
+
+  const deleteRecurringTemplate = useCallback((id: string) => runExclusive(async () => {
+    const d = data.current;
+    const target = d.recurringTemplates.find(t => t.id === id);
+    if (target) await cancelTemplateReminder(target);
+    await commit({ recurringTemplates: d.recurringTemplates.filter(t => t.id !== id) });
+  }), [runExclusive, commit]);
 
   // ─── Payment Methods CRUD ──────────────────────────────────────────────────
-  const addPaymentMethod = useCallback(async (name: string) => {
-    const newPM: PaymentMethod = { id: Date.now().toString(), name };
-    const updated = [...paymentMethods, newPM];
-    setPaymentMethods(updated);
-    await savePaymentMethods(updated);
-  }, [paymentMethods]);
+  const addPaymentMethod = useCallback((name: string) => runExclusive(async () => {
+    await commit({ paymentMethods: [...data.current.paymentMethods, { id: newId(), name }] });
+  }), [runExclusive, commit]);
 
-  const deletePaymentMethod = useCallback(async (id: string) => {
-    const updated = paymentMethods.filter(pm => pm.id !== id);
-    setPaymentMethods(updated);
-    await savePaymentMethods(updated);
-  }, [paymentMethods]);
+  const deletePaymentMethod = useCallback((id: string) => runExclusive(async () => {
+    await commit({ paymentMethods: data.current.paymentMethods.filter(pm => pm.id !== id) });
+  }), [runExclusive, commit]);
 
   // ─── Categories CRUD ───────────────────────────────────────────────────────
-  const addCategory = useCallback(async (name: string) => {
-    const newCat: TransactionCategory = { id: Date.now().toString(), name };
-    const updated = [...categories, newCat];
-    setCategories(updated);
-    await saveCategories(updated);
-  }, [categories]);
+  const addCategory = useCallback((name: string) => runExclusive(async () => {
+    await commit({ categories: [...data.current.categories, { id: newId(), name }] });
+  }), [runExclusive, commit]);
 
-  const deleteCategory = useCallback(async (id: string) => {
-    const updated = categories.filter(c => c.id !== id);
-    setCategories(updated);
-    await saveCategories(updated);
-  }, [categories]);
+  const deleteCategory = useCallback((id: string) => runExclusive(async () => {
+    await commit({ categories: data.current.categories.filter(c => c.id !== id) });
+  }), [runExclusive, commit]);
 
   // ─── Income Categories CRUD ────────────────────────────────────────────────
-  const addIncomeCategory = useCallback(async (name: string) => {
+  const addIncomeCategory = useCallback((name: string) => runExclusive(async () => {
     // Prefixed so an income category id can never collide with an expense one.
-    const newCat: TransactionCategory = { id: `inc-${Date.now()}`, name };
-    const updated = [...incomeCategories, newCat];
-    setIncomeCategories(updated);
-    await saveIncomeCategories(updated);
-  }, [incomeCategories]);
+    await commit({ incomeCategories: [...data.current.incomeCategories, { id: `inc-${newId()}`, name }] });
+  }), [runExclusive, commit]);
 
-  const deleteIncomeCategory = useCallback(async (id: string) => {
-    const updated = incomeCategories.filter(c => c.id !== id);
-    setIncomeCategories(updated);
-    await saveIncomeCategories(updated);
-  }, [incomeCategories]);
+  const deleteIncomeCategory = useCallback((id: string) => runExclusive(async () => {
+    await commit({ incomeCategories: data.current.incomeCategories.filter(c => c.id !== id) });
+  }), [runExclusive, commit]);
 
   // ─── Settings ──────────────────────────────────────────────────────────────
-  const updateSettings = useCallback(async (updates: Partial<AppSettings>) => {
+  const updateSettings = useCallback((updates: Partial<AppSettings>) => runExclusive(async () => {
+    const d = data.current;
+    const previous = d.settings;
+    const updated = { ...previous, ...updates };
+
     if (
-      !isExpoGo && (
-        (updates.budgetAlertsEnabled === true && !settings.budgetAlertsEnabled) ||
-        (updates.billRemindersEnabled === true && !settings.billRemindersEnabled)
-      )
+      (updated.budgetAlertsEnabled && !previous.budgetAlertsEnabled) ||
+      (updated.billRemindersEnabled && !previous.billRemindersEnabled)
     ) {
-      try {
-        await requestNotificationPermissions();
-      } catch (e) {
-        console.error('Error requesting notification permissions', e);
-      }
+      await requestNotificationPermissions();
     }
-    const updated = { ...settings, ...updates };
-    setSettings(updated);
-    await saveSettings(updated);
+    await commit({ settings: updated });
 
-    const leadDaysChanged = updates.billReminderLeadDays !== undefined
-      && updates.billReminderLeadDays !== settings.billReminderLeadDays;
+    const turnedOn = updated.billRemindersEnabled && !previous.billRemindersEnabled;
+    const turnedOff = !updated.billRemindersEnabled && previous.billRemindersEnabled;
+    const leadDaysChanged = updated.billRemindersEnabled && previous.billRemindersEnabled
+      && updated.billReminderLeadDays !== previous.billReminderLeadDays;
+    if (!turnedOn && !turnedOff && !leadDaysChanged) return;
 
-    if (updates.billRemindersEnabled === true && !settings.billRemindersEnabled) {
-      const withReminders = await scheduleBillReminders(recurringTemplates, envelopes, true, updated.billReminderLeadDays);
-      setRecurringTemplates(withReminders);
-      await saveRecurringTemplates(withReminders);
-
-      const envelopesWithReminders = await scheduleDebtReminders(envelopes, transactions, true, updated.billReminderLeadDays);
-      setEnvelopes(envelopesWithReminders);
-      await saveEnvelopes(envelopesWithReminders);
-    } else if (leadDaysChanged && updated.billRemindersEnabled) {
-      // Cancel any already-scheduled reminders so they're rescheduled at the new lead time.
-      const cancelled = await Promise.all(recurringTemplates.map(cancelTemplateReminder));
-      const withReminders = await scheduleBillReminders(cancelled, envelopes, true, updated.billReminderLeadDays);
-      setRecurringTemplates(withReminders);
-      await saveRecurringTemplates(withReminders);
-
-      const cancelledEnvelopes = await Promise.all(envelopes.map(cancelDebtReminder));
-      const envelopesWithReminders = await scheduleDebtReminders(cancelledEnvelopes, transactions, true, updated.billReminderLeadDays);
-      setEnvelopes(envelopesWithReminders);
-      await saveEnvelopes(envelopesWithReminders);
+    // Turning reminders off, or moving their lead time, cancels what's pending.
+    let templates = d.recurringTemplates;
+    let envs = d.envelopes;
+    if (turnedOff || leadDaysChanged) {
+      templates = await Promise.all(templates.map(cancelTemplateReminder));
+      envs = await Promise.all(envs.map(cancelDebtReminder));
     }
-  }, [settings, recurringTemplates, envelopes, transactions, scheduleBillReminders, cancelTemplateReminder, scheduleDebtReminders, cancelDebtReminder]);
+    if (turnedOn || leadDaysChanged) {
+      templates = await scheduleBillReminders(templates, envs, true, updated.billReminderLeadDays);
+      envs = await scheduleDebtReminders(envs, d.transactions, true, updated.billReminderLeadDays);
+    }
+    await commit({ recurringTemplates: templates, envelopes: envs });
+  }), [runExclusive, commit]);
 
   // ─── Import/Export ─────────────────────────────────────────────────────────
   const importFromBackup = useCallback(async () => {
+    let importResult;
     try {
-      const importResult = await pickAndImportBackup();
-      if (!importResult) {
-        return { success: false, message: translateActive('import.cancelled') };
-      }
-
-      if (importResult.errors.length > 0) {
-        return { success: false, message: translateActive('import.fileErrors'), errors: importResult.errors };
-      }
-
-      const backup = importResult.backup;
-
-      // Replace all data with backup data
-      setEnvelopes(backup.envelopes);
-      setTransactions(backup.transactions);
-      setPaymentMethods(backup.paymentMethods);
-      setCategories(backup.categories);
-      setSettings(backup.settings);
-
-      // Save all
-      await saveEnvelopes(backup.envelopes);
-      await saveTransactions(backup.transactions);
-      await savePaymentMethods(backup.paymentMethods);
-      await saveCategories(backup.categories);
-      await saveSettings(backup.settings);
-
-      // Income categories are optional in the backup: apply them only when the
-      // file carried the field, so importing a pre-change backup does not wipe
-      // the device's current income catalog.
-      let restoredIncomeCategories = incomeCategories;
-      if (backup.incomeCategories) {
-        restoredIncomeCategories = backup.incomeCategories;
-        setIncomeCategories(backup.incomeCategories);
-        await saveIncomeCategories(backup.incomeCategories);
-      }
-
-      const message = translateActive('import.restored', {
-        envelopes: backup.envelopes.length,
-        transactions: backup.transactions.length,
-        categories: backup.categories.length,
-        incomeCategories: restoredIncomeCategories.length,
-        paymentMethods: backup.paymentMethods.length,
-      });
-      return { success: true, message };
-    } catch {
+      importResult = await pickAndImportBackup();
+    } catch (e) {
+      console.error('Error reading backup file', e);
       return { success: false, message: translateActive('import.failed') };
     }
-  }, [incomeCategories]);
+    if (!importResult) {
+      return { success: false, message: translateActive('import.cancelled') };
+    }
+    if (importResult.errors.length > 0) {
+      return { success: false, message: translateActive('import.fileErrors'), errors: importResult.errors };
+    }
+
+    const backup = importResult.backup;
+    try {
+      return await runExclusive(async () => {
+        const d = data.current;
+        // Reminders scheduled for the data being replaced would otherwise keep firing.
+        await Promise.all(d.recurringTemplates.map(cancelTemplateReminder));
+        await Promise.all(d.envelopes.map(cancelDebtReminder));
+
+        // Backups from before templates were exported keep the device's templates,
+        // but only those whose envelope exists in the restored data.
+        const envelopeIds = new Set(backup.envelopes.map(e => e.id));
+        const restoredTemplates = (backup.recurringTemplates
+          ?? d.recurringTemplates.filter(t => envelopeIds.has(t.envelopeId))
+        ).map(t => ({ ...t, reminderNotificationId: null, lastReminderScheduledPeriod: null }));
+        // Notification ids in the file belong to whichever device scheduled them.
+        const restoredEnvelopes = backup.envelopes.map(e => ({ ...e, dueReminderNotificationId: null, lastDueReminderScheduledPeriod: null }));
+
+        // Income categories are optional in the backup: apply them only when the
+        // file carried the field, so importing a pre-change backup does not wipe
+        // the device's current income catalog.
+        const restoredIncomeCategories = backup.incomeCategories ?? d.incomeCategories;
+
+        // A successful restore replaces whatever couldn't be read, so saving is safe again.
+        writesBlocked.current = false;
+        await commit({
+          envelopes: restoredEnvelopes,
+          transactions: backup.transactions,
+          paymentMethods: backup.paymentMethods,
+          categories: backup.categories,
+          incomeCategories: restoredIncomeCategories,
+          recurringTemplates: restoredTemplates,
+          settings: backup.settings,
+        });
+        await processScheduledWork(new Date());
+
+        const message = translateActive('import.restored', {
+          envelopes: backup.envelopes.length,
+          transactions: backup.transactions.length,
+          categories: backup.categories.length,
+          incomeCategories: restoredIncomeCategories.length,
+          paymentMethods: backup.paymentMethods.length,
+        });
+        return { success: true, message };
+      });
+    } catch (e) {
+      console.error('Error restoring backup', e);
+      return { success: false, message: translateActive('import.failed') };
+    }
+  }, [runExclusive, commit, processScheduledWork]);
 
   const value = useMemo(() => ({
-    envelopes, transactions, paymentMethods, categories, incomeCategories, settings, recurringTemplates, autoBackup, updateAutoBackup,
+    envelopes, transactions, paymentMethods, categories, incomeCategories, settings, recurringTemplates, isLoaded, autoBackup, updateAutoBackup,
     addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
     addTransaction, updateTransaction, deleteTransaction, addTransfer, updateTransfer,
     addRecurringTemplate, updateRecurringTemplate, deleteRecurringTemplate,
@@ -929,7 +715,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     importFromBackup,
     getEnvelopeBalance, getTotalByType, convertToCRC, formatAmount,
   }), [
-    envelopes, transactions, paymentMethods, categories, incomeCategories, settings, recurringTemplates, autoBackup, updateAutoBackup,
+    envelopes, transactions, paymentMethods, categories, incomeCategories, settings, recurringTemplates, isLoaded, autoBackup, updateAutoBackup,
     addEnvelope, updateEnvelope, deleteEnvelope, resetEnvelope, resetAllEnvelopes,
     addTransaction, updateTransaction, deleteTransaction, addTransfer, updateTransfer,
     addRecurringTemplate, updateRecurringTemplate, deleteRecurringTemplate,

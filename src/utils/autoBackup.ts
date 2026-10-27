@@ -1,6 +1,5 @@
 import { documentDirectory, writeAsStringAsync, readDirectoryAsync, deleteAsync, EncodingType } from 'expo-file-system/legacy';
-import { Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings } from '../types';
-import { buildFullBackupJson } from './exportData';
+import { BackupData, buildFullBackupJson } from './exportData';
 
 export const AUTO_BACKUP_PREFIX = 'trace-auto-backup-';
 export const AUTO_BACKUP_SUFFIX = '.json';
@@ -44,16 +43,8 @@ export const getLatestAutomaticBackupUri = async (): Promise<string | null> => {
 };
 
 /** Writes a timestamped full backup and prunes old ones. Throws on failure. */
-export const createAutomaticBackup = async (
-  envelopes: Envelope[],
-  transactions: Transaction[],
-  paymentMethods: PaymentMethod[],
-  categories: TransactionCategory[],
-  incomeCategories: TransactionCategory[],
-  settings: AppSettings,
-  now: Date = new Date()
-): Promise<string> => {
-  const json = buildFullBackupJson(envelopes, transactions, paymentMethods, categories, incomeCategories, settings, now);
+export const createAutomaticBackup = async (data: BackupData, now: Date = new Date()): Promise<string> => {
+  const json = buildFullBackupJson(data, now);
   // ':' and '.' are replaced to keep the name safe on every filesystem; order is preserved.
   const stamp = now.toISOString().replace(/[:.]/g, '-');
   const uri = `${documentDirectory}${AUTO_BACKUP_PREFIX}${stamp}${AUTO_BACKUP_SUFFIX}`;

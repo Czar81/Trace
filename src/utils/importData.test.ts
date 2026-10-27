@@ -80,3 +80,44 @@ describe('parseBackup validation messages in English', () => {
     expect(parseBackup('{}').errors[0]).toMatch(/^Invalid backup format\. Required/);
   });
 });
+
+describe('parseBackup validation', () => {
+  const envelope = { id: 'e1', name: 'Casa', type: 'gasto', currency: 'CRC', limit: 100, isUnlimited: false, icon: 'x', color: '#000' };
+
+  it('rejects envelopes with an unknown type or currency', () => {
+    const result = parseBackup(JSON.stringify({ ...baseBackup, envelopes: [{ ...envelope, currency: 'MXN' }] }));
+    expect(result.errors).toHaveLength(1);
+  });
+
+  it('rejects transactions without a valid date', () => {
+    const result = parseBackup(JSON.stringify({
+      ...baseBackup,
+      envelopes: [envelope],
+      transactions: [{ id: 't', envelopeId: 'e1', type: 'expense', amount: 1, date: 'yesterday' }],
+    }));
+    expect(result.errors).toHaveLength(1);
+  });
+
+  it('replaces malformed settings fields with defaults and keeps unknown ones', () => {
+    const result = parseBackup(JSON.stringify({
+      ...baseBackup,
+      settings: { defaultCurrency: 'XYZ', billReminderLeadDays: 'two', exchangeRates: { USD_TO_CRC: -1 }, futureFlag: true },
+    }));
+    expect(result.errors).toEqual([]);
+    expect(result.backup.settings.defaultCurrency).toBe('CRC');
+    expect(result.backup.settings.billReminderLeadDays).toBe(2);
+    expect(result.backup.settings.exchangeRates.USD_TO_CRC).toBe(510);
+    expect((result.backup.settings as any).futureFlag).toBe(true);
+  });
+
+  it('keeps recurring templates whose envelope is in the backup', () => {
+    const tpl = { id: 'r', envelopeId: 'e1', type: 'expense', amount: 5, description: 'x', frequency: 'monthly', dayOfMonth: 1, isActive: true };
+    const result = parseBackup(JSON.stringify({
+      ...baseBackup,
+      envelopes: [envelope],
+      recurringTemplates: [tpl, { ...tpl, id: 'orphan', envelopeId: 'nope' }],
+    }));
+    expect(result.errors).toEqual([]);
+    expect(result.backup.recurringTemplates?.map(t => t.id)).toEqual(['r']);
+  });
+});

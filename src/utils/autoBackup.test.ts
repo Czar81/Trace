@@ -14,12 +14,17 @@ jest.mock('expo-file-system/legacy', () => ({
 }));
 jest.mock('expo-sharing', () => ({ isAvailableAsync: jest.fn(), shareAsync: jest.fn() }));
 
+import { BackupData } from './exportData';
 import { isBackupDue, pruneAutomaticBackups, createAutomaticBackup, getLatestAutomaticBackupUri } from './autoBackup';
 import { DEFAULT_SETTINGS } from './storage';
 
 const name = (d: string) => `trace-auto-backup-${d}.json`;
 
 beforeEach(() => jest.clearAllMocks());
+
+const EMPTY: BackupData = {
+  envelopes: [], transactions: [], paymentMethods: [], categories: [], incomeCategories: [], recurringTemplates: [], settings: DEFAULT_SETTINGS,
+};
 
 describe('isBackupDue', () => {
   const now = new Date('2026-01-10T00:00:00.000Z');
@@ -66,7 +71,7 @@ describe('pruneAutomaticBackups', () => {
 describe('createAutomaticBackup / getLatestAutomaticBackupUri', () => {
   it('writes a timestamped file then prunes', async () => {
     mockReadDir.mockResolvedValue([]);
-    const uri = await createAutomaticBackup([], [], [], [], [], DEFAULT_SETTINGS, new Date('2026-01-01T10:20:30.456Z'));
+    const uri = await createAutomaticBackup(EMPTY, new Date('2026-01-01T10:20:30.456Z'));
     expect(uri).toBe('file:///docs/trace-auto-backup-2026-01-01T10-20-30-456Z.json');
     expect(mockWrite).toHaveBeenCalledWith(uri, expect.any(String), { encoding: 'utf8' });
     expect(mockReadDir).toHaveBeenCalled();
@@ -74,7 +79,7 @@ describe('createAutomaticBackup / getLatestAutomaticBackupUri', () => {
 
   it('propagates write failures', async () => {
     mockWrite.mockRejectedValueOnce(new Error('disk full'));
-    await expect(createAutomaticBackup([], [], [], [], [], DEFAULT_SETTINGS)).rejects.toThrow('disk full');
+    await expect(createAutomaticBackup(EMPTY)).rejects.toThrow('disk full');
   });
 
   it('returns the newest backup uri, or null when none', async () => {

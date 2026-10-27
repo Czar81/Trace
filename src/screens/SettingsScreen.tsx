@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { ArrowLeft, ChevronRight, ChevronDown, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat, Palette, Share2 } from 'lucide-react-native';
-import { exportDataToCSV } from '../utils/exportData';
+import { exportBackupJson } from '../utils/exportData';
 import { getLatestAutomaticBackupUri, AUTO_BACKUP_INTERVAL_OPTIONS } from '../utils/autoBackup';
 import { isAvailableAsync, shareAsync } from 'expo-sharing';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -30,7 +30,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
   const { t, preference, setPreference } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const {
-    envelopes, transactions, paymentMethods, categories, incomeCategories, settings,
+    envelopes, transactions, paymentMethods, categories, incomeCategories, recurringTemplates, settings,
     importFromBackup, resetAllEnvelopes, updateSettings, autoBackup, updateAutoBackup,
   } = useAppData();
 
@@ -66,9 +66,14 @@ export const SettingsScreen = ({ navigation }: Props) => {
     ? LEAD_DAYS_OPTIONS
     : [...LEAD_DAYS_OPTIONS, settings.billReminderLeadDays].sort((a, b) => a - b);
 
-  const handleExport = () => {
-    exportDataToCSV(envelopes, transactions, paymentMethods, categories, incomeCategories, settings);
-    showInfo(t('settings.exportTitle'), t('settings.exportDone'));
+  const handleExport = async () => {
+    try {
+      await exportBackupJson({ envelopes, transactions, paymentMethods, categories, incomeCategories, recurringTemplates, settings });
+      showInfo(t('settings.exportTitle'), t('settings.exportDone'));
+    } catch (e) {
+      console.error('Error exporting data:', e);
+      showInfo(t('settings.exportTitle'), t('settings.exportFailed'));
+    }
   };
 
   const handleShareLatestBackup = async () => {
