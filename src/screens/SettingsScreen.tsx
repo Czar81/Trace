@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
-import { ArrowLeft, ChevronRight, ChevronDown, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat, Palette, Share2 } from 'lucide-react-native';
+import { ArrowLeft, ChevronRight, ChevronDown, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat, Palette, Share2, FolderOpen, X } from 'lucide-react-native';
 import { exportBackupJson } from '../utils/exportData';
-import { getLatestAutomaticBackupUri, AUTO_BACKUP_INTERVAL_OPTIONS } from '../utils/autoBackup';
+import { getLatestAutomaticBackupUri, AUTO_BACKUP_INTERVAL_OPTIONS, canUseBackupFolder, pickBackupFolder, backupFolderLabel } from '../utils/autoBackup';
 import { isAvailableAsync, shareAsync } from 'expo-sharing';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { DayGridSheet } from '../components/DayGridSheet';
@@ -86,6 +86,15 @@ export const SettingsScreen = ({ navigation }: Props) => {
       await shareAsync(uri, { UTI: 'public.json', mimeType: 'application/json' });
     } catch {
       showInfo(t('settings.autoBackupTitle'), t('settings.autoBackupOpenFailed'));
+    }
+  };
+
+  const handlePickBackupFolder = async () => {
+    try {
+      const folderUri = await pickBackupFolder();
+      if (folderUri) await updateAutoBackup({ folderUri });
+    } catch (e) {
+      console.error('Error picking backup folder', e);
     }
   };
 
@@ -368,6 +377,32 @@ export const SettingsScreen = ({ navigation }: Props) => {
                   ))}
                 </View>
               </View>
+              {canUseBackupFolder && (
+                <>
+                  <View style={styles.reminderDivider} />
+                  <TouchableOpacity style={styles.reminderRow} onPress={handlePickBackupFolder} activeOpacity={0.8}>
+                    <View style={styles.toggleTextWrapper}>
+                      <Text style={styles.leadDaysLabel}>{t('settings.backupFolder')}</Text>
+                      <Text style={styles.menuSubtitle}>
+                        {autoBackup.folderUri
+                          ? t('settings.backupFolderSet', { folder: backupFolderLabel(autoBackup.folderUri) })
+                          : t('settings.backupFolderNone')}
+                      </Text>
+                    </View>
+                    {autoBackup.folderUri ? (
+                      <TouchableOpacity
+                        onPress={() => updateAutoBackup({ folderUri: null })}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        accessibilityLabel={t('settings.backupFolderRemove')}
+                      >
+                        <X color={colors.secondaryText} size={18} />
+                      </TouchableOpacity>
+                    ) : (
+                      <FolderOpen color={colors.secondaryText} size={18} />
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
               <View style={styles.reminderDivider} />
               <TouchableOpacity style={styles.reminderRow} onPress={handleShareLatestBackup} activeOpacity={0.8}>
                 <View style={styles.toggleTextWrapper}>
@@ -388,7 +423,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
           )}
           <View style={styles.reminderDivider} />
           <Text style={[styles.menuSubtitle, { padding: 16 }]}>
-            {t('settings.autoBackupNote')}
+            {autoBackup.enabled && autoBackup.folderUri ? t('settings.autoBackupNoteFolder') : t('settings.autoBackupNote')}
           </Text>
         </View>
 

@@ -17,6 +17,7 @@ const KEYS = {
   AUTO_BACKUP_INTERVAL_DAYS: '@trace_auto_backup_interval_days',
   AUTO_BACKUP_LAST_SUCCESS_AT: '@trace_auto_backup_last_success_at',
   AUTO_BACKUP_LAST_ERROR: '@trace_auto_backup_last_error',
+  AUTO_BACKUP_FOLDER_URI: '@trace_auto_backup_folder_uri',
   LANGUAGE: '@trace_language',
 };
 
@@ -160,6 +161,8 @@ export interface AutoBackupState {
   intervalDays: number;
   lastSuccessAt: string | null;
   lastError: string | null;
+  /** Android folder (Storage Access Framework URI) that also receives each backup, so it survives uninstalling. */
+  folderUri: string | null;
 }
 
 export const DEFAULT_AUTO_BACKUP_STATE: AutoBackupState = {
@@ -167,6 +170,7 @@ export const DEFAULT_AUTO_BACKUP_STATE: AutoBackupState = {
   intervalDays: DEFAULT_AUTO_BACKUP_INTERVAL_DAYS,
   lastSuccessAt: null,
   lastError: null,
+  folderUri: null,
 };
 
 export const loadAutoBackupState = async (): Promise<AutoBackupState> => ({
@@ -174,12 +178,14 @@ export const loadAutoBackupState = async (): Promise<AutoBackupState> => ({
   intervalDays: await loadData<number>(KEYS.AUTO_BACKUP_INTERVAL_DAYS, DEFAULT_AUTO_BACKUP_STATE.intervalDays),
   lastSuccessAt: await loadData<string | null>(KEYS.AUTO_BACKUP_LAST_SUCCESS_AT, null),
   lastError: await loadData<string | null>(KEYS.AUTO_BACKUP_LAST_ERROR, null),
+  folderUri: await loadData<string | null>(KEYS.AUTO_BACKUP_FOLDER_URI, null),
 });
 
 export const saveAutoBackupEnabled = (v: boolean) => saveDataQuietly(KEYS.AUTO_BACKUP_ENABLED, v);
 export const saveAutoBackupIntervalDays = (v: number) => saveDataQuietly(KEYS.AUTO_BACKUP_INTERVAL_DAYS, v);
 export const saveAutoBackupLastSuccessAt = (v: string | null) => saveDataQuietly(KEYS.AUTO_BACKUP_LAST_SUCCESS_AT, v);
 export const saveAutoBackupLastError = (v: string | null) => saveDataQuietly(KEYS.AUTO_BACKUP_LAST_ERROR, v);
+export const saveAutoBackupFolderUri = (v: string | null) => saveDataQuietly(KEYS.AUTO_BACKUP_FOLDER_URI, v);
 
 // The language preference has its own key (not in AppSettings) so it is never
 // part of a backup and a restore cannot overwrite it.

@@ -5,17 +5,23 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 const mockWrite = jest.fn();
 const mockReadDir = jest.fn();
 const mockDelete = jest.fn();
+const mockSafCreate = jest.fn();
+const mockSafReadDir = jest.fn();
 jest.mock('expo-file-system/legacy', () => ({
   documentDirectory: 'file:///docs/',
   writeAsStringAsync: (...a: any[]) => mockWrite(...a),
   readDirectoryAsync: (...a: any[]) => mockReadDir(...a),
   deleteAsync: (...a: any[]) => mockDelete(...a),
   EncodingType: { UTF8: 'utf8' },
+  StorageAccessFramework: {
+    createFileAsync: (...a: any[]) => mockSafCreate(...a),
+    readDirectoryAsync: (...a: any[]) => mockSafReadDir(...a),
+  },
 }));
 jest.mock('expo-sharing', () => ({ isAvailableAsync: jest.fn(), shareAsync: jest.fn() }));
 
 import { BackupData } from './exportData';
-import { isBackupDue, pruneAutomaticBackups, createAutomaticBackup, getLatestAutomaticBackupUri } from './autoBackup';
+import { isBackupDue, pruneAutomaticBackups, createAutomaticBackup, getLatestAutomaticBackupUri, backupFolderLabel } from './autoBackup';
 import { DEFAULT_SETTINGS } from './storage';
 
 const name = (d: string) => `trace-auto-backup-${d}.json`;
@@ -87,5 +93,35 @@ describe('createAutomaticBackup / getLatestAutomaticBackupUri', () => {
     await expect(getLatestAutomaticBackupUri()).resolves.toBe('file:///docs/' + name('2026-01-03'));
     mockReadDir.mockResolvedValue([]);
     await expect(getLatestAutomaticBackupUri()).resolves.toBeNull();
+  });
+});
+
+describe('backup folder outside the app', () => {
+  const folder = 'content://com.android.externalstorage.documents/tree/primary%3ADocuments%2FTrace';
+  const safFile = (stamp: string) => `${folder}/document/primary%3ADocuments%2FTrace%2Ftrace-auto-backup-${stamp}.json`;
+
+  it('also writes the backup to the picked folder and keeps the newest there', async () => {
+    mockReadDir.mockResolvedValue([]);
+    mockSafCreate.mockResolvedValue(safFile('new'));
+    const existing = ['2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04', '2026-01-05', '2026-01-06'].map(safFile);
+    mockSafReadDir.mockResolvedValue([...existing, `${folder}/document/primary%3ADocuments%2FTrace%2Fother.pdf`]);
+
+    await createAutomaticBackup(EMPTY, new Date('2026-01-07T00:00:00.000Z'), folder);
+
+    expect(mockSafCreate).toHaveBeenCalledWith(folder, 'trace-auto-backup-2026-01-07T00-00-00-000Z', 'application/json');
+    expect(mockWrite).toHaveBeenCalledWith(safFile('new'), expect.any(String), { encoding: 'utf8' });
+    expect(mockDelete).toHaveBeenCalledTimes(1);
+    expect(mockDelete).toHaveBeenCalledWith(safFile('2026-01-01'), { idempotent: true });
+  });
+
+  it('keeps the in-app copy when the folder write fails', async () => {
+    mockReadDir.mockResolvedValue([]);
+    mockSafCreate.mockRejectedValue(new Error('permission revoked'));
+    await expect(createAutomaticBackup(EMPTY, new Date(), folder)).rejects.toThrow('permission revoked');
+    expect(mockWrite).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a readable folder name', () => {
+    expect(backupFolderLabel(folder)).toBe('Documents/Trace');
   });
 });

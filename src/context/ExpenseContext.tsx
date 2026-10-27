@@ -9,7 +9,7 @@ import {
   loadIncomeCategories, saveIncomeCategories,
   loadSettings, saveSettings, DEFAULT_SETTINGS,
   AutoBackupState, DEFAULT_AUTO_BACKUP_STATE, loadAutoBackupState,
-  saveAutoBackupEnabled, saveAutoBackupIntervalDays, saveAutoBackupLastSuccessAt, saveAutoBackupLastError,
+  saveAutoBackupEnabled, saveAutoBackupIntervalDays, saveAutoBackupLastSuccessAt, saveAutoBackupLastError, saveAutoBackupFolderUri,
   loadRecurringTemplates, saveRecurringTemplates
 } from '../utils/storage';
 import { pickAndImportBackup } from '../utils/importData';
@@ -88,7 +88,7 @@ interface AppContextType {
   /** False until stored data has been read; changes made before then wait for it. */
   isLoaded: boolean;
   autoBackup: AutoBackupState;
-  updateAutoBackup: (updates: Partial<Pick<AutoBackupState, 'enabled' | 'intervalDays'>>) => Promise<void>;
+  updateAutoBackup: (updates: Partial<Pick<AutoBackupState, 'enabled' | 'intervalDays' | 'folderUri'>>) => Promise<void>;
 
   // Envelope CRUD
   addEnvelope: (envelope: Omit<Envelope, 'id'>) => Promise<void>;
@@ -238,7 +238,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setAutoBackup(backupState);
       if (!backupState.enabled || !isBackupDue(backupState.lastSuccessAt, backupState.intervalDays, now)) return;
       try {
-        await createAutomaticBackup(data.current, now);
+        await createAutomaticBackup(data.current, now, backupState.folderUri);
         const lastSuccessAt = now.toISOString();
         await saveAutoBackupLastSuccessAt(lastSuccessAt);
         await saveAutoBackupLastError(null);
@@ -297,10 +297,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => subscription.remove();
   }, [processScheduledWork, runAutoBackup, runExclusive]);
 
-  const updateAutoBackup = useCallback(async (updates: Partial<Pick<AutoBackupState, 'enabled' | 'intervalDays'>>) => {
+  const updateAutoBackup = useCallback(async (updates: Partial<Pick<AutoBackupState, 'enabled' | 'intervalDays' | 'folderUri'>>) => {
     setAutoBackup(prev => ({ ...prev, ...updates }));
     if (updates.enabled !== undefined) await saveAutoBackupEnabled(updates.enabled);
     if (updates.intervalDays !== undefined) await saveAutoBackupIntervalDays(updates.intervalDays);
+    if (updates.folderUri !== undefined) await saveAutoBackupFolderUri(updates.folderUri);
   }, []);
 
   // ─── Currency helpers ──────────────────────────────────────────────────────
