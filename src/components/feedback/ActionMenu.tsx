@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 export interface ActionMenuItem {
   label: string;
@@ -56,16 +57,16 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     right: 20,
     minWidth: 200,
     backgroundColor: colors.cardBg,
-    borderRadius: 16,
-    paddingVertical: 8,
+    borderRadius: RADIUS.xl,
+    paddingVertical: SPACING.sm,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 8,
   },
-  itemBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 16 },
-  itemText: { color: colors.white, fontSize: 15, fontWeight: '500' },
-  iconWrap: { marginLeft: 16 },
-  divider: { height: 1, backgroundColor: colors.divider, marginHorizontal: 16 },
+  itemBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: SPACING.lg },
+  itemText: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '500' },
+  iconWrap: { marginLeft: SPACING.lg },
+  divider: { height: 1, backgroundColor: colors.divider, marginHorizontal: SPACING.lg },
 });

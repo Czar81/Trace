@@ -7,6 +7,7 @@ import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { authenticate } from '../../services/device/deviceAuth';
 import { shouldRelock } from '../../services/device/appLock';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 /** Hides the app behind the device's fingerprint/PIN prompt when the lock setting is on. */
 export const AppLockGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -60,8 +61,8 @@ export const AppLockGate: React.FC<{ children: React.ReactNode }> = ({ children 
 };
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
-  cover: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', gap: 16 },
-  title: { color: colors.white, fontSize: 20, fontWeight: 'bold' },
-  btn: { backgroundColor: colors.green, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 28 },
-  btnText: { color: colors.bg, fontSize: 16, fontWeight: '700' },
+  cover: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', gap: SPACING.lg },
+  title: { color: colors.white, fontSize: FONT_SIZE.xxl, fontWeight: 'bold' },
+  btn: { backgroundColor: colors.green, borderRadius: RADIUS.lg, paddingVertical: 14, paddingHorizontal: 28 },
+  btnText: { color: colors.bg, fontSize: FONT_SIZE.lg, fontWeight: '700' },
 });

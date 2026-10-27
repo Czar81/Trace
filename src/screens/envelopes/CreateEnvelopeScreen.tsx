@@ -18,6 +18,7 @@ import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { TranslationKey } from '../../i18n';
 import { hapticSave } from '../../services/device/haptics';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 const CURRENCY_OPTIONS = [
   { label: 'CRC', value: 'CRC' },
@@ -202,7 +203,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
         )}
 
         <View style={styles.switchRow}>
-          <View style={{ flex: 1, paddingRight: 20 }}>
+          <View style={{ flex: 1, paddingRight: SPACING.xl }}>
             <Text style={styles.label}>
               {envelopeType === 'gasto'
                 ? t('envelope.unlimitedExpense')
@@ -291,22 +292,22 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   keyboardAvoiding: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 20 },
-  headerBtn: { padding: 4 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingTop: SPACING.xl, paddingBottom: SPACING.xl },
+  headerBtn: { padding: SPACING.xs },
   headerTitle: { color: colors.white, fontSize: 17, fontWeight: 'bold', flex: 1, textAlign: 'center' },
-  form: { paddingHorizontal: 20, paddingBottom: 60 },
-  iconSection: { alignItems: 'center', marginBottom: 28, marginTop: 8 },
+  form: { paddingHorizontal: SPACING.xl, paddingBottom: 60 },
+  iconSection: { alignItems: 'center', marginBottom: 28, marginTop: SPACING.sm },
   iconPreviewWrap: { marginBottom: 10 },
-  changeIconText: { color: colors.secondaryText, fontSize: 14, fontWeight: '600' },
-  label: { color: colors.white, fontSize: 16, fontWeight: '600', marginBottom: 8 },
-  hint: { color: colors.secondaryText, fontSize: 13, marginBottom: 16 },
-  input: { backgroundColor: colors.cardBg, borderRadius: 12, padding: 16, color: colors.white, fontSize: 16, marginBottom: 24 },
-  errorText: { color: colors.red, fontSize: 13, marginTop: -20, marginBottom: 20 },
-  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
-  sectionLabel: { color: colors.white, fontSize: 15, fontWeight: '700', marginTop: 28, marginBottom: 12 },
-  deadlineSection: { marginTop: 24 },
-  clearDeadline: { color: colors.secondaryText, fontSize: 14, fontWeight: '600', marginTop: 12 },
-  percentRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 24 },
+  changeIconText: { color: colors.secondaryText, fontSize: FONT_SIZE.md, fontWeight: '600' },
+  label: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '600', marginBottom: SPACING.sm },
+  hint: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, marginBottom: SPACING.lg },
+  input: { backgroundColor: colors.cardBg, borderRadius: RADIUS.md, padding: SPACING.lg, color: colors.white, fontSize: FONT_SIZE.lg, marginBottom: SPACING.xxl },
+  errorText: { color: colors.red, fontSize: FONT_SIZE.sm, marginTop: -20, marginBottom: SPACING.xl },
+  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACING.sm },
+  sectionLabel: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '700', marginTop: 28, marginBottom: SPACING.md },
+  deadlineSection: { marginTop: SPACING.xxl },
+  clearDeadline: { color: colors.secondaryText, fontSize: FONT_SIZE.md, fontWeight: '600', marginTop: SPACING.md },
+  percentRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: SPACING.xxl },
   percentInput: { flex: 1, marginBottom: 0 },
-  percentSign: { color: colors.secondaryText, fontSize: 18, fontWeight: '700' },
+  percentSign: { color: colors.secondaryText, fontSize: FONT_SIZE.xl, fontWeight: '700' },
 });

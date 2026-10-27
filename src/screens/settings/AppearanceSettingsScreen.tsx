@@ -8,6 +8,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { TranslationKey } from '../../i18n';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AppearanceSettings'>;
 
@@ -61,18 +62,18 @@ export const AppearanceSettingsScreen = ({ navigation }: Props) => {
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.lg },
   headerBtn: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: colors.white, fontSize: 20, fontWeight: 'bold' },
-  scroll: { paddingHorizontal: 20, paddingBottom: 60 },
-  sectionTitle: { color: colors.white, fontSize: 16, fontWeight: '700', marginBottom: 20 },
-  themeCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.cardBg, borderRadius: 16, padding: 14, marginBottom: 12, borderWidth: 1.5, borderColor: colors.divider },
+  headerTitle: { color: colors.white, fontSize: FONT_SIZE.xxl, fontWeight: 'bold' },
+  scroll: { paddingHorizontal: SPACING.xl, paddingBottom: 60 },
+  sectionTitle: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '700', marginBottom: SPACING.xl },
+  themeCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.cardBg, borderRadius: RADIUS.xl, padding: 14, marginBottom: SPACING.md, borderWidth: 1.5, borderColor: colors.divider },
   themeCardSelected: { borderColor: colors.green },
-  swatch: { width: 34, height: 34, borderRadius: 10, overflow: 'hidden', flexDirection: 'row', flexWrap: 'wrap', marginRight: 14 },
+  swatch: { width: 34, height: 34, borderRadius: RADIUS.sm, overflow: 'hidden', flexDirection: 'row', flexWrap: 'wrap', marginRight: 14 },
   swatchDot: { width: 17, height: 17 },
   themeTextWrapper: { flex: 1 },
-  themeName: { color: colors.white, fontSize: 15, fontWeight: '700', marginBottom: 2 },
-  themeSubtitle: { color: colors.secondaryText, fontSize: 13 },
+  themeName: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '700', marginBottom: SPACING.xxs },
+  themeSubtitle: { color: colors.secondaryText, fontSize: FONT_SIZE.sm },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: colors.secondaryText, justifyContent: 'center', alignItems: 'center' },
   radioSelected: { borderColor: colors.green, backgroundColor: colors.green },
 });

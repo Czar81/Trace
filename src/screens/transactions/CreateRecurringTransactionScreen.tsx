@@ -18,6 +18,7 @@ import { Envelope, RecurrenceFrequency } from '../../types';
 import { sortEnvelopesByTypeAndName } from '../../domain/budget/envelopeSorting';
 import { clampDayOfMonth } from '../../domain/recurring/recurrence';
 import { hapticSave } from '../../services/device/haptics';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateRecurringTransaction'>;
 
@@ -277,7 +278,7 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
           {(frequency === 'weekly' || frequency === 'biweekly') && (
             <>
               <Text style={styles.label}>{t('recurring.firstOccurrence')}</Text>
-              <View style={{ marginBottom: 16 }}>
+              <View style={{ marginBottom: SPACING.lg }}>
                 <DateField value={occurrenceDate} onChange={setOccurrenceDate} showWeekday />
               </View>
             </>
@@ -358,24 +359,24 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   keyboardAvoiding: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
+    paddingHorizontal: SPACING.xl, paddingTop: SPACING.xl, paddingBottom: SPACING.lg,
   },
-  headerBtn: { padding: 4 },
-  headerTitle: { color: colors.white, fontSize: 18, fontWeight: 'bold', flex: 1, textAlign: 'center' },
-  form: { paddingHorizontal: 20, paddingBottom: 60 },
+  headerBtn: { padding: SPACING.xs },
+  headerTitle: { color: colors.white, fontSize: FONT_SIZE.xl, fontWeight: 'bold', flex: 1, textAlign: 'center' },
+  form: { paddingHorizontal: SPACING.xl, paddingBottom: 60 },
   typeSelector: {
-    flexDirection: 'row', backgroundColor: colors.cardBg, borderRadius: 14,
-    padding: 4, marginBottom: 24, gap: 4,
+    flexDirection: 'row', backgroundColor: colors.cardBg, borderRadius: RADIUS.lg,
+    padding: SPACING.xs, marginBottom: SPACING.xxl, gap: SPACING.xs,
   },
   typeBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 12, borderRadius: 10, gap: 8,
+    paddingVertical: SPACING.md, borderRadius: RADIUS.sm, gap: SPACING.sm,
   },
   typeBtnExpense: { backgroundColor: colors.red },
   typeBtnIncome: { backgroundColor: colors.blue },
-  typeText: { color: colors.secondaryText, fontSize: 15, fontWeight: '700' },
-  label: { color: colors.white, fontSize: 16, fontWeight: '600', marginTop: 24, marginBottom: 8 },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20, marginBottom: 16 },
+  typeText: { color: colors.secondaryText, fontSize: FONT_SIZE.base, fontWeight: '700' },
+  label: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '600', marginTop: SPACING.xxl, marginBottom: SPACING.sm },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', marginTop: SPACING.xl, marginBottom: SPACING.lg },
   checkbox: {
     width: 24,
     height: 24,
@@ -384,19 +385,19 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.secondaryText,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: SPACING.md,
   },
-  toggleLabel: { color: colors.white, fontSize: 15, flex: 1 },
-  fieldLabel: { color: colors.white, fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  toggleLabel: { color: colors.white, fontSize: FONT_SIZE.base, flex: 1 },
+  fieldLabel: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '600', marginBottom: SPACING.sm },
   dayField: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.cardBg,
-    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 24,
+    borderRadius: RADIUS.md, paddingHorizontal: SPACING.lg, paddingVertical: 14, marginBottom: SPACING.xxl,
   },
-  dayFieldText: { color: colors.white, fontSize: 16 },
-  dayFieldHint: { color: colors.secondaryText, fontSize: 13, marginTop: 2 },
-  errorText: { color: colors.red, fontSize: 13, marginTop: -20, marginBottom: 20 },
+  dayFieldText: { color: colors.white, fontSize: FONT_SIZE.lg },
+  dayFieldHint: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, marginTop: SPACING.xxs },
+  errorText: { color: colors.red, fontSize: FONT_SIZE.sm, marginTop: -20, marginBottom: SPACING.xl },
   input: {
-    backgroundColor: colors.cardBg, borderRadius: 12, padding: 16,
-    color: colors.white, fontSize: 16, marginBottom: 24,
+    backgroundColor: colors.cardBg, borderRadius: RADIUS.md, padding: SPACING.lg,
+    color: colors.white, fontSize: FONT_SIZE.lg, marginBottom: SPACING.xxl,
   },
 });

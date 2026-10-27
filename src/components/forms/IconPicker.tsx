@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 interface IconPickerProps {
   visible: boolean;
@@ -120,29 +121,29 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingBottom: 40,
     maxHeight: '85%',
   },
-  handle: { width: 36, height: 4, backgroundColor: colors.divider, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
+  handle: { width: 36, height: 4, backgroundColor: colors.divider, borderRadius: 2, alignSelf: 'center', marginTop: SPACING.md, marginBottom: SPACING.xs },
   title: { color: colors.white, fontSize: 17, fontWeight: '700', textAlign: 'center', paddingVertical: 14 },
-  listContent: { paddingHorizontal: 16, paddingBottom: 20 },
-  sectionHeader: { color: colors.white, fontSize: 16, fontWeight: '600', marginTop: 24, marginBottom: 16 },
-  iconRow: { flexDirection: 'row', marginBottom: 8 },
+  listContent: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xl },
+  sectionHeader: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '600', marginTop: SPACING.xxl, marginBottom: SPACING.lg },
+  iconRow: { flexDirection: 'row', marginBottom: SPACING.sm },
   pickImageBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.cardBg,
-    marginHorizontal: 20,
-    marginBottom: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
+    marginHorizontal: SPACING.xl,
+    marginBottom: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
+    gap: SPACING.sm,
   },
-  pickImageText: { color: colors.white, fontSize: 16, fontWeight: '600' },
+  pickImageText: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '600' },
   iconBtn: {
     flex: 1,
     aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
+    borderRadius: RADIUS.md,
   },
   iconCircle: {
     width: 44,

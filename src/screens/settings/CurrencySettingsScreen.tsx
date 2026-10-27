@@ -12,6 +12,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { canRefreshNow, fetchExchangeRates } from '../../services/currency/exchangeRates';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CurrencySettings'>;
 
@@ -117,7 +118,7 @@ export const CurrencySettingsScreen = ({ navigation }: Props) => {
             </Text>
           ) : null}
           <View style={styles.autoRow}>
-            <View style={{ flex: 1, paddingRight: 12 }}>
+            <View style={{ flex: 1, paddingRight: SPACING.md }}>
               <Text style={styles.autoLabel}>{t('currency.autoUpdate')}</Text>
               <Text style={styles.fetchInfo}>{t('currency.autoUpdateHint')}</Text>
             </View>
@@ -142,24 +143,24 @@ export const CurrencySettingsScreen = ({ navigation }: Props) => {
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.lg },
   headerBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: colors.white, fontSize: 20, fontWeight: 'bold' },
+  headerTitle: { color: colors.white, fontSize: FONT_SIZE.xxl, fontWeight: 'bold' },
   keyboardAvoiding: { flex: 1 },
-  scroll: { paddingHorizontal: 20, paddingBottom: 60 },
-  sectionTitle: { color: colors.white, fontSize: 16, fontWeight: '700', marginTop: 28, marginBottom: 12 },
+  scroll: { paddingHorizontal: SPACING.xl, paddingBottom: 60 },
+  sectionTitle: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '700', marginTop: 28, marginBottom: SPACING.md },
   rateRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  rateLabel: { color: colors.secondaryText, fontSize: 15, width: 60 },
-  rateInput: { flex: 1, backgroundColor: colors.cardBg, borderRadius: 10, padding: 12, color: colors.white, fontSize: 16 },
-  rateSuffix: { color: colors.secondaryText, fontSize: 15, marginLeft: 10, width: 36 },
-  fetchBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.cardBg, borderRadius: 12, padding: 14, marginTop: 4 },
-  fetchBtnText: { color: colors.white, fontSize: 15, fontWeight: '600' },
-  attribution: { color: colors.secondaryText, fontSize: 12, textDecorationLine: 'underline', marginBottom: 16 },
-  fetchError: { color: colors.red, fontSize: 13, marginTop: 8 },
-  fetchInfo: { color: colors.secondaryText, fontSize: 12, marginTop: 6 },
-  autoRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 16 },
-  autoLabel: { color: colors.white, fontSize: 15 },
-  saveBtn: { backgroundColor: colors.green, borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 8, marginBottom: 4 },
+  rateLabel: { color: colors.secondaryText, fontSize: FONT_SIZE.base, width: 60 },
+  rateInput: { flex: 1, backgroundColor: colors.cardBg, borderRadius: RADIUS.sm, padding: SPACING.md, color: colors.white, fontSize: FONT_SIZE.lg },
+  rateSuffix: { color: colors.secondaryText, fontSize: FONT_SIZE.base, marginLeft: 10, width: 36 },
+  fetchBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, backgroundColor: colors.cardBg, borderRadius: RADIUS.md, padding: 14, marginTop: SPACING.xs },
+  fetchBtnText: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '600' },
+  attribution: { color: colors.secondaryText, fontSize: FONT_SIZE.xs, textDecorationLine: 'underline', marginBottom: SPACING.lg },
+  fetchError: { color: colors.red, fontSize: FONT_SIZE.sm, marginTop: SPACING.sm },
+  fetchInfo: { color: colors.secondaryText, fontSize: FONT_SIZE.xs, marginTop: 6 },
+  autoRow: { flexDirection: 'row', alignItems: 'center', marginVertical: SPACING.lg },
+  autoLabel: { color: colors.white, fontSize: FONT_SIZE.base },
+  saveBtn: { backgroundColor: colors.green, borderRadius: RADIUS.md, padding: 14, alignItems: 'center', marginTop: SPACING.sm, marginBottom: SPACING.xs },
   saveBtnSuccess: { backgroundColor: '#4ADE80' },
-  saveBtnText: { color: colors.bg, fontSize: 16, fontWeight: '700' },
+  saveBtnText: { color: colors.bg, fontSize: FONT_SIZE.lg, fontWeight: '700' },
 });

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
+import { FONT_SIZE, SPACING } from '../../theme/tokens';
 
 interface DayGridSheetProps {
   visible: boolean;
@@ -83,20 +84,20 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.modalSheet,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.lg,
     paddingTop: 10,
     paddingBottom: 40,
   },
   grabber: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.progressTrack, alignSelf: 'center', marginBottom: 14 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4, marginBottom: 12 },
-  title: { color: colors.white, fontSize: 18, fontWeight: '700' },
-  subtitle: { color: colors.secondaryText, fontSize: 14 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xs, marginBottom: SPACING.md },
+  title: { color: colors.white, fontSize: FONT_SIZE.xl, fontWeight: '700' },
+  subtitle: { color: colors.secondaryText, fontSize: FONT_SIZE.md },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { width: `${100 / COLUMNS}%`, aspectRatio: 1, padding: 3 },
   day: { flex: 1, borderRadius: 999, justifyContent: 'center', alignItems: 'center' },
   daySelected: { backgroundColor: colors.green },
-  dayText: { color: colors.white, fontSize: 16, fontVariant: ['tabular-nums'] },
+  dayText: { color: colors.white, fontSize: FONT_SIZE.lg, fontVariant: ['tabular-nums'] },
   dayTextTail: { color: colors.secondaryText },
   dayTextSelected: { color: colors.modalSheet, fontWeight: '700' },
-  hint: { color: colors.secondaryText, fontSize: 13, lineHeight: 18, marginTop: 10, paddingHorizontal: 4 },
+  hint: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, lineHeight: 18, marginTop: 10, paddingHorizontal: SPACING.xs },
 });

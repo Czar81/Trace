@@ -7,6 +7,7 @@ import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { ReceiptViewer } from '../feedback/ReceiptViewer';
 import { saveReceiptImage } from '../../services/files/receipts';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 interface ReceiptFieldProps {
   /** URIs of the stored receipt photos. */
@@ -83,12 +84,12 @@ export const ReceiptField: React.FC<ReceiptFieldProps> = ({ value, onChange }) =
 };
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
-  container: { marginBottom: 24 },
-  label: { color: colors.white, fontSize: 16, fontWeight: '600', marginBottom: 8 },
-  thumbs: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 12 },
-  thumb: { width: 76, height: 76, borderRadius: 12, backgroundColor: colors.cardBg },
-  removeBadge: { position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: 10, backgroundColor: colors.red, alignItems: 'center', justifyContent: 'center' },
+  container: { marginBottom: SPACING.xxl },
+  label: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '600', marginBottom: SPACING.sm },
+  thumbs: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.md, marginBottom: SPACING.md },
+  thumb: { width: 76, height: 76, borderRadius: RADIUS.md, backgroundColor: colors.cardBg },
+  removeBadge: { position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: RADIUS.sm, backgroundColor: colors.red, alignItems: 'center', justifyContent: 'center' },
   buttons: { flexDirection: 'row', gap: 10 },
-  btn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.cardBg, borderRadius: 12, paddingVertical: 14 },
-  btnText: { color: colors.white, fontSize: 14, fontWeight: '600' },
+  btn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, backgroundColor: colors.cardBg, borderRadius: RADIUS.md, paddingVertical: 14 },
+  btnText: { color: colors.white, fontSize: FONT_SIZE.md, fontWeight: '600' },
 });

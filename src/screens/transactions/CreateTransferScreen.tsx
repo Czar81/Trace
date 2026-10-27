@@ -15,6 +15,7 @@ import { TranslationKey } from '../../i18n';
 import { EnvelopeType } from '../../types';
 import { sortEnvelopesByTypeAndName } from '../../domain/budget/envelopeSorting';
 import { hapticSave } from '../../services/device/haptics';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransfer'>;
 
@@ -190,19 +191,19 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   keyboardAvoiding: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
+    paddingHorizontal: SPACING.xl, paddingTop: SPACING.xl, paddingBottom: SPACING.lg,
   },
-  headerBtn: { padding: 4 },
-  headerTitle: { color: colors.white, fontSize: 18, fontWeight: 'bold', flex: 1, textAlign: 'center' },
-  form: { paddingHorizontal: 20, paddingBottom: 60 },
-  label: { color: colors.white, fontSize: 16, fontWeight: '600', marginTop: 0, marginBottom: 8 },
+  headerBtn: { padding: SPACING.xs },
+  headerTitle: { color: colors.white, fontSize: FONT_SIZE.xl, fontWeight: 'bold', flex: 1, textAlign: 'center' },
+  form: { paddingHorizontal: SPACING.xl, paddingBottom: 60 },
+  label: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '600', marginTop: 0, marginBottom: SPACING.sm },
   input: {
-    backgroundColor: colors.cardBg, borderRadius: 12, padding: 16,
-    color: colors.white, fontSize: 16, marginBottom: 24,
+    backgroundColor: colors.cardBg, borderRadius: RADIUS.md, padding: SPACING.lg,
+    color: colors.white, fontSize: FONT_SIZE.lg, marginBottom: SPACING.xxl,
   },
   preview: {
-    backgroundColor: colors.cardBg, borderRadius: 12, padding: 16, marginBottom: 24, gap: 6,
+    backgroundColor: colors.cardBg, borderRadius: RADIUS.md, padding: SPACING.lg, marginBottom: SPACING.xxl, gap: 6,
   },
-  previewText: { color: colors.secondaryText, fontSize: 14 },
-  errorText: { color: colors.red, fontSize: 14, marginBottom: 16 },
+  previewText: { color: colors.secondaryText, fontSize: FONT_SIZE.md },
+  errorText: { color: colors.red, fontSize: FONT_SIZE.md, marginBottom: SPACING.lg },
 });

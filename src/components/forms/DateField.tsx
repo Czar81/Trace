@@ -5,6 +5,7 @@ import { Calendar } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 export interface DateQuickOption {
   label: string;
@@ -76,22 +77,22 @@ export const DateField: React.FC<DateFieldProps> = ({ value, placeholder, onChan
 };
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
-  container: { marginBottom: 8 },
+  container: { marginBottom: SPACING.sm },
   button: {
     backgroundColor: colors.cardBg,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: RADIUS.md,
+    padding: SPACING.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: SPACING.md,
   },
-  text: { color: colors.white, fontSize: 16, flexShrink: 1 },
-  quickRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  text: { color: colors.white, fontSize: FONT_SIZE.lg, flexShrink: 1 },
+  quickRow: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.sm },
   chip: {
     backgroundColor: colors.cardBg,
-    borderRadius: 16,
+    borderRadius: RADIUS.xl,
     paddingVertical: 6,
     paddingHorizontal: 14,
   },
-  chipText: { color: colors.white, fontSize: 14 },
+  chipText: { color: colors.white, fontSize: FONT_SIZE.md },
 });

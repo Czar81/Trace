@@ -13,6 +13,7 @@ import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { sortEnvelopesByTypeAndName } from '../../domain/budget/envelopeSorting';
 import { ColumnMapping, CsvTable, guessMapping, isDuplicate, mapRows, parseCsv } from '../../domain/transactions/bankCsv';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ImportBankCsv'>;
 
@@ -125,7 +126,7 @@ export const ImportBankCsvScreen = ({ navigation }: Props) => {
             <Dropdown label={t('bankCsv.colAmount')} options={columnOptions} value={mapping.amount >= 0 ? String(mapping.amount) : ''} onSelect={setCol('amount')} placeholder={t('bankCsv.selectColumn')} />
 
             <View style={styles.toggleRow}>
-              <View style={{ flex: 1, paddingRight: 12 }}>
+              <View style={{ flex: 1, paddingRight: SPACING.md }}>
                 <Text style={styles.toggleLabel}>{t('bankCsv.invert')}</Text>
                 <Text style={styles.toggleHint}>{t('bankCsv.invertHint')}</Text>
               </View>
@@ -170,21 +171,21 @@ export const ImportBankCsvScreen = ({ navigation }: Props) => {
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16 },
-  headerBtn: { padding: 4 },
-  headerTitle: { color: colors.white, fontSize: 18, fontWeight: 'bold', flex: 1, textAlign: 'center' },
-  form: { paddingHorizontal: 20, paddingBottom: 60 },
-  hint: { color: colors.secondaryText, fontSize: 13, marginBottom: 16 },
-  pickBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.cardBg, borderRadius: 12, padding: 16, marginBottom: 20 },
-  pickText: { color: colors.white, fontSize: 15, fontWeight: '600', flex: 1 },
-  success: { color: colors.green, fontSize: 14, marginBottom: 16 },
-  errorText: { color: colors.red, fontSize: 14, marginBottom: 16 },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  toggleLabel: { color: colors.white, fontSize: 15 },
-  toggleHint: { color: colors.secondaryText, fontSize: 12, marginTop: 2 },
-  summary: { backgroundColor: colors.cardBg, borderRadius: 12, padding: 16, marginBottom: 20, gap: 4 },
-  summaryTitle: { color: colors.white, fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  summaryLine: { color: colors.secondaryText, fontSize: 14 },
-  importBtn: { backgroundColor: colors.green, borderRadius: 14, padding: 16, alignItems: 'center' },
-  importText: { color: colors.bg, fontSize: 16, fontWeight: '700' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingTop: SPACING.xl, paddingBottom: SPACING.lg },
+  headerBtn: { padding: SPACING.xs },
+  headerTitle: { color: colors.white, fontSize: FONT_SIZE.xl, fontWeight: 'bold', flex: 1, textAlign: 'center' },
+  form: { paddingHorizontal: SPACING.xl, paddingBottom: 60 },
+  hint: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, marginBottom: SPACING.lg },
+  pickBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.cardBg, borderRadius: RADIUS.md, padding: SPACING.lg, marginBottom: SPACING.xl },
+  pickText: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '600', flex: 1 },
+  success: { color: colors.green, fontSize: FONT_SIZE.md, marginBottom: SPACING.lg },
+  errorText: { color: colors.red, fontSize: FONT_SIZE.md, marginBottom: SPACING.lg },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.xl },
+  toggleLabel: { color: colors.white, fontSize: FONT_SIZE.base },
+  toggleHint: { color: colors.secondaryText, fontSize: FONT_SIZE.xs, marginTop: SPACING.xxs },
+  summary: { backgroundColor: colors.cardBg, borderRadius: RADIUS.md, padding: SPACING.lg, marginBottom: SPACING.xl, gap: SPACING.xs },
+  summaryTitle: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '700', marginBottom: SPACING.xs },
+  summaryLine: { color: colors.secondaryText, fontSize: FONT_SIZE.md },
+  importBtn: { backgroundColor: colors.green, borderRadius: RADIUS.lg, padding: SPACING.lg, alignItems: 'center' },
+  importText: { color: colors.bg, fontSize: FONT_SIZE.lg, fontWeight: '700' },
 });

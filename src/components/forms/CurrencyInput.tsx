@@ -3,6 +3,7 @@ import { View, Text, TextInput, StyleSheet, TextInputProps } from 'react-native'
 import { Currency } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 const SYMBOLS: Record<Currency, string> = { CRC: '₡', USD: '$', EUR: '€' };
 
@@ -94,16 +95,16 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
 };
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
-  wrapper: { marginBottom: 24 },
-  label: { color: colors.white, fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  wrapper: { marginBottom: SPACING.xxl },
+  label: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '600', marginBottom: SPACING.sm },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.cardBg,
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.lg,
     paddingVertical: 14,
   },
-  symbol: { color: colors.secondaryText, fontSize: 20, fontWeight: '700', marginRight: 8 },
+  symbol: { color: colors.secondaryText, fontSize: FONT_SIZE.xxl, fontWeight: '700', marginRight: SPACING.sm },
   input: { flex: 1, color: colors.white, fontSize: 22, fontWeight: '700', padding: 0 },
 });

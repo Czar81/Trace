@@ -15,6 +15,7 @@ import { useTranslation } from '../../context/LanguageContext';
 import { TranslationKey } from '../../i18n';
 import { formatCurrency } from '../../domain/shared/formatCurrency';
 import { loadMainDisplayCurrency, saveMainDisplayCurrency } from '../../services/storage/storage';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 const { width } = Dimensions.get('window');
 
@@ -77,7 +78,7 @@ const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
       >
-        <View style={{ marginRight: 16 }}>
+        <View style={{ marginRight: SPACING.lg }}>
           <EnvelopeAvatar
             icon={envelope.icon ?? 'box'}
             imageUri={envelope.imageUri}
@@ -367,27 +368,27 @@ export const MainScreen = ({ navigation }: Props) => {
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
-  title: { color: colors.white, fontSize: 18, fontWeight: 'bold', letterSpacing: 1 },
-  iconBtn: { padding: 8 },
-  tabContainer: { flexDirection: 'row', marginHorizontal: 20, height: 48, position: 'relative', marginBottom: 16, backgroundColor: colors.cardBg, borderRadius: 24, padding: 4 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingTop: SPACING.lg, paddingBottom: SPACING.sm },
+  title: { color: colors.white, fontSize: FONT_SIZE.xl, fontWeight: 'bold', letterSpacing: 1 },
+  iconBtn: { padding: SPACING.sm },
+  tabContainer: { flexDirection: 'row', marginHorizontal: SPACING.xl, height: 48, position: 'relative', marginBottom: SPACING.lg, backgroundColor: colors.cardBg, borderRadius: RADIUS.sheet, padding: SPACING.xs },
   tab: { flex: 1, justifyContent: 'center', alignItems: 'center', zIndex: 1 },
-  tabIndicator: { position: 'absolute', top: 4, bottom: 4, left: 4, backgroundColor: colors.green, borderRadius: 20 },
-  tabText: { color: colors.secondaryText, fontSize: 16, fontWeight: '600' },
-  summaryCard: { backgroundColor: colors.cardBg, marginHorizontal: 20, borderRadius: 16, padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, overflow: 'hidden' },
+  tabIndicator: { position: 'absolute', top: 4, bottom: 4, left: 4, backgroundColor: colors.green, borderRadius: RADIUS.pill },
+  tabText: { color: colors.secondaryText, fontSize: FONT_SIZE.lg, fontWeight: '600' },
+  summaryCard: { backgroundColor: colors.cardBg, marginHorizontal: SPACING.xl, borderRadius: RADIUS.xl, padding: SPACING.xl, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg, overflow: 'hidden' },
   cardFlap: { position: 'absolute', top: -20, left: '50%', width: 40, height: 40, marginLeft: -20, backgroundColor: colors.cardHighlight, transform: [{ rotate: '45deg' }] },
-  currencyBtn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, backgroundColor: colors.divider },
-  currencyText: { color: colors.white, fontSize: 15, fontWeight: '700' },
+  currencyBtn: { paddingVertical: 6, paddingHorizontal: SPACING.md, borderRadius: RADIUS.pill, backgroundColor: colors.divider },
+  currencyText: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '700' },
   summaryValues: { alignItems: 'flex-end' },
-  summaryLabel: { color: colors.secondaryText, fontSize: 13, marginBottom: 4 },
+  summaryLabel: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, marginBottom: SPACING.xs },
   summaryTotal: { color: colors.white, fontSize: 22, fontWeight: 'bold' },
-  list: { paddingHorizontal: 20, paddingBottom: 120 },
-  emptyText: { color: colors.secondaryText, fontSize: 15, textAlign: 'center', marginTop: 40, fontStyle: 'italic' },
-  envelopeCard: { backgroundColor: colors.cardBg, borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  list: { paddingHorizontal: SPACING.xl, paddingBottom: 120 },
+  emptyText: { color: colors.secondaryText, fontSize: FONT_SIZE.base, textAlign: 'center', marginTop: 40, fontStyle: 'italic' },
+  envelopeCard: { backgroundColor: colors.cardBg, borderRadius: RADIUS.pill, padding: SPACING.lg, flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md },
   envelopeName: { flex: 1, color: colors.white, fontSize: 17, fontWeight: '600' },
   envelopeValues: { alignItems: 'flex-end' },
-  envelopeAmount: { fontSize: 18, fontWeight: 'bold', marginBottom: 2 },
-  envelopeSubtext: { color: colors.secondaryText, fontSize: 13 },
-  fab: { position: 'absolute', bottom: 30, right: 20, backgroundColor: colors.green, paddingVertical: 16, paddingHorizontal: 24, borderRadius: 30 },
-  fabText: { color: colors.bg, fontSize: 16, fontWeight: 'bold' },
+  envelopeAmount: { fontSize: FONT_SIZE.xl, fontWeight: 'bold', marginBottom: SPACING.xxs },
+  envelopeSubtext: { color: colors.secondaryText, fontSize: FONT_SIZE.sm },
+  fab: { position: 'absolute', bottom: 30, right: 20, backgroundColor: colors.green, paddingVertical: SPACING.lg, paddingHorizontal: SPACING.xxl, borderRadius: 30 },
+  fabText: { color: colors.bg, fontSize: FONT_SIZE.lg, fontWeight: 'bold' },
 });

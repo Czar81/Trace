@@ -15,6 +15,7 @@ import { useTranslation } from '../../context/LanguageContext';
 import { Currency } from '../../types';
 import { sortEnvelopesByTypeAndName } from '../../domain/budget/envelopeSorting';
 import { getUnallocated, parseAmount, toInputString } from '../../domain/budget/allocation';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AssignIncome'>;
 
@@ -169,20 +170,20 @@ export const AssignIncomeScreen = ({ navigation }: Props) => {
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   keyboardAvoiding: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16 },
-  headerBtn: { padding: 4 },
-  headerTitle: { color: colors.white, fontSize: 18, fontWeight: 'bold', flex: 1, textAlign: 'center' },
-  form: { paddingHorizontal: 20, paddingBottom: 60 },
-  label: { color: colors.white, fontSize: 16, fontWeight: '600', marginBottom: 8 },
-  hint: { color: colors.secondaryText, fontSize: 13, marginBottom: 16 },
-  input: { backgroundColor: colors.cardBg, borderRadius: 12, padding: 16, color: colors.white, fontSize: 16, marginBottom: 24 },
-  remainingCard: { backgroundColor: colors.cardBg, borderRadius: 12, padding: 16, marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingTop: SPACING.xl, paddingBottom: SPACING.lg },
+  headerBtn: { padding: SPACING.xs },
+  headerTitle: { color: colors.white, fontSize: FONT_SIZE.xl, fontWeight: 'bold', flex: 1, textAlign: 'center' },
+  form: { paddingHorizontal: SPACING.xl, paddingBottom: 60 },
+  label: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '600', marginBottom: SPACING.sm },
+  hint: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, marginBottom: SPACING.lg },
+  input: { backgroundColor: colors.cardBg, borderRadius: RADIUS.md, padding: SPACING.lg, color: colors.white, fontSize: FONT_SIZE.lg, marginBottom: SPACING.xxl },
+  remainingCard: { backgroundColor: colors.cardBg, borderRadius: RADIUS.md, padding: SPACING.lg, marginBottom: SPACING.lg, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   remainingCardOver: { borderWidth: 1, borderColor: colors.red },
-  remainingLabel: { color: colors.secondaryText, fontSize: 14 },
-  remainingAmount: { color: colors.white, fontSize: 20, fontWeight: 'bold' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  rowName: { color: colors.white, fontSize: 15, flex: 1 },
-  restBtn: { color: colors.secondaryText, fontSize: 12, fontWeight: '600' },
-  rowInput: { backgroundColor: colors.cardBg, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: colors.white, fontSize: 16, width: 110, textAlign: 'right' },
-  errorText: { color: colors.red, fontSize: 14, marginVertical: 12 },
+  remainingLabel: { color: colors.secondaryText, fontSize: FONT_SIZE.md },
+  remainingAmount: { color: colors.white, fontSize: FONT_SIZE.xxl, fontWeight: 'bold' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: SPACING.md },
+  rowName: { color: colors.white, fontSize: FONT_SIZE.base, flex: 1 },
+  restBtn: { color: colors.secondaryText, fontSize: FONT_SIZE.xs, fontWeight: '600' },
+  rowInput: { backgroundColor: colors.cardBg, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.md, paddingVertical: 10, color: colors.white, fontSize: FONT_SIZE.lg, width: 110, textAlign: 'right' },
+  errorText: { color: colors.red, fontSize: FONT_SIZE.md, marginVertical: SPACING.md },
 });

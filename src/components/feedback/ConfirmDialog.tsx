@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 interface ConfirmDialogProps {
   visible: boolean;
@@ -108,7 +109,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   card: {
     width: '100%',
     backgroundColor: colors.cardBg,
-    borderRadius: 20,
+    borderRadius: RADIUS.pill,
     overflow: 'hidden',
   },
   title: {
@@ -116,16 +117,16 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     textAlign: 'center',
-    paddingTop: 24,
-    paddingHorizontal: 20,
-    marginBottom: 8,
+    paddingTop: SPACING.xxl,
+    paddingHorizontal: SPACING.xl,
+    marginBottom: SPACING.sm,
   },
   message: {
     color: colors.secondaryText,
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     textAlign: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING.xl,
     lineHeight: 20,
   },
   divider: {
@@ -137,12 +138,12 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   cancelBtn: {
     flex: 1,
-    paddingVertical: 16,
+    paddingVertical: SPACING.lg,
     alignItems: 'center',
   },
   cancelText: {
     color: colors.secondaryText,
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
   },
   actionDivider: {
@@ -153,7 +154,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
   },
   confirmBtnInner: {
-    paddingVertical: 16,
+    paddingVertical: SPACING.lg,
     alignItems: 'center',
   },
   singleActionBtn: {
@@ -162,7 +163,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   confirmBtnDestructive: {},
   confirmText: {
     color: colors.green,
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '700',
   },
   confirmTextDestructive: {

@@ -7,6 +7,7 @@ import { ChevronDown, Check } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 export interface DropdownOption {
   label: string;
@@ -121,18 +122,18 @@ export const Dropdown: React.FC<DropdownProps> = ({
 };
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
-  wrapper: { marginBottom: 24 },
-  label: { color: colors.white, fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  wrapper: { marginBottom: SPACING.xxl },
+  label: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '600', marginBottom: SPACING.sm },
   trigger: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.cardBg,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.lg,
   },
-  triggerText: { color: colors.white, fontSize: 16, flex: 1 },
+  triggerText: { color: colors.white, fontSize: FONT_SIZE.lg, flex: 1 },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: OVERLAY },
   sheet: {
     position: 'absolute',
@@ -142,26 +143,26 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.modalSheet,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.xl,
     paddingBottom: 40,
     maxHeight: '60%',
   },
-  sheetTitle: { color: colors.white, fontSize: 18, fontWeight: '700', marginBottom: 16, textAlign: 'center' },
+  sheetTitle: { color: colors.white, fontSize: FONT_SIZE.xl, fontWeight: '700', marginBottom: SPACING.lg, textAlign: 'center' },
   searchInput: {
     backgroundColor: colors.cardBg,
-    borderRadius: 10,
+    borderRadius: RADIUS.sm,
     paddingHorizontal: 14,
     paddingVertical: 10,
     color: colors.white,
-    fontSize: 15,
-    marginBottom: 12,
+    fontSize: FONT_SIZE.base,
+    marginBottom: SPACING.md,
   },
   sectionHeader: {
-    color: colors.secondaryText, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4,
+    color: colors.secondaryText, fontSize: FONT_SIZE.xs, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4,
     backgroundColor: colors.modalSheet, paddingTop: 14, paddingBottom: 6,
   },
-  option: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16 },
-  optionText: { color: colors.white, fontSize: 16 },
+  option: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: SPACING.lg },
+  optionText: { color: colors.white, fontSize: FONT_SIZE.lg },
   divider: { height: 1, backgroundColor: colors.divider },
 });

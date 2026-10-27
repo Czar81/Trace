@@ -8,6 +8,7 @@ import { useTranslation } from '../../context/LanguageContext';
 import { Currency, Envelope, TransactionCategory } from '../../types';
 import { formatCurrency } from '../../domain/shared/formatCurrency';
 import { getUnallocated, parseAmount, splitEqually, toInputString } from '../../domain/budget/allocation';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 export interface SplitPart {
   key: string;
@@ -108,12 +109,12 @@ export const SplitEditor: React.FC<SplitEditorProps> = ({ parts, onChange, total
 };
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
-  container: { marginBottom: 16 },
-  part: { backgroundColor: colors.cardBg, borderRadius: 14, padding: 14, marginBottom: 12 },
-  partHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  partTitle: { color: colors.white, fontSize: 15, fontWeight: '700' },
-  input: { backgroundColor: colors.bg, borderRadius: 10, padding: 12, color: colors.white, fontSize: 16 },
-  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8 },
-  addText: { color: colors.secondaryText, fontSize: 14, fontWeight: '600' },
-  remaining: { color: colors.green, fontSize: 14, fontWeight: '600', marginTop: 4 },
+  container: { marginBottom: SPACING.lg },
+  part: { backgroundColor: colors.cardBg, borderRadius: RADIUS.lg, padding: 14, marginBottom: SPACING.md },
+  partHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md },
+  partTitle: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '700' },
+  input: { backgroundColor: colors.bg, borderRadius: RADIUS.sm, padding: SPACING.md, color: colors.white, fontSize: FONT_SIZE.lg },
+  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: SPACING.sm },
+  addText: { color: colors.secondaryText, fontSize: FONT_SIZE.md, fontWeight: '600' },
+  remaining: { color: colors.green, fontSize: FONT_SIZE.md, fontWeight: '600', marginTop: SPACING.xs },
 });

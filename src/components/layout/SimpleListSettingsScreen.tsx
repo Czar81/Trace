@@ -7,6 +7,7 @@ import { ConfirmDialog } from '../feedback/ConfirmDialog';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 interface ListItem {
   id: string;
@@ -79,7 +80,7 @@ const ListSection: React.FC<ListSectionConfig & { onRequestDelete: (p: PendingDe
       <Text style={styles.sectionTitle}>{addSectionTitle}</Text>
       <View style={styles.addRow}>
         <TextInput
-          style={[styles.input, { flex: 1, marginBottom: 0, marginRight: 12 }]}
+          style={[styles.input, { flex: 1, marginBottom: 0, marginRight: SPACING.md }]}
           value={newItemName}
           onChangeText={setNewItemName}
           placeholder={addPlaceholder}
@@ -167,16 +168,16 @@ export const SimpleListSettingsScreen: React.FC<SimpleListSettingsScreenProps> =
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.lg },
   headerBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: colors.white, fontSize: 20, fontWeight: 'bold' },
+  headerTitle: { color: colors.white, fontSize: FONT_SIZE.xxl, fontWeight: 'bold' },
   keyboardAvoiding: { flex: 1 },
-  scroll: { paddingHorizontal: 20, paddingBottom: 60 },
-  groupTitle: { color: colors.green, fontSize: 13, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', marginTop: 28, marginBottom: -12 },
-  sectionTitle: { color: colors.white, fontSize: 16, fontWeight: '700', marginTop: 28, marginBottom: 12 },
+  scroll: { paddingHorizontal: SPACING.xl, paddingBottom: 60 },
+  groupTitle: { color: colors.green, fontSize: FONT_SIZE.sm, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', marginTop: 28, marginBottom: -12 },
+  sectionTitle: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '700', marginTop: 28, marginBottom: SPACING.md },
   listItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.divider },
-  listItemText: { color: colors.white, fontSize: 16, flex: 1, paddingRight: 12 },
+  listItemText: { color: colors.white, fontSize: FONT_SIZE.lg, flex: 1, paddingRight: SPACING.md },
   addRow: { flexDirection: 'row', alignItems: 'center', marginTop: 14 },
-  input: { backgroundColor: colors.cardBg, borderRadius: 12, padding: 14, color: colors.white, fontSize: 16, marginBottom: 12 },
-  addBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.green, justifyContent: 'center', alignItems: 'center' },
+  input: { backgroundColor: colors.cardBg, borderRadius: RADIUS.md, padding: 14, color: colors.white, fontSize: FONT_SIZE.lg, marginBottom: SPACING.md },
+  addBtn: { width: 48, height: 48, borderRadius: RADIUS.sheet, backgroundColor: colors.green, justifyContent: 'center', alignItems: 'center' },
 });

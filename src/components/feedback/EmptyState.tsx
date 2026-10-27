@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 interface EmptyStateProps {
   message: string;
@@ -26,14 +27,14 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ message, ctaLabel, onPre
 };
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
-  container: { alignItems: 'center', marginTop: 40, paddingHorizontal: 20 },
-  message: { color: colors.secondaryText, fontSize: 15, textAlign: 'center', fontStyle: 'italic' },
+  container: { alignItems: 'center', marginTop: 40, paddingHorizontal: SPACING.xl },
+  message: { color: colors.secondaryText, fontSize: FONT_SIZE.base, textAlign: 'center', fontStyle: 'italic' },
   cta: {
-    marginTop: 16,
+    marginTop: SPACING.lg,
     backgroundColor: colors.green,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 24,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+    borderRadius: RADIUS.sheet,
   },
-  ctaText: { color: colors.bg, fontSize: 15, fontWeight: '700' },
+  ctaText: { color: colors.bg, fontSize: FONT_SIZE.base, fontWeight: '700' },
 });

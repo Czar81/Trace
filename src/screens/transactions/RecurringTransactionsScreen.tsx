@@ -12,6 +12,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { formatCadence } from '../../domain/recurring/recurrence';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Recurring'>;
 
@@ -115,26 +116,26 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.lg },
   headerBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: colors.white, fontSize: 20, fontWeight: 'bold' },
-  list: { paddingHorizontal: 20, paddingBottom: 100 },
-  emptyText: { color: colors.secondaryText, fontSize: 15, textAlign: 'center', marginTop: 40 },
+  headerTitle: { color: colors.white, fontSize: FONT_SIZE.xxl, fontWeight: 'bold' },
+  list: { paddingHorizontal: SPACING.xl, paddingBottom: 100 },
+  emptyText: { color: colors.secondaryText, fontSize: FONT_SIZE.base, textAlign: 'center', marginTop: 40 },
   card: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.cardBg,
-    borderRadius: 16, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: colors.divider,
+    borderRadius: RADIUS.xl, padding: SPACING.lg, marginBottom: 14, borderWidth: 1, borderColor: colors.divider,
   },
   cardMain: { flex: 1 },
-  cardTitle: { color: colors.white, fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  cardSubtitle: { color: colors.secondaryText, fontSize: 14, marginBottom: 6 },
-  statusText: { fontSize: 12, fontWeight: '700' },
+  cardTitle: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '700', marginBottom: SPACING.xs },
+  cardSubtitle: { color: colors.secondaryText, fontSize: FONT_SIZE.md, marginBottom: 6 },
+  statusText: { fontSize: FONT_SIZE.xs, fontWeight: '700' },
   statusActive: { color: colors.green },
   statusPaused: { color: colors.secondaryText },
-  iconBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center', marginLeft: 4 },
+  iconBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center', marginLeft: SPACING.xs },
   fab: {
     position: 'absolute', bottom: 24, alignSelf: 'center',
-    flexDirection: 'row', alignItems: 'center', gap: 8,
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
     backgroundColor: colors.green, borderRadius: 28, paddingVertical: 14, paddingHorizontal: 22,
   },
-  fabText: { color: colors.bg, fontSize: 15, fontWeight: '700' },
+  fabText: { color: colors.bg, fontSize: FONT_SIZE.base, fontWeight: '700' },
 });

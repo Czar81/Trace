@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
+import { FONT_SIZE, SPACING } from '../../theme/tokens';
 
 interface ReceiptViewerProps {
   /** Photos to page through; the viewer is closed when empty. */
@@ -46,6 +47,6 @@ export const ReceiptViewer: React.FC<ReceiptViewerProps> = ({ uris, initialIndex
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 },
-  counter: { color: colors.white, fontSize: 15, fontWeight: '600' },
+  top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: SPACING.lg },
+  counter: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '600' },
 });

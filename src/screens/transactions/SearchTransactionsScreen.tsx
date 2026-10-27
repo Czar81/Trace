@@ -14,6 +14,7 @@ import { useTranslation } from '../../context/LanguageContext';
 import { filterTransactions, hasActiveSearch, SearchFilters } from '../../domain/transactions/transactionSearch';
 import { groupTransactionsByDay } from '../../domain/transactions/transactionGrouping';
 import { Transaction } from '../../types';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Search'>;
 
@@ -254,36 +255,36 @@ const TransactionResultRow: React.FC<{
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.lg },
   headerBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: colors.white, fontSize: 20, fontWeight: 'bold' },
+  headerTitle: { color: colors.white, fontSize: FONT_SIZE.xxl, fontWeight: 'bold' },
   searchRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: colors.cardBg, borderRadius: 12, marginHorizontal: 20,
-    paddingHorizontal: 14, paddingVertical: 12, marginBottom: 12,
+    backgroundColor: colors.cardBg, borderRadius: RADIUS.md, marginHorizontal: SPACING.xl,
+    paddingHorizontal: 14, paddingVertical: SPACING.md, marginBottom: SPACING.md,
   },
-  searchInput: { flex: 1, color: colors.white, fontSize: 15, padding: 0 },
-  filterToggle: { paddingLeft: 4, flexDirection: 'row', alignItems: 'center' },
+  searchInput: { flex: 1, color: colors.white, fontSize: FONT_SIZE.base, padding: 0 },
+  filterToggle: { paddingLeft: SPACING.xs, flexDirection: 'row', alignItems: 'center' },
   filterBadge: {
     minWidth: 16, height: 16, borderRadius: 8, backgroundColor: colors.green,
-    alignItems: 'center', justifyContent: 'center', marginLeft: 4, paddingHorizontal: 4,
+    alignItems: 'center', justifyContent: 'center', marginLeft: SPACING.xs, paddingHorizontal: SPACING.xs,
   },
   filterBadgeText: { color: colors.bg, fontSize: 10, fontWeight: '700' },
-  filtersRow: { flexDirection: 'row', gap: 10, marginHorizontal: 20, marginBottom: 12 },
+  filtersRow: { flexDirection: 'row', gap: 10, marginHorizontal: SPACING.xl, marginBottom: SPACING.md },
   filterHalf: { flex: 1 },
   amountInput: {
-    backgroundColor: colors.cardBg, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14,
-    color: colors.white, fontSize: 14,
+    backgroundColor: colors.cardBg, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 14,
+    color: colors.white, fontSize: FONT_SIZE.md,
   },
-  clearBtn: { alignSelf: 'flex-start', marginHorizontal: 20, marginBottom: 12 },
-  clearBtnText: { color: colors.green, fontSize: 14, fontWeight: '600' },
-  resultsList: { paddingHorizontal: 20, paddingBottom: 60 },
-  sectionHeader: { color: colors.secondaryText, fontSize: 13, fontWeight: '700', marginTop: 16, marginBottom: 6 },
-  resultItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
-  resultLeft: { flex: 1, paddingRight: 12 },
-  resultDesc: { color: colors.white, fontSize: 15, fontWeight: '600', marginBottom: 2 },
-  resultMeta: { color: colors.secondaryText, fontSize: 12, marginBottom: 2 },
-  resultDate: { color: colors.secondaryText, fontSize: 12 },
-  resultAmount: { fontSize: 15, fontWeight: '700' },
+  clearBtn: { alignSelf: 'flex-start', marginHorizontal: SPACING.xl, marginBottom: SPACING.md },
+  clearBtnText: { color: colors.green, fontSize: FONT_SIZE.md, fontWeight: '600' },
+  resultsList: { paddingHorizontal: SPACING.xl, paddingBottom: 60 },
+  sectionHeader: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, fontWeight: '700', marginTop: SPACING.lg, marginBottom: 6 },
+  resultItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: SPACING.md },
+  resultLeft: { flex: 1, paddingRight: SPACING.md },
+  resultDesc: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '600', marginBottom: SPACING.xxs },
+  resultMeta: { color: colors.secondaryText, fontSize: FONT_SIZE.xs, marginBottom: SPACING.xxs },
+  resultDate: { color: colors.secondaryText, fontSize: FONT_SIZE.xs },
+  resultAmount: { fontSize: FONT_SIZE.base, fontWeight: '700' },
   separator: { height: 1, backgroundColor: colors.divider },
 });
