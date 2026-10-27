@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
-import { ArrowLeft, ChevronRight, ChevronDown, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat, Palette, Share2 } from 'lucide-react-native';
+import { ArrowLeft, ChevronRight, ChevronDown, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat, TrendingDown, Palette, Share2 } from 'lucide-react-native';
 import { exportDataToCSV } from '../utils/exportData';
 import { getLatestAutomaticBackupUri, AUTO_BACKUP_INTERVAL_OPTIONS } from '../utils/autoBackup';
 import { isAvailableAsync, shareAsync } from 'expo-sharing';
@@ -187,6 +187,21 @@ export const SettingsScreen = ({ navigation }: Props) => {
           <View style={styles.menuTextWrapper}>
             <Text style={styles.menuTitle}>{t('settings.recurring')}</Text>
             <Text style={styles.menuSubtitle}>{t('settings.recurringSubtitle')}</Text>
+          </View>
+          <ChevronRight color={colors.secondaryText} size={20} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('DebtPayoffPlan')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <TrendingDown color={colors.white} size={18} />
+          </View>
+          <View style={styles.menuTextWrapper}>
+            <Text style={styles.menuTitle}>{t('settings.debtPayoff')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.debtPayoffSubtitle')}</Text>
           </View>
           <ChevronRight color={colors.secondaryText} size={20} />
         </TouchableOpacity>
