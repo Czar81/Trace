@@ -26,6 +26,25 @@ function formatDisplay(raw: string): string {
 }
 
 /**
+ * Turns what the field now shows into a raw numeric string. Commas in the
+ * display are thousands separators, but a comma the user just typed, or one
+ * pasted before the last one or two digits (e.g. "12,50"), is read as the
+ * decimal point, since many keyboards in Spanish only offer a comma.
+ */
+export function parseCurrencyInput(text: string, previousRaw: string): string {
+  const previousDisplay = formatDisplay(previousRaw);
+  let normalized = text;
+  if (text.length === previousDisplay.length + 1) {
+    let i = 0;
+    while (i < previousDisplay.length && text[i] === previousDisplay[i]) i++;
+    if (text[i] === ',') normalized = text.slice(0, i) + '.' + text.slice(i + 1);
+  } else if (text.length > previousDisplay.length + 1 && !text.includes('.')) {
+    normalized = text.replace(/,(\d{1,2})$/, '.$1');
+  }
+  return sanitize(normalized);
+}
+
+/**
  * Strips everything except digits and the first decimal point.
  */
 function sanitize(text: string): string {
@@ -52,8 +71,8 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
   const display = formatDisplay(value);
 
   const handleChange = useCallback((text: string) => {
-    onChangeText(sanitize(text));
-  }, [onChangeText]);
+    onChangeText(parseCurrencyInput(text, value));
+  }, [onChangeText, value]);
 
   return (
     <View style={styles.wrapper}>
@@ -64,7 +83,7 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
           {...rest}
           value={display}
           onChangeText={handleChange}
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
           placeholder={placeholder}
           placeholderTextColor={colors.secondaryText}
           style={[styles.input, style]}

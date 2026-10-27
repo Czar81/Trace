@@ -185,7 +185,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
                   ? t('envelope.debtTotal')
                   : t('envelope.savingsGoal')
               }
-              currency={settings.defaultCurrency}
+              currency={currency}
               value={limitStr}
               onChangeText={(text) => { setLimitStr(text); setLimitError(''); }}
             />
@@ -244,7 +244,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
 
             <CurrencyInput
               label={t('envelope.minimumPayment')}
-              currency={settings.defaultCurrency}
+              currency={currency}
               value={minimumPaymentStr}
               onChangeText={setMinimumPaymentStr}
             />

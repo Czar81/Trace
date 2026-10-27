@@ -108,6 +108,8 @@ export const MainScreen = ({ navigation }: Props) => {
   const { envelopes, getTotalByType, getEnvelopeBalance, formatAmount, settings, convertToCRC, resetAllEnvelopes, paymentMethods, categories, transactions } = useAppData();
   const [activeTab, setActiveTab] = useState<EnvelopeType>('gasto');
   const [displayCurrency, setDisplayCurrency] = useState<Currency>(settings.defaultCurrency);
+  // Settings load after the first render (and can change), so follow the saved default.
+  useEffect(() => { setDisplayCurrency(settings.defaultCurrency); }, [settings.defaultCurrency]);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const scrollX = useRef(new Animated.Value(0)).current;
