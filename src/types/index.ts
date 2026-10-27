@@ -70,6 +70,8 @@ export interface RecurringTransactionTemplate {
   anchorDate?: string; // ISO date, first occurrence for 'biweekly'
   month?: number; // 1-12, used by 'annual'
   isActive: boolean;
+  /** ISO date the template was created or last reactivated; generation never backfills before it. */
+  activeSince?: string;
   lastGeneratedPeriod: string | null; // occurrence key: 'YYYY-MM' (monthly), 'YYYY' (annual), 'YYYY-Www' (weekly), or ISO due date (biweekly)
   reminderNotificationId: string | null;
   lastReminderScheduledPeriod: string | null; // occurrence key, same scheme as lastGeneratedPeriod

@@ -21,9 +21,16 @@ import {
   clampDayOfMonth, getNextDueDate, getOccurrenceKey,
   getDebtCycleDate, getDebtCycleOccurrenceKey, getPreviousDebtCycleDate, DebtCycleAnchor,
 } from '../utils/recurrence';
+import { calculateEnvelopeBalance, computeEnvelopeBalances, getCutoffPeriodStart } from '../utils/balance';
+import { accrueDebtInterest, generateRecurringTransactions } from '../utils/recurringGeneration';
 
-// Re-exported for backward compatibility — other modules import clampDayOfMonth from here.
-export { clampDayOfMonth };
+// Re-exported for backward compatibility — other modules and tests import these from here.
+export { clampDayOfMonth, calculateEnvelopeBalance, getCutoffPeriodStart, accrueDebtInterest };
+
+/** Strips the time component, keeping year/month/day in local time. */
+function dateOnly(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+}
 
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 const loadNotifications = () => isExpoGo ? Promise.resolve(null) : import('expo-notifications');
@@ -45,128 +52,6 @@ const requestNotificationPermissions = async () => {
   const notifications = await loadNotifications();
   if (notifications) await notifications.requestPermissionsAsync();
 };
-
-/** Strips the time component, keeping year/month/day in local time. */
-function dateOnly(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-}
-
-/**
- * Start of the current cutoff period: this month's cutoffDay if we've reached it,
- * otherwise last month's. Clamped to the target month's last day so cutoffDay values
- * like 31 don't roll over into the next month on shorter months.
- */
-export function getCutoffPeriodStart(now: Date, cutoffDay: number): Date {
-  const targetMonth = now.getDate() >= cutoffDay ? now.getMonth() : now.getMonth() - 1;
-  const day = clampDayOfMonth(now.getFullYear(), targetMonth, cutoffDay);
-  return new Date(now.getFullYear(), targetMonth, day, 0, 0, 0, 0);
-}
-
-/**
- * Pure envelope-balance formula shared by getEnvelopeBalance (live state) and
- * computeSpentPercentage (explicit before/after snapshots for budget alerts).
- * For 'gasto' envelopes with an active cutoff, expenses dated before the current
- * cutoff period start are excluded from the balance.
- */
-export function calculateEnvelopeBalance(
-  envelopeId: string,
-  transactions: Transaction[],
-  envelopes: Envelope[],
-  expenseCutoffEnabled: boolean,
-  expenseCutoffDay: number | null
-): number {
-  const envelope = envelopes.find(e => e.id === envelopeId);
-  // Explicit equality against 'gasto' (not an else-branch), so this already
-  // correctly excludes 'ahorro' and 'deuda' envelopes from cutoff filtering.
-  const isGastoEnvelope = envelope?.type === 'gasto';
-  const hasCutoff = isGastoEnvelope && expenseCutoffEnabled && !!expenseCutoffDay;
-  const periodStart = hasCutoff ? getCutoffPeriodStart(new Date(), expenseCutoffDay as number) : null;
-
-  return transactions.reduce((sum, t) => {
-    if (t.isArchived) return sum;
-
-    if (hasCutoff && t.type === 'expense' && t.envelopeId === envelopeId && periodStart != null) {
-      const transactionDate = new Date(t.date);
-      if (transactionDate < periodStart) {
-        return sum;
-      }
-    }
-
-    if (t.envelopeId === envelopeId) {
-      return sum + (t.type === 'income' ? t.amount : -t.amount);
-    }
-    if (t.type === 'expense' && t.sourceSavingsEnvelopeId === envelopeId) {
-      return sum - t.amount;
-    }
-    if (t.type === 'transfer' && t.toEnvelopeId === envelopeId) {
-      return sum + t.amount;
-    }
-    return sum;
-  }, 0);
-}
-
-/**
- * Accrues interest for debt envelopes whose current cycle (per `interestFrequency`/
- * `dueDay`) has been reached and not yet charged. Posts an ordinary 'expense'
- * transaction per envelope ("Interés"), computed as `interestRate% × amount owed`
- * at cycle start — no separate balance math, same formula as any other debt
- * transaction. Pure and side-effect-free; callers persist the results. Envelopes
- * that are not `deuda`, are `isUnlimited`, or have no rate/frequency/dueDay set
- * pass through unchanged.
- */
-export function accrueDebtInterest(
-  envelopes: Envelope[],
-  transactions: Transaction[],
-  now: Date
-): { updatedEnvelopes: Envelope[]; newTransactions: Transaction[] } {
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-  const newTransactions: Transaction[] = [];
-  let idOffset = 0;
-
-  const updatedEnvelopes = envelopes.map(envelope => {
-    if (
-      envelope.type !== 'deuda' || envelope.isUnlimited ||
-      !envelope.interestRate || envelope.interestRate <= 0 ||
-      !envelope.interestFrequency || !envelope.dueDay
-    ) {
-      return envelope;
-    }
-
-    const anchor: DebtCycleAnchor = {
-      interestFrequency: envelope.interestFrequency,
-      dueDay: envelope.dueDay,
-      dueAnchorMonth: envelope.dueAnchorMonth,
-    };
-    const cycleDate = getDebtCycleDate(anchor, now);
-    if (cycleDate.getTime() > today.getTime()) return envelope;
-
-    const occurrenceKey = getDebtCycleOccurrenceKey(anchor, cycleDate);
-    if (envelope.lastInterestAccrualPeriod === occurrenceKey) return envelope;
-
-    const balance = calculateEnvelopeBalance(envelope.id, transactions, envelopes, false, null);
-    const amountOwed = envelope.limit - balance;
-    // Nothing owed (paid off or overpaid) -> no interest to charge, but the
-    // cycle is still marked handled so it isn't re-evaluated on every app open.
-    if (amountOwed > 0) {
-      const interestAmount = Math.round(amountOwed * (envelope.interestRate / 100) * 100) / 100;
-      if (interestAmount > 0) {
-        newTransactions.push({
-          id: `${Date.now() + idOffset++}-int`,
-          envelopeId: envelope.id,
-          type: 'expense',
-          amount: interestAmount,
-          description: translateActive('debt.interestDescription'),
-          date: cycleDate.toISOString(),
-          isArchived: false,
-        });
-      }
-    }
-
-    return { ...envelope, lastInterestAccrualPeriod: occurrenceKey };
-  });
-
-  return { updatedEnvelopes, newTransactions };
-}
 
 interface AppContextType {
   envelopes: Envelope[];
@@ -258,34 +143,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // ─── Automatic generation of due recurring transactions ──────────────
       const now = new Date();
-      const today = dateOnly(now);
-
-      const newTransactions: Transaction[] = [];
-      let idOffset = 0;
-      const finalTemplates = loadedTemplates.map(template => {
-        if (!template.isActive) return template;
-
-        const dueDate = getNextDueDate(template, now);
-        if (dueDate.getTime() > today.getTime()) return template;
-
-        const occurrenceKey = getOccurrenceKey(template, dueDate);
-        if (template.lastGeneratedPeriod === occurrenceKey) return template;
-
-        newTransactions.push({
-          id: (Date.now() + idOffset++).toString(),
-          envelopeId: template.envelopeId,
-          type: template.type,
-          amount: template.amount,
-          description: template.description,
-          date: dueDate.toISOString(),
-          paymentMethodId: template.paymentMethodId,
-          categoryId: template.categoryId,
-          sourceSavingsEnvelopeId: template.sourceSavingsEnvelopeId,
-          isArchived: false,
-        });
-
-        return { ...template, lastGeneratedPeriod: occurrenceKey };
-      });
+      const { updatedTemplates: finalTemplates, newTransactions } = generateRecurringTransactions(loadedTemplates, now);
 
       // ─── Debt envelope interest accrual ────────────────────────────────────
       const transactionsBeforeDebtProcessing = [...newTransactions, ...loadedTransactions];
@@ -383,54 +241,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   // ─── Balance computation ───────────────────────────────────────────────────
-  /**
-   * Envelope id -> balance, computed in a single pass over `transactions` so
-   * per-envelope lookups (e.g. rendering the envelope list) are O(1) instead of
-   * each doing its own O(n) reduce. Mirrors calculateEnvelopeBalance's formula:
-   * a transaction affects at most two envelopes (its own envelopeId, and, for
-   * expenses funded from savings, sourceSavingsEnvelopeId; or for transfers,
-   * toEnvelopeId), so both effects are applied per transaction as the map is built.
-   */
-  const envelopeBalanceMap = useMemo(() => {
-    const map = new Map<string, number>();
-    const envelopeById = new Map(envelopes.map(e => [e.id, e]));
-    const cutoffPeriodStart = settings.expenseCutoffEnabled && settings.expenseCutoffDay
-      ? getCutoffPeriodStart(new Date(), settings.expenseCutoffDay)
-      : null;
-
-    for (const t of transactions) {
-      if (t.isArchived) continue;
-
-      if (t.envelopeId) {
-        const envelope = envelopeById.get(t.envelopeId);
-        // Explicit 'gasto' check — 'ahorro' and 'deuda' envelopes are never cutoff-filtered.
-        const hasCutoff = envelope?.type === 'gasto' && cutoffPeriodStart != null;
-        const skip = hasCutoff && t.type === 'expense' && new Date(t.date) < (cutoffPeriodStart as Date);
-        if (!skip) {
-          const delta = t.type === 'income' ? t.amount : -t.amount;
-          map.set(t.envelopeId, (map.get(t.envelopeId) ?? 0) + delta);
-        }
-      }
-      if (t.type === 'expense' && t.sourceSavingsEnvelopeId) {
-        const sourceId = t.sourceSavingsEnvelopeId;
-        map.set(sourceId, (map.get(sourceId) ?? 0) - t.amount);
-      }
-      if (t.type === 'transfer' && t.toEnvelopeId) {
-        const destId = t.toEnvelopeId;
-        map.set(destId, (map.get(destId) ?? 0) + t.amount);
-      }
-    }
-
-    return map;
-  }, [transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay]);
+  /** Envelope id -> balance, computed once per change so per-envelope lookups are O(1). */
+  const envelopeBalanceMap = useMemo(
+    () => computeEnvelopeBalances(transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay),
+    [transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay]
+  );
 
   const getEnvelopeBalance = useCallback((envelopeId: string): number => {
-    const cached = envelopeBalanceMap.get(envelopeId);
-    if (cached !== undefined) return cached;
-    // Fallback for ids not present in the map (e.g. a brand-new envelope with
-    // zero transactions) — never hit in practice, but keeps this correct.
-    return calculateEnvelopeBalance(envelopeId, transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay);
-  }, [envelopeBalanceMap, transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay]);
+    // Envelopes with no transactions are absent from the map.
+    return envelopeBalanceMap.get(envelopeId) ?? 0;
+  }, [envelopeBalanceMap]);
 
   /**
    * getTotalByType computes the sum of all envelope *available balances*
@@ -905,6 +725,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newTemplate: RecurringTransactionTemplate = {
       ...templateData,
       id: Date.now().toString(),
+      activeSince: new Date().toISOString(),
       lastGeneratedPeriod: null,
       reminderNotificationId: null,
       lastReminderScheduledPeriod: null,
@@ -935,7 +756,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    const updated = workingTemplates.map(t => (t.id === id ? { ...t, ...updates } : t));
+    const updated = workingTemplates.map(t => {
+      if (t.id !== id) return t;
+      const merged = { ...t, ...updates };
+      // Reactivating, or switching to a frequency whose period keys differ, starts
+      // generation over from today instead of backfilling the paused/old schedule.
+      const restartsSchedule = (updates.isActive === true && !t.isActive) ||
+        (updates.frequency !== undefined && updates.frequency !== t.frequency);
+      return restartsSchedule ? { ...merged, lastGeneratedPeriod: null, activeSince: new Date().toISOString() } : merged;
+    });
     const withReminders = await scheduleBillReminders(updated, envelopes, settings.billRemindersEnabled, settings.billReminderLeadDays);
     setRecurringTemplates(withReminders);
     await saveRecurringTemplates(withReminders);
