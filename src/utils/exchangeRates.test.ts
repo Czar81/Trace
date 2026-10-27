@@ -1,4 +1,4 @@
-import { areRatesStale, fetchExchangeRates, parseRatesResponse } from './exchangeRates';
+import { areRatesStale, canRefreshNow, fetchExchangeRates, parseRatesResponse } from './exchangeRates';
 
 const ok = { result: 'success', rates: { CRC: 500, EUR: 0.92 } };
 
@@ -24,5 +24,14 @@ describe('exchange rates', () => {
     expect(areRatesStale(undefined, now)).toBe(true);
     expect(areRatesStale('2026-10-27T10:00:00Z', now)).toBe(false);
     expect(areRatesStale('2026-10-26T10:00:00Z', now)).toBe(true);
+  });
+});
+
+describe('canRefreshNow', () => {
+  const now = Date.parse('2026-10-27T12:00:00Z');
+  it('blocks a second manual refresh within five minutes', () => {
+    expect(canRefreshNow('2026-10-27T11:57:00Z', now)).toBe(false);
+    expect(canRefreshNow('2026-10-27T11:50:00Z', now)).toBe(true);
+    expect(canRefreshNow(undefined, now)).toBe(true);
   });
 });

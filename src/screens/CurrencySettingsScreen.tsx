@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform, Switch, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
@@ -11,7 +11,7 @@ import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
-import { fetchExchangeRates } from '../utils/exchangeRates';
+import { canRefreshNow, fetchExchangeRates } from '../utils/exchangeRates';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CurrencySettings'>;
 
@@ -29,9 +29,13 @@ export const CurrencySettingsScreen = ({ navigation }: Props) => {
     setEurRate(settings.exchangeRates.EUR_TO_CRC.toString());
   }, [settings.exchangeRates]);
 
-  const [fetchStatus, setFetchStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [fetchStatus, setFetchStatus] = useState<'idle' | 'loading' | 'error' | 'recent'>('idle');
 
   const handleFetchRates = async () => {
+    if (!canRefreshNow(settings.exchangeRatesUpdatedAt)) {
+      setFetchStatus('recent');
+      return;
+    }
     setFetchStatus('loading');
     const rates = await fetchExchangeRates();
     if (!rates) {
@@ -105,6 +109,7 @@ export const CurrencySettingsScreen = ({ navigation }: Props) => {
             <RefreshCw color={colors.white} size={16} />
             <Text style={styles.fetchBtnText}>{fetchStatus === 'loading' ? t('currency.fetching') : t('currency.fetchRates')}</Text>
           </TouchableOpacity>
+          {fetchStatus === 'recent' ? <Text style={styles.fetchInfo}>{t('currency.fetchRecent')}</Text> : null}
           {fetchStatus === 'error' ? <Text style={styles.fetchError}>{t('currency.fetchError')}</Text> : null}
           {settings.exchangeRatesUpdatedAt ? (
             <Text style={styles.fetchInfo}>
@@ -123,6 +128,9 @@ export const CurrencySettingsScreen = ({ navigation }: Props) => {
               thumbColor={colors.white}
             />
           </View>
+          <TouchableOpacity onPress={() => Linking.openURL('https://www.exchangerate-api.com')}>
+            <Text style={styles.attribution}>{t('currency.attribution')}</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={[styles.saveBtn, ratesSaved && styles.saveBtnSuccess]} onPress={handleSaveRates}>
             <Text style={styles.saveBtnText}>{ratesSaved ? t('currency.saved') : t('currency.saveRates')}</Text>
           </TouchableOpacity>
@@ -146,6 +154,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   rateSuffix: { color: colors.secondaryText, fontSize: 15, marginLeft: 10, width: 36 },
   fetchBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.cardBg, borderRadius: 12, padding: 14, marginTop: 4 },
   fetchBtnText: { color: colors.white, fontSize: 15, fontWeight: '600' },
+  attribution: { color: colors.secondaryText, fontSize: 12, textDecorationLine: 'underline', marginBottom: 16 },
   fetchError: { color: colors.red, fontSize: 13, marginTop: 8 },
   fetchInfo: { color: colors.secondaryText, fontSize: 12, marginTop: 6 },
   autoRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 16 },

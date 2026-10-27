@@ -29,3 +29,9 @@ export const RATES_STALE_MS = 12 * 60 * 60 * 1000;
 
 export const areRatesStale = (updatedAt: string | undefined, now: number = Date.now()): boolean =>
   !updatedAt || isNaN(Date.parse(updatedAt)) || now - Date.parse(updatedAt) > RATES_STALE_MS;
+
+/** Minimum time between manual refreshes; the provider only publishes new rates daily and rate-limits abusive clients. */
+export const MANUAL_REFRESH_COOLDOWN_MS = 5 * 60 * 1000;
+
+export const canRefreshNow = (updatedAt: string | undefined, now: number = Date.now()): boolean =>
+  !updatedAt || isNaN(Date.parse(updatedAt)) || now - Date.parse(updatedAt) >= MANUAL_REFRESH_COOLDOWN_MS;
