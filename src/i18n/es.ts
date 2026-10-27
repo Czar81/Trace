@@ -402,6 +402,9 @@ export const es = {
   'a11y.changeCurrency': 'Cambiar moneda del total (actual: {currency})',
   // reports currency selector
   'a11y.changeReportsCurrency': 'Cambiar moneda de los reportes (actual: {currency})',
+  // reports drag to reorder
+  'reports.dragHandle': 'Arrastrar {section}',
+  'reports.dragHint': 'Mantén presionado el asa para arrastrar una sección.',
 } as const;
 
 export type TranslationKey = keyof typeof es;

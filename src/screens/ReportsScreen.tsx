@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
+import { NestableScrollContainer, NestableDraggableFlatList, ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
-import { ArrowLeft, Calendar, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react-native';
+import { ArrowLeft, Calendar, ChevronDown, ChevronUp, GripVertical, SlidersHorizontal } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { RootStackParamList } from '../navigation/types';
 import { EmptyState as SharedEmptyState } from '../components/EmptyState';
@@ -347,7 +348,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <NestableScrollContainer contentContainerStyle={styles.scroll}>
         <View style={styles.periodRow}>
           {PERIOD_OPTIONS.map(opt => (
             <TouchableOpacity
@@ -436,32 +437,52 @@ export const ReportsScreen = ({ navigation }: Props) => {
 
         {editingLayout && (
           <View style={styles.card}>
-            {layout.map((item, index) => (
-              <View key={item.id} style={styles.layoutRow}>
-                <Switch
-                  value={item.visible}
-                  onValueChange={() => toggleSection(item.id)}
-                  trackColor={{ false: colors.divider, true: colors.green }}
-                />
-                <Text style={[styles.rowLabel, styles.layoutLabel]}>{t(SECTION_LABELS[item.id])}</Text>
-                <TouchableOpacity
-                  onPress={() => moveSection(index, -1)}
-                  disabled={index === 0}
-                  style={[styles.moveBtn, index === 0 && styles.moveBtnDisabled]}
-                  accessibilityLabel={t('reports.moveUp', { section: t(SECTION_LABELS[item.id]) })}
-                >
-                  <ChevronUp color={colors.white} size={20} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => moveSection(index, 1)}
-                  disabled={index === layout.length - 1}
-                  style={[styles.moveBtn, index === layout.length - 1 && styles.moveBtnDisabled]}
-                  accessibilityLabel={t('reports.moveDown', { section: t(SECTION_LABELS[item.id]) })}
-                >
-                  <ChevronDown color={colors.white} size={20} />
-                </TouchableOpacity>
-              </View>
-            ))}
+            <Text style={styles.dragHint}>{t('reports.dragHint')}</Text>
+            <NestableDraggableFlatList
+              data={layout}
+              keyExtractor={item => item.id}
+              onDragEnd={({ data }) => applyLayout(data)}
+              renderItem={({ item, drag, isActive, getIndex }: RenderItemParams<ReportLayoutItem>) => {
+                const index = getIndex() ?? 0;
+                return (
+                  <ScaleDecorator>
+                    <View style={[styles.layoutRow, isActive && styles.layoutRowActive]}>
+                      <TouchableOpacity
+                        onLongPress={drag}
+                        delayLongPress={150}
+                        disabled={isActive}
+                        style={styles.dragHandle}
+                        accessibilityLabel={t('reports.dragHandle', { section: t(SECTION_LABELS[item.id]) })}
+                      >
+                        <GripVertical color={colors.secondaryText} size={20} />
+                      </TouchableOpacity>
+                      <Switch
+                        value={item.visible}
+                        onValueChange={() => toggleSection(item.id)}
+                        trackColor={{ false: colors.divider, true: colors.green }}
+                      />
+                      <Text style={[styles.rowLabel, styles.layoutLabel]}>{t(SECTION_LABELS[item.id])}</Text>
+                      <TouchableOpacity
+                        onPress={() => moveSection(index, -1)}
+                        disabled={index === 0}
+                        style={[styles.moveBtn, index === 0 && styles.moveBtnDisabled]}
+                        accessibilityLabel={t('reports.moveUp', { section: t(SECTION_LABELS[item.id]) })}
+                      >
+                        <ChevronUp color={colors.white} size={20} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => moveSection(index, 1)}
+                        disabled={index === layout.length - 1}
+                        style={[styles.moveBtn, index === layout.length - 1 && styles.moveBtnDisabled]}
+                        accessibilityLabel={t('reports.moveDown', { section: t(SECTION_LABELS[item.id]) })}
+                      >
+                        <ChevronDown color={colors.white} size={20} />
+                      </TouchableOpacity>
+                    </View>
+                  </ScaleDecorator>
+                );
+              }}
+            />
             <TouchableOpacity style={styles.resetBtn} onPress={resetLayout} activeOpacity={0.8}>
               <Text style={styles.resetBtnText}>{t('reports.reset')}</Text>
             </TouchableOpacity>
@@ -471,7 +492,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
         {layout.filter(item => item.visible).map(item => (
           <React.Fragment key={item.id}>{sectionNodes[item.id]}</React.Fragment>
         ))}
-      </ScrollView>
+      </NestableScrollContainer>
     </SafeAreaView>
   );
 };
@@ -513,6 +534,9 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   summaryValue: { color: colors.white, fontSize: 16, fontWeight: '700' },
   layoutToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16, alignSelf: 'flex-start' },
   layoutToggleText: { color: colors.secondaryText, fontSize: 13, fontWeight: '600' },
+  layoutRowActive: { backgroundColor: colors.cardHighlight, borderRadius: 12 },
+  dragHint: { color: colors.secondaryText, fontSize: 12, marginBottom: 12 },
+  dragHandle: { paddingRight: 8, paddingVertical: 4 },
   layoutRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
   layoutLabel: { flex: 1 },
   moveBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
