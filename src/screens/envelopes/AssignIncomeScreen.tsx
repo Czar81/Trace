@@ -37,9 +37,9 @@ export const AssignIncomeScreen = ({ navigation }: Props) => {
   const [amounts, setAmounts] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
 
-  // Debts are paid down via income too, but a paycheck split is for spending and savings envelopes.
+  // A paycheck split only feeds savings envelopes; spending and debt envelopes are excluded.
   const targets = useMemo(
-    () => sortEnvelopesByTypeAndName(envelopes.filter(e => e.currency === currency && e.type !== 'deuda')),
+    () => sortEnvelopesByTypeAndName(envelopes.filter(e => e.currency === currency && e.type === 'ahorro')),
     [envelopes, currency]
   );
 
