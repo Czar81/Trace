@@ -64,3 +64,12 @@
 
 4. **Ejecutar en tu dispositivo:**
    Escanea el código QR con la app Expo Go (Android/iOS).
+
+## Arquitectura
+
+Capas con dependencias en un solo sentido (`screens → context → services → domain`):
+
+- `src/domain/` — lógica pura (balances, recurrencia, reportes, validaciones). Sin I/O, fácil de probar.
+- `src/services/` — efectos: AsyncStorage, notificaciones, backups, tipos de cambio, recibos, bloqueo.
+- `src/context/` — estado. `useDataStore` serializa los cambios (`runExclusive` + `commit`); `actions/` tiene un hook por área (sobres, transacciones, plantillas, catálogos); `ExpenseContext` los compone y expone `useAppData`.
+- `src/screens/`, `src/components/` — UI.
