@@ -5,7 +5,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
 import { EnvelopeType, Currency, Envelope } from '../types';
 import { RootStackParamList } from '../navigation/types';
-import { Settings, MoreVertical, RefreshCw, Search } from 'lucide-react-native';
+import { Settings, MoreVertical, RefreshCw, Search, BarChart3, Repeat } from 'lucide-react-native';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
@@ -278,6 +278,12 @@ export const MainScreen = ({ navigation }: Props) => {
         <View style={{ flexDirection: 'row' }}>
           <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Search')} accessibilityRole="button" accessibilityLabel={t('search.title')}>
             <Search color={colors.secondaryText} size={22} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }} onPress={() => navigation.navigate('Reports')} accessibilityRole="button" accessibilityLabel={t('settings.reports')}>
+            <BarChart3 color={colors.secondaryText} size={22} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }} onPress={() => navigation.navigate('Recurring')} accessibilityRole="button" accessibilityLabel={t('settings.recurring')}>
+            <Repeat color={colors.secondaryText} size={22} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Settings')} accessibilityRole="button" accessibilityLabel={t('settings.title')}>
             <MoreVertical color={colors.secondaryText} size={24} />
