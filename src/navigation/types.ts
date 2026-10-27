@@ -8,6 +8,7 @@ export type RootStackParamList = {
   CreateTransfer: { envelopeId?: string; transaction?: Transaction } | undefined;
   AssignIncome: undefined;
   DebtPayoffPlan: undefined;
+  ImportBankCsv: undefined;
   Settings: undefined;
   AppearanceSettings: undefined;
   CurrencySettings: undefined;

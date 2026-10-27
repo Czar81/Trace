@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
-import { ArrowLeft, ChevronRight, ChevronDown, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat, TrendingDown, Palette, Share2 } from 'lucide-react-native';
+import { ArrowLeft, ChevronRight, ChevronDown, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat, TrendingDown, FileSpreadsheet, Palette, Share2 } from 'lucide-react-native';
 import { exportDataToCSV } from '../utils/exportData';
 import { getLatestAutomaticBackupUri, AUTO_BACKUP_INTERVAL_OPTIONS } from '../utils/autoBackup';
 import { isAvailableAsync, shareAsync } from 'expo-sharing';
@@ -314,6 +314,20 @@ export const SettingsScreen = ({ navigation }: Props) => {
         </View>
 
         <Text style={[styles.sectionTitle, { marginTop: 10 }]}>{t('settings.backupSection')}</Text>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('ImportBankCsv')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <FileSpreadsheet color={colors.white} size={18} />
+          </View>
+          <View style={styles.menuTextWrapper}>
+            <Text style={styles.menuTitle}>{t('settings.importBankCsv')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.importBankCsvSubtitle')}</Text>
+          </View>
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.menuItem}
