@@ -25,6 +25,7 @@ export interface Envelope {
   icon: string;
   imageUri?: string;
   color: string;
+  goalDeadline?: string; // ISO date; savings goals only (type === 'ahorro' && !isUnlimited)
   // Debt-only fields (type === 'deuda' && !isUnlimited); undefined/unset otherwise.
   interestRate?: number; // percentage applied per cycle, e.g. 2.5 = 2.5%
   interestFrequency?: DebtInterestFrequency;

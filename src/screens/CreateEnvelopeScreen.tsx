@@ -12,6 +12,7 @@ import { EnvelopeIcon, IconName } from '../components/EnvelopeIcon';
 import { IconPicker } from '../components/IconPicker';
 import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { Dropdown } from '../components/Dropdown';
+import { DateField } from '../components/DateField';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
@@ -57,9 +58,11 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
   const [interestRateStr, setInterestRateStr] = useState(envelope?.interestRate ? String(envelope.interestRate) : '');
   const [interestFrequency, setInterestFrequency] = useState<DebtInterestFrequency>(envelope?.interestFrequency ?? 'mensual');
   const [minimumPaymentStr, setMinimumPaymentStr] = useState(envelope?.minimumPayment ? String(envelope.minimumPayment) : '');
+  const [goalDeadline, setGoalDeadline] = useState<Date | undefined>(envelope?.goalDeadline ? new Date(envelope.goalDeadline) : undefined);
   const [dueDay, setDueDay] = useState<string>(envelope?.dueDay ? String(envelope.dueDay) : '');
 
   const color = envelope?.color ?? defaultColor;
+  const isDeadlineVisible = envelopeType === 'ahorro' && !isUnlimited;
   const isDebtDetailsVisible = envelopeType === 'deuda' && !isUnlimited;
 
   const handleSave = async () => {
@@ -94,8 +97,10 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
           dueAnchorMonth: undefined,
         };
 
+    const goalDeadlineIso = isDeadlineVisible && goalDeadline ? goalDeadline.toISOString() : undefined;
+
     if (isEditing && envelope) {
-      await updateEnvelope(envelope.id, { name: name.trim(), currency, limit, isUnlimited, icon, imageUri, ...debtFields });
+      await updateEnvelope(envelope.id, { name: name.trim(), currency, limit, isUnlimited, icon, imageUri, goalDeadline: goalDeadlineIso, ...debtFields });
     } else {
       await addEnvelope({
         name: name.trim(),
@@ -106,6 +111,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
         color,
         icon,
         imageUri,
+        goalDeadline: goalDeadlineIso,
         ...debtFields,
       });
     }
@@ -218,6 +224,22 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
           />
         </View>
 
+        {isDeadlineVisible && (
+          <View style={styles.deadlineSection}>
+            <Text style={styles.label}>{t('envelope.goalDeadline')}</Text>
+            <DateField
+              value={goalDeadline}
+              placeholder={t('envelope.goalDeadlinePlaceholder')}
+              onChange={setGoalDeadline}
+            />
+            {goalDeadline ? (
+              <TouchableOpacity onPress={() => setGoalDeadline(undefined)}>
+                <Text style={styles.clearDeadline}>{t('envelope.goalDeadlineClear')}</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        )}
+
         {isDebtDetailsVisible && (
           <>
             <Text style={styles.sectionLabel}>{t('envelope.debtDetails')}</Text>
@@ -280,6 +302,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   errorText: { color: colors.red, fontSize: 13, marginTop: -20, marginBottom: 20 },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
   sectionLabel: { color: colors.white, fontSize: 15, fontWeight: '700', marginTop: 28, marginBottom: 12 },
+  deadlineSection: { marginTop: 24 },
+  clearDeadline: { color: colors.secondaryText, fontSize: 14, fontWeight: '600', marginTop: 12 },
   percentRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 24 },
   percentInput: { flex: 1, marginBottom: 0 },
   percentSign: { color: colors.secondaryText, fontSize: 18, fontWeight: '700' },

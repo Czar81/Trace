@@ -14,6 +14,7 @@ import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
 import { groupTransactionsByDay } from '../utils/transactionGrouping';
 import { formatDebtCycle } from '../utils/recurrence';
+import { getGoalDeadlineInfo } from '../utils/savingsGoal';
 import { Transaction } from '../types';
 
 const PAGE_SIZE = 10;
@@ -336,6 +337,27 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
             </Text>
           </View>
         </View>
+
+        {type === 'ahorro' && !envelope.isUnlimited && envelope.goalDeadline ? (() => {
+          const info = getGoalDeadlineInfo(envelope.goalDeadline, envelope.limit, balance);
+          return (
+            <View style={styles.debtDetails}>
+              <Text style={styles.debtDetailText}>
+                {t('detail.goalDeadline', { date: new Date(envelope.goalDeadline).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }) })}
+              </Text>
+              {info.missing === 0 ? (
+                <Text style={styles.debtDetailText}>{t('detail.goalReached')}</Text>
+              ) : info.isOverdue ? (
+                <Text style={[styles.debtDetailText, { color: colors.red }]}>{t('detail.goalOverdue', { days: -info.daysLeft })}</Text>
+              ) : (
+                <>
+                  <Text style={styles.debtDetailText}>{t('detail.goalDaysLeft', { days: info.daysLeft })}</Text>
+                  <Text style={styles.debtDetailText}>{t('detail.goalPerMonth', { amount: formatAmount(info.perMonth ?? 0, envelope.currency) })}</Text>
+                </>
+              )}
+            </View>
+          );
+        })() : null}
 
         {type === 'deuda' && !envelope.isUnlimited && (envelope.interestRate || envelope.minimumPayment || envelope.dueDay) ? (
           <View style={styles.debtDetails}>
