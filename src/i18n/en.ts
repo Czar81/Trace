@@ -293,6 +293,8 @@ export const en: Record<TranslationKey, string> = {
   'search.to': 'To',
   'search.minAmount': 'Min. amount',
   'search.maxAmount': 'Max. amount',
+  'search.showFilters': 'Show filters',
+  'search.hideFilters': 'Hide filters',
   'search.clearFilters': 'Clear filters',
   'search.noResults': 'No transactions found.',
   'search.hint': 'Search by description or use the filters to find a transaction.',

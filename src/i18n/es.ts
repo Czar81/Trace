@@ -294,6 +294,8 @@ export const es = {
   'search.to': 'Hasta',
   'search.minAmount': 'Monto mín.',
   'search.maxAmount': 'Monto máx.',
+  'search.showFilters': 'Mostrar filtros',
+  'search.hideFilters': 'Ocultar filtros',
   'search.clearFilters': 'Limpiar filtros',
   'search.noResults': 'No se encontraron transacciones.',
   'search.hint': 'Busca por descripción o usa los filtros para encontrar una transacción.',
