@@ -15,3 +15,9 @@ export const hapticSave = () => fire(() => Haptics.notificationAsync(Haptics.Not
 
 /** Firmer tap when something is deleted. */
 export const hapticDelete = () => fire(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium));
+
+/** Subtle tick for selection changes such as switching tabs. */
+export const hapticSelection = () => fire(() => Haptics.selectionAsync());
+
+/** Light tap when a gesture crosses its action threshold. */
+export const hapticLight = () => fire(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light));

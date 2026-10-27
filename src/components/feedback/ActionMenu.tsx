@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { MENU_ENTERING } from './menuMotion';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
@@ -26,7 +28,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({ visible, items, onClose 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose} />
-      <View style={styles.popup}>
+      <Animated.View entering={MENU_ENTERING} style={styles.popup}>
         {items.map((item, index) => (
           <View key={index}>
             <TouchableOpacity
@@ -44,7 +46,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({ visible, items, onClose 
             {index < items.length - 1 && <View style={styles.divider} />}
           </View>
         ))}
-      </View>
+      </Animated.View>
     </Modal>
   );
 };
