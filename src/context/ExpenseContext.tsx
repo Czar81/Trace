@@ -1,3 +1,4 @@
+import { areRatesStale, fetchExchangeRates } from '../utils/exchangeRates';
 import { deleteReceiptImage } from '../utils/receipts';
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
@@ -258,6 +259,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIncomeCategories(await loadIncomeCategories());
       const loadedSettings = await loadSettings();
       setSettings(loadedSettings);
+
+      // Refresh exchange rates in the background; offline or API errors keep the saved rates.
+      if (loadedSettings.autoExchangeRates && areRatesStale(loadedSettings.exchangeRatesUpdatedAt)) {
+        void fetchExchangeRates().then(async rates => {
+          if (!rates) return;
+          const refreshed = { ...loadedSettings, exchangeRates: rates, exchangeRatesUpdatedAt: new Date().toISOString() };
+          setSettings(prev => ({ ...prev, exchangeRates: rates, exchangeRatesUpdatedAt: refreshed.exchangeRatesUpdatedAt }));
+          await saveSettings(refreshed);
+        });
+      }
 
       // ─── Automatic generation of due recurring transactions ──────────────
       const now = new Date();

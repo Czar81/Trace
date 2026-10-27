@@ -84,6 +84,9 @@ export interface AppSettings {
     USD_TO_CRC: number;
     EUR_TO_CRC: number;
   };
+  /** When on, rates are refreshed from the internet on app start if older than 12 hours. */
+  autoExchangeRates?: boolean;
+  exchangeRatesUpdatedAt?: string;
   expenseCutoffEnabled: boolean;
   expenseCutoffDay: number | null;
   budgetAlertsEnabled: boolean;
