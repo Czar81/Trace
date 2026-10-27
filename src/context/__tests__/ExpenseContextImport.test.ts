@@ -2,17 +2,17 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 
-jest.mock('../../utils/importData', () => ({
+jest.mock('../../services/importData', () => ({
   pickAndImportBackup: jest.fn(),
 }));
 
 import { setActiveLanguage } from '../../i18n';
 import React from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react-native';
-import { pickAndImportBackup } from '../../utils/importData';
+import { pickAndImportBackup } from '../../services/importData';
 import { AppProvider, useAppData } from '../ExpenseContext';
-import { DEFAULT_SETTINGS, DEFAULT_INCOME_CATEGORIES } from '../../utils/storage';
-import { FullBackup } from '../../utils/importData';
+import { DEFAULT_SETTINGS, DEFAULT_INCOME_CATEGORIES } from '../../services/storage';
+import { FullBackup } from '../../services/importData';
 
 const mockedPickAndImport = pickAndImportBackup as jest.MockedFunction<typeof pickAndImportBackup>;
 

@@ -65,7 +65,7 @@ describe('isLanguagePreference', () => {
 });
 
 describe('localized cadence labels', () => {
-  const { formatCadence } = require('../utils/recurrence');
+  const { formatCadence } = require('../domain/recurrence');
   const template = { frequency: 'weekly', dayOfWeek: 1 };
 
   it('defaults to Spanish and follows the given translator', () => {

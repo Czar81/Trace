@@ -13,8 +13,8 @@ import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
 import { TranslationKey } from '../i18n';
-import { formatCurrency } from '../utils/formatCurrency';
-import { loadMainDisplayCurrency, saveMainDisplayCurrency } from '../utils/storage';
+import { formatCurrency } from '../domain/formatCurrency';
+import { loadMainDisplayCurrency, saveMainDisplayCurrency } from '../services/storage';
 
 const { width } = Dimensions.get('window');
 

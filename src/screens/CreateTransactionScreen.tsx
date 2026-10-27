@@ -12,13 +12,13 @@ import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
-import { sortEnvelopesByTypeAndName } from '../utils/envelopeSorting';
+import { sortEnvelopesByTypeAndName } from '../domain/envelopeSorting';
 import { SplitEditor, SplitPart, newSplitPart } from '../components/SplitEditor';
-import { getUnallocated, parseAmount } from '../utils/allocation';
+import { getUnallocated, parseAmount } from '../domain/allocation';
 import { ReceiptField } from '../components/ReceiptField';
-import { deleteReceiptImage } from '../utils/receipts';
-import { mostUsedCategories } from '../utils/categoryUsage';
-import { hapticSave } from '../utils/haptics';
+import { deleteReceiptImage } from '../services/receipts';
+import { mostUsedCategories } from '../domain/categoryUsage';
+import { hapticSave } from '../services/haptics';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransaction'>;
 

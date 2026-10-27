@@ -11,7 +11,7 @@ import {
   setActiveLanguage,
   translate,
 } from '../i18n';
-import { loadLanguagePreference, saveLanguagePreference } from '../utils/storage';
+import { loadLanguagePreference, saveLanguagePreference } from '../services/storage';
 
 interface LanguageContextType {
   preference: LanguagePreference;

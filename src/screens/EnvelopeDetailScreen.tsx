@@ -12,12 +12,12 @@ import { EnvelopeAvatar } from '../components/EnvelopeAvatar';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
-import { groupTransactionsByDay } from '../utils/transactionGrouping';
-import { formatDebtCycle } from '../utils/recurrence';
-import { getGoalDeadlineInfo } from '../utils/savingsGoal';
+import { groupTransactionsByDay } from '../domain/transactionGrouping';
+import { formatDebtCycle } from '../domain/recurrence';
+import { getGoalDeadlineInfo } from '../domain/savingsGoal';
 import { Transaction } from '../types';
 import { ReceiptViewer } from '../components/ReceiptViewer';
-import { hapticDelete } from '../utils/haptics';
+import { hapticDelete } from '../services/haptics';
 
 const PAGE_SIZE = 10;
 

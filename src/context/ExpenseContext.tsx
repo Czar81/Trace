@@ -1,5 +1,5 @@
-import { areRatesStale, fetchExchangeRates } from '../utils/exchangeRates';
-import { deleteUnreferencedReceipts } from '../utils/receipts';
+import { areRatesStale, fetchExchangeRates } from '../services/exchangeRates';
+import { deleteUnreferencedReceipts } from '../services/receipts';
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Alert, AppState } from 'react-native';
 import { Envelope, Transaction, EnvelopeType, PaymentMethod, TransactionCategory, AppSettings, Currency, RecurringTransactionTemplate } from '../types';
@@ -13,19 +13,19 @@ import {
   AutoBackupState, DEFAULT_AUTO_BACKUP_STATE, loadAutoBackupState,
   saveAutoBackupEnabled, saveAutoBackupIntervalDays, saveAutoBackupLastSuccessAt, saveAutoBackupLastError, saveAutoBackupFolderUri,
   loadRecurringTemplates, saveRecurringTemplates
-} from '../utils/storage';
-import { pickAndImportBackup } from '../utils/importData';
-import { createAutomaticBackup, isBackupDue } from '../utils/autoBackup';
+} from '../services/storage';
+import { pickAndImportBackup } from '../services/importData';
+import { createAutomaticBackup, isBackupDue } from '../services/autoBackup';
 import { translateActive } from '../i18n';
-import { formatCurrency } from '../utils/formatCurrency';
-import { clampDayOfMonth } from '../utils/recurrence';
-import { calculateEnvelopeBalance, computeEnvelopeBalances, getCutoffPeriodStart, roundMoney } from '../utils/balance';
-import { accrueDebtInterest, generateRecurringTransactions } from '../utils/recurringGeneration';
-import { removeEnvelopeReferences } from '../utils/envelopeRemoval';
+import { formatCurrency } from '../domain/formatCurrency';
+import { clampDayOfMonth } from '../domain/recurrence';
+import { calculateEnvelopeBalance, computeEnvelopeBalances, getCutoffPeriodStart, roundMoney } from '../domain/balance';
+import { accrueDebtInterest, generateRecurringTransactions } from '../domain/recurringGeneration';
+import { removeEnvelopeReferences } from '../domain/envelopeRemoval';
 import {
   isExpoGo, requestNotificationPermissions, notifyBudgetThreshold,
   cancelTemplateReminder, scheduleBillReminders, checkMinimumPayments, cancelDebtReminder, scheduleDebtReminders,
-} from '../utils/notifications';
+} from '../services/notifications';
 
 // Re-exported for backward compatibility — other modules and tests import these from here.
 export { clampDayOfMonth, calculateEnvelopeBalance, getCutoffPeriodStart, accrueDebtInterest };

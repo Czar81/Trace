@@ -11,7 +11,7 @@ import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
-import { canRefreshNow, fetchExchangeRates } from '../utils/exchangeRates';
+import { canRefreshNow, fetchExchangeRates } from '../services/exchangeRates';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CurrencySettings'>;
 

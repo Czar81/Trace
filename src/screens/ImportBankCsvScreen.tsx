@@ -11,8 +11,8 @@ import { Dropdown } from '../components/Dropdown';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
-import { sortEnvelopesByTypeAndName } from '../utils/envelopeSorting';
-import { ColumnMapping, CsvTable, guessMapping, isDuplicate, mapRows, parseCsv } from '../utils/bankCsv';
+import { sortEnvelopesByTypeAndName } from '../domain/envelopeSorting';
+import { ColumnMapping, CsvTable, guessMapping, isDuplicate, mapRows, parseCsv } from '../domain/bankCsv';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ImportBankCsv'>;
 

@@ -10,7 +10,7 @@ jest.mock('expo-notifications', () => ({
   requestPermissionsAsync: jest.fn(),
 }));
 
-jest.mock('../../utils/importData', () => ({
+jest.mock('../../services/importData', () => ({
   pickAndImportBackup: jest.fn(),
 }));
 
@@ -19,8 +19,8 @@ import { Alert, AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { renderHook, act, waitFor } from '@testing-library/react-native';
 import { AppProvider, useAppData } from '../ExpenseContext';
-import { pickAndImportBackup, FullBackup } from '../../utils/importData';
-import { DEFAULT_SETTINGS } from '../../utils/storage';
+import { pickAndImportBackup, FullBackup } from '../../services/importData';
+import { DEFAULT_SETTINGS } from '../../services/storage';
 import { Envelope, RecurringTransactionTemplate } from '../../types';
 
 const mockedPick = pickAndImportBackup as jest.MockedFunction<typeof pickAndImportBackup>;

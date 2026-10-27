@@ -13,8 +13,8 @@ import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
 import { TranslationKey } from '../i18n';
 import { EnvelopeType } from '../types';
-import { sortEnvelopesByTypeAndName } from '../utils/envelopeSorting';
-import { hapticSave } from '../utils/haptics';
+import { sortEnvelopesByTypeAndName } from '../domain/envelopeSorting';
+import { hapticSave } from '../services/haptics';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransfer'>;
 

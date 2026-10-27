@@ -15,9 +15,9 @@ import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
 import { TranslationKey } from '../i18n';
 import { Envelope, RecurrenceFrequency } from '../types';
-import { sortEnvelopesByTypeAndName } from '../utils/envelopeSorting';
-import { clampDayOfMonth } from '../utils/recurrence';
-import { hapticSave } from '../utils/haptics';
+import { sortEnvelopesByTypeAndName } from '../domain/envelopeSorting';
+import { clampDayOfMonth } from '../domain/recurrence';
+import { hapticSave } from '../services/haptics';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateRecurringTransaction'>;
 

@@ -7,7 +7,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 
 import { AppProvider, useAppData, getCutoffPeriodStart, accrueDebtInterest } from '../ExpenseContext';
 import { Envelope, Transaction } from '../../types';
-import { DEFAULT_INCOME_CATEGORIES } from '../../utils/storage';
+import { DEFAULT_INCOME_CATEGORIES } from '../../services/storage';
 
 describe('accrueDebtInterest', () => {
   const baseDebtEnvelope = (overrides: Partial<Envelope> = {}): Envelope => ({

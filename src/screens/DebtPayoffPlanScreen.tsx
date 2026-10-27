@@ -12,9 +12,9 @@ import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
 import { Currency, SavedDebtPlan } from '../types';
-import { loadDebtPlans, saveDebtPlans } from '../utils/storage';
-import { PayoffDebt, PayoffStrategy, simulatePayoff } from '../utils/debtPayoff';
-import { parseAmount } from '../utils/allocation';
+import { loadDebtPlans, saveDebtPlans } from '../services/storage';
+import { PayoffDebt, PayoffStrategy, simulatePayoff } from '../domain/debtPayoff';
+import { parseAmount } from '../domain/allocation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DebtPayoffPlan'>;
 

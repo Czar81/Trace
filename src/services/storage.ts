@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SavedDebtPlan, Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings, RecurringTransactionTemplate, Currency } from '../types';
 import { DEFAULT_THEME_ID } from '../theme/colors';
 import { LanguagePreference, DEFAULT_LANGUAGE_PREFERENCE, isLanguagePreference, translateActive } from '../i18n';
-import { ReportLayoutItem, parseReportLayout } from './reports';
+import { ReportLayoutItem, parseReportLayout } from '../domain/reports';
 
 const KEYS = {
   ENVELOPES: '@trace_envelopes',

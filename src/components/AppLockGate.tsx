@@ -5,8 +5,8 @@ import { useAppData } from '../context/ExpenseContext';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
-import { authenticate } from '../utils/deviceAuth';
-import { shouldRelock } from '../utils/appLock';
+import { authenticate } from '../services/deviceAuth';
+import { shouldRelock } from '../services/appLock';
 
 /** Hides the app behind the device's fingerprint/PIN prompt when the lock setting is on. */
 export const AppLockGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {

@@ -6,8 +6,8 @@ import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
 import { Currency, Envelope, TransactionCategory } from '../types';
-import { formatCurrency } from '../utils/formatCurrency';
-import { getUnallocated, parseAmount, splitEqually, toInputString } from '../utils/allocation';
+import { formatCurrency } from '../domain/formatCurrency';
+import { getUnallocated, parseAmount, splitEqually, toInputString } from '../domain/allocation';
 
 export interface SplitPart {
   key: string;

@@ -25,7 +25,7 @@ import {
   loadReportsDisplayCurrency,
   saveReportsDisplayCurrency,
 } from './storage';
-import { REPORT_SECTIONS } from './reports';
+import { REPORT_SECTIONS } from '../domain/reports';
 
 describe('income categories storage', () => {
   beforeEach(async () => {

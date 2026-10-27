@@ -25,9 +25,9 @@ import {
   REPORT_SECTIONS,
   ReportLayoutItem,
   ReportSectionId,
-} from '../utils/reports';
-import { loadReportLayout, saveReportLayout, loadReportsDisplayCurrency, saveReportsDisplayCurrency } from '../utils/storage';
-import { formatCurrency } from '../utils/formatCurrency';
+} from '../domain/reports';
+import { loadReportLayout, saveReportLayout, loadReportsDisplayCurrency, saveReportsDisplayCurrency } from '../services/storage';
+import { formatCurrency } from '../domain/formatCurrency';
 
 const TREND_MONTHS = 6;
 const CURRENCY_CYCLE: Currency[] = ['CRC', 'USD', 'EUR'];

@@ -2,12 +2,12 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type * as ExpoNotifications from 'expo-notifications';
 import { Envelope, RecurringTransactionTemplate, Transaction } from '../types';
 import { translateActive } from '../i18n';
-import { formatCurrency } from './formatCurrency';
-import { calculateEnvelopeBalance } from './balance';
+import { formatCurrency } from '../domain/formatCurrency';
+import { calculateEnvelopeBalance } from '../domain/balance';
 import {
   getNextDueDate, getOccurrenceKey,
   getDebtCycleDate, getDebtCycleOccurrenceKey, getPreviousDebtCycleDate, DebtCycleAnchor,
-} from './recurrence';
+} from '../domain/recurrence';
 
 // Expo Go has no local notification support; every helper is a no-op there.
 export const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;

@@ -17,7 +17,7 @@ import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
 import { TranslationKey } from '../i18n';
-import { hapticSave } from '../utils/haptics';
+import { hapticSave } from '../services/haptics';
 
 const CURRENCY_OPTIONS = [
   { label: 'CRC', value: 'CRC' },

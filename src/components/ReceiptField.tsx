@@ -6,7 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
 import { ReceiptViewer } from './ReceiptViewer';
-import { saveReceiptImage } from '../utils/receipts';
+import { saveReceiptImage } from '../services/receipts';
 
 interface ReceiptFieldProps {
   /** URIs of the stored receipt photos. */

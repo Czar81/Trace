@@ -11,8 +11,8 @@ import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
-import { filterTransactions, hasActiveSearch, SearchFilters } from '../utils/transactionSearch';
-import { groupTransactionsByDay } from '../utils/transactionGrouping';
+import { filterTransactions, hasActiveSearch, SearchFilters } from '../domain/transactionSearch';
+import { groupTransactionsByDay } from '../domain/transactionGrouping';
 import { Transaction } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Search'>;

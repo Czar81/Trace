@@ -11,7 +11,7 @@ import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
-import { formatCadence } from '../utils/recurrence';
+import { formatCadence } from '../domain/recurrence';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Recurring'>;
 

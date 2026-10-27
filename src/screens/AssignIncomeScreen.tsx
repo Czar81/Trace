@@ -13,8 +13,8 @@ import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
 import { Currency } from '../types';
-import { sortEnvelopesByTypeAndName } from '../utils/envelopeSorting';
-import { getUnallocated, parseAmount, toInputString } from '../utils/allocation';
+import { sortEnvelopesByTypeAndName } from '../domain/envelopeSorting';
+import { getUnallocated, parseAmount, toInputString } from '../domain/allocation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AssignIncome'>;
 

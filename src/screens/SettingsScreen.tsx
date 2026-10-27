@@ -3,10 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../context/ExpenseContext';
-import { authenticate, isDeviceAuthAvailable } from '../utils/deviceAuth';
+import { authenticate, isDeviceAuthAvailable } from '../services/deviceAuth';
 import { ArrowLeft, ChevronRight, ChevronDown, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat, TrendingDown, FileSpreadsheet, Palette, Share2, FolderOpen, X } from 'lucide-react-native';
-import { exportBackupJson } from '../utils/exportData';
-import { getLatestAutomaticBackupUri, AUTO_BACKUP_INTERVAL_OPTIONS, canUseBackupFolder, pickBackupFolder, backupFolderLabel } from '../utils/autoBackup';
+import { exportBackupJson } from '../services/exportData';
+import { getLatestAutomaticBackupUri, AUTO_BACKUP_INTERVAL_OPTIONS, canUseBackupFolder, pickBackupFolder, backupFolderLabel } from '../services/autoBackup';
 import { isAvailableAsync, shareAsync } from 'expo-sharing';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { DayGridSheet } from '../components/DayGridSheet';
