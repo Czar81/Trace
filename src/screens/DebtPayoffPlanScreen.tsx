@@ -1,9 +1,9 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, Bookmark, X } from 'lucide-react-native';
 import { useAppData } from '../context/ExpenseContext';
 import { RootStackParamList } from '../navigation/types';
 import { CurrencyInput } from '../components/CurrencyInput';
@@ -11,7 +11,8 @@ import { Dropdown } from '../components/Dropdown';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { useTranslation } from '../context/LanguageContext';
-import { Currency } from '../types';
+import { Currency, SavedDebtPlan } from '../types';
+import { loadDebtPlans, saveDebtPlans } from '../utils/storage';
 import { PayoffDebt, PayoffStrategy, simulatePayoff } from '../utils/debtPayoff';
 import { parseAmount } from '../utils/allocation';
 
@@ -32,6 +33,36 @@ export const DebtPayoffPlanScreen = ({ navigation }: Props) => {
   const [currency, setCurrency] = useState<Currency>(settings.defaultCurrency);
   const [strategy, setStrategy] = useState<PayoffStrategy>('avalanche');
   const [budgetStr, setBudgetStr] = useState('');
+
+  const [savedPlans, setSavedPlans] = useState<SavedDebtPlan[]>([]);
+  const [planName, setPlanName] = useState('');
+  const [naming, setNaming] = useState(false);
+
+  useEffect(() => {
+    void loadDebtPlans().then(setSavedPlans);
+  }, []);
+
+  const persistPlans = (plans: SavedDebtPlan[]) => {
+    setSavedPlans(plans);
+    void saveDebtPlans(plans);
+  };
+
+  const handleSavePlan = () => {
+    const name = planName.trim();
+    if (!name) return;
+    persistPlans([
+      { id: Date.now().toString(), name, currency, strategy, monthlyBudget: parseAmount(budgetStr) || null, createdAt: new Date().toISOString() },
+      ...savedPlans,
+    ]);
+    setPlanName('');
+    setNaming(false);
+  };
+
+  const handleLoadPlan = (plan: SavedDebtPlan) => {
+    setCurrency(plan.currency);
+    setStrategy(plan.strategy);
+    setBudgetStr(plan.monthlyBudget ? String(plan.monthlyBudget) : '');
+  };
 
   const debts = useMemo(
     () =>
@@ -83,6 +114,26 @@ export const DebtPayoffPlanScreen = ({ navigation }: Props) => {
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={1}>
         <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+          {savedPlans.length > 0 && (
+            <View style={styles.savedSection}>
+              <Text style={styles.sectionTitle}>{t('payoff.savedPlans')}</Text>
+              {savedPlans.map(plan => (
+                <TouchableOpacity key={plan.id} style={styles.savedRow} onPress={() => handleLoadPlan(plan)} activeOpacity={0.8}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.debtName}>{plan.name}</Text>
+                    <Text style={styles.debtMeta}>
+                      {t(plan.strategy === 'avalanche' ? 'payoff.avalanche' : 'payoff.snowball')} · {plan.currency} · {plan.monthlyBudget ? formatAmount(plan.monthlyBudget, plan.currency) : t('payoff.minimumsOnly')}
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={() => persistPlans(savedPlans.filter(p => p.id !== plan.id))} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityLabel={t('common.delete')}>
+                    <X color={colors.secondaryText} size={18} />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              ))}
+              <Text style={styles.hint}>{t('payoff.savedHint')}</Text>
+            </View>
+          )}
+
           <Dropdown label={t('envelope.currency')} options={CURRENCY_OPTIONS} value={currency} onSelect={(v) => setCurrency(v as Currency)} />
 
           {debts.length === 0 ? (
@@ -125,6 +176,27 @@ export const DebtPayoffPlanScreen = ({ navigation }: Props) => {
                     </Text>
                   ) : null}
                 </View>
+              )}
+
+              {naming ? (
+                <View style={styles.nameRow}>
+                  <TextInput
+                    style={styles.nameInput}
+                    value={planName}
+                    onChangeText={setPlanName}
+                    placeholder={t('payoff.planNamePlaceholder')}
+                    placeholderTextColor={colors.secondaryText}
+                    autoFocus
+                  />
+                  <TouchableOpacity style={styles.nameSave} onPress={handleSavePlan}>
+                    <Text style={styles.nameSaveText}>{t('common.save')}</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity style={styles.saveBtn} onPress={() => setNaming(true)} activeOpacity={0.8}>
+                  <Bookmark color={colors.white} size={16} />
+                  <Text style={styles.saveBtnText}>{t('payoff.savePlan')}</Text>
+                </TouchableOpacity>
               )}
 
               <Text style={styles.sectionTitle}>{t('payoff.order')}</Text>
@@ -171,6 +243,14 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   summaryValue: { color: colors.white, fontSize: 24, fontWeight: 'bold', marginVertical: 4 },
   summaryLine: { color: colors.secondaryText, fontSize: 14, marginTop: 2 },
   summaryNote: { color: colors.green, fontSize: 13, marginTop: 10 },
+  savedSection: { marginBottom: 8 },
+  savedRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.cardBg, borderRadius: 12, padding: 14, marginBottom: 10 },
+  saveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.cardBg, borderRadius: 12, padding: 14, marginBottom: 24 },
+  saveBtnText: { color: colors.white, fontSize: 15, fontWeight: '600' },
+  nameRow: { flexDirection: 'row', gap: 10, marginBottom: 24 },
+  nameInput: { flex: 1, backgroundColor: colors.cardBg, borderRadius: 12, padding: 14, color: colors.white, fontSize: 15 },
+  nameSave: { backgroundColor: colors.green, borderRadius: 12, paddingHorizontal: 18, justifyContent: 'center' },
+  nameSaveText: { color: colors.bg, fontSize: 15, fontWeight: '700' },
   sectionTitle: { color: colors.white, fontSize: 15, fontWeight: '700', marginBottom: 12 },
   debtRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.cardBg, borderRadius: 12, padding: 14, marginBottom: 10 },
   debtIndex: { color: colors.secondaryText, fontSize: 16, fontWeight: 'bold', width: 20 },

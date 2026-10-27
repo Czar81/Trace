@@ -14,3 +14,6 @@ The system SHALL simulate month by month, for the limited debt envelopes of the 
 #### Scenario: Budget too low
 - **WHEN** the debts are not cleared within 600 months
 - **THEN** the screen warns that the payment must be raised instead of showing a date
+
+### Requirement: Saved plans
+The user SHALL be able to save the current currency, strategy and monthly payment under a name, list saved plans, open one (which restores those inputs and recalculates with current balances) and delete it. Saved plans are stored on the device and are not part of backups.

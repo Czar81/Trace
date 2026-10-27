@@ -80,6 +80,16 @@ export interface RecurringTransactionTemplate {
   lastReminderScheduledPeriod: string | null; // occurrence key, same scheme as lastGeneratedPeriod
 }
 
+export interface SavedDebtPlan {
+  id: string;
+  name: string;
+  currency: Currency;
+  strategy: 'snowball' | 'avalanche';
+  /** Monthly payment for all debts; null means "just the minimum payments". */
+  monthlyBudget: number | null;
+  createdAt: string;
+}
+
 export interface AppSettings {
   defaultCurrency: Currency;
   exchangeRates: {

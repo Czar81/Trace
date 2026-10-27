@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings, RecurringTransactionTemplate } from '../types';
+import { SavedDebtPlan, Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings, RecurringTransactionTemplate } from '../types';
 import { DEFAULT_THEME_ID } from '../theme/colors';
 import { LanguagePreference, DEFAULT_LANGUAGE_PREFERENCE, isLanguagePreference, translateActive } from '../i18n';
 import { ReportLayoutItem, parseReportLayout } from './reports';
@@ -18,6 +18,7 @@ const KEYS = {
   AUTO_BACKUP_LAST_SUCCESS_AT: '@trace_auto_backup_last_success_at',
   AUTO_BACKUP_LAST_ERROR: '@trace_auto_backup_last_error',
   LANGUAGE: '@trace_language',
+  DEBT_PLANS: '@trace_debt_plans',
 };
 
 export const DEFAULT_AUTO_BACKUP_INTERVAL_DAYS = 7;
@@ -109,6 +110,9 @@ export const loadSettings = async (): Promise<AppSettings> => {
   }
   return mergedSettings;
 };
+
+export const saveDebtPlans = (data: SavedDebtPlan[]) => saveData(KEYS.DEBT_PLANS, data);
+export const loadDebtPlans = () => loadData<SavedDebtPlan[]>(KEYS.DEBT_PLANS, []);
 
 export const saveReportLayout = (data: ReportLayoutItem[]) => saveData(KEYS.REPORT_LAYOUT, data);
 export const loadReportLayout = async (): Promise<ReportLayoutItem[]> => {
