@@ -4,21 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
 import { authenticate, isDeviceAuthAvailable } from '../../services/device/deviceAuth';
-import ArrowLeft from 'lucide-react-native/icons/arrow-left';
-import ChevronRight from 'lucide-react-native/icons/chevron-right';
-import ChevronDown from 'lucide-react-native/icons/chevron-down';
-import CreditCard from 'lucide-react-native/icons/credit-card';
-import Tag from 'lucide-react-native/icons/tag';
-import TrendingDown from 'lucide-react-native/icons/trending-down';
-import Palette from 'lucide-react-native/icons/palette';
-import Settings2 from 'lucide-react-native/icons/settings-2';
-import Wallet from 'lucide-react-native/icons/wallet';
-import Wrench from 'lucide-react-native/icons/wrench';
-import Bell from 'lucide-react-native/icons/bell';
-import Shield from 'lucide-react-native/icons/shield';
-import Database from 'lucide-react-native/icons/database';
-import DatabaseBackup from 'lucide-react-native/icons/database-backup';
-import HelpCircle from 'lucide-react-native/icons/circle-help';
+import { ArrowLeft, ChevronRight, ChevronDown, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, TrendingDown, FileSpreadsheet, Palette, Share2, FolderOpen, X } from 'lucide-react-native';
+import { exportBackupJson } from '../../services/backup/exportData';
+import { getLatestAutomaticBackupUri, AUTO_BACKUP_INTERVAL_OPTIONS, canUseBackupFolder, pickBackupFolder, backupFolderLabel } from '../../services/backup/autoBackup';
+import { isAvailableAsync, shareAsync } from 'expo-sharing';
 import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
 import { CurrencySelector } from '../../components/forms/CurrencySelector';
 import { DayGridSheet } from '../../components/forms/DayGridSheet';
@@ -196,23 +185,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
           </View>
           <ChevronRight color={colors.secondaryText} size={20} />
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('PaymentMethodsSettings')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.menuIconWrapper}>
-            <CreditCard color={colors.white} size={18} />
-          </View>
-          <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>{t('settings.paymentMethods')}</Text>
-            <Text style={styles.menuSubtitle}>{t('settings.paymentMethodsSubtitle')}</Text>
-          </View>
-          <ChevronRight color={colors.secondaryText} size={20} />
-        </TouchableOpacity>
-
-        <SettingsSectionHeader icon={<Wrench color={colors.secondaryText} size={14} />} title={t(sectionTitleKey('tools'))} />
 
         <TouchableOpacity
           style={styles.menuItem}
