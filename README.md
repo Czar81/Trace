@@ -27,13 +27,13 @@
 - Custom categories and payment methods, and manual dates.
 
 ### Reports and data
-- **Reports** with selectable currency and reorderable sections.
+- **Reports** per currency, with reorderable sections.
 - **CSV export** to share via WhatsApp, email or the cloud.
 - **Backups**: manual export/import and optional automatic backups, including recurring templates.
 - **Smart reset**: reset envelopes one by one or all at once, moving data to the history.
 
 ### Money and security
-- **Currencies**: CRC, USD and EUR. Currencies are never converted or mixed: totals and reports are shown per currency.
+- **Currencies**: 30 currencies with a searchable selector. Pick your default currency in Settings; amounts are never converted or mixed, so totals and reports are shown per currency.
 - **App lock** with your fingerprint, face or device PIN.
 - **Bill reminders** through local notifications.
 - **Languages**: Spanish and English.
@@ -83,7 +83,7 @@ Scan the QR code with Expo Go (Android/iOS), or press `a` for an Android emulato
 Dependencies flow one way (`screens → context → services → domain`):
 
 - `src/domain/`: pure logic with no I/O (`budget/`, `transactions/`, `recurring/`, `reports/`, `backup/`, `shared/`).
-- `src/services/`: side effects, grouped by topic (`storage/`, `backup/`, `notifications/`, `scheduling/`, `device/`, `currency/`, `files/`).
+- `src/services/`: side effects, grouped by topic (`storage/`, `backup/`, `notifications/`, `scheduling/`, `device/`, `files/`).
 - `src/context/`: app state. `useDataStore` serializes changes (`runExclusive` + `commit`); `actions/` has one hook per area (envelopes, transactions, templates, catalogs); `ExpenseContext` composes them and exposes `useAppData`.
 - `src/theme/`: per-theme colors (`colors.ts`) and shared scales (`tokens.ts`: spacing, font sizes, radii).
 - `src/i18n/`: Spanish and English strings.
