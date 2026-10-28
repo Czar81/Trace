@@ -1,6 +1,6 @@
 # TRACE
 
-**TRACE** es una aplicación de gestión financiera personal basada en el método de sobres (budgeting by envelopes). Diseñada con una estética minimalista, oscura y premium, TRACE te permite tener un control total y visual de tus gastos y ahorros.
+**TRACE** is a personal finance app built around envelope budgeting. It has a minimalist, dark, premium look and gives you a clear, visual view of your spending, savings and debts. Everything is stored locally on your device.
 
 ![TRACE Logo](https://img.shields.io/badge/App-TRACE-092230?style=for-the-badge)
 ![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
@@ -8,69 +8,93 @@
 
 ---
 
-## Características Principales
+## Features
 
-### Gestión por Sobres
-- **Sobres de Gasto**: Define un presupuesto mensual y lleva un control de lo que te queda disponible.
-- **Sobres de Ahorro**: Establece metas de ahorro y visualiza cuánto te falta para alcanzarlas.
-- **Modo Ilimitado**: Crea sobres sin límites para simplemente trackear flujos de dinero.
+### Envelopes
+- **Spending envelopes**: set a budget per period and see what is left, with optional alerts at 80% and 100% usage.
+- **Savings envelopes**: set a goal, optionally with a deadline, and track progress.
+- **Debt envelopes**: track what you owe and generate a payoff plan.
+- **Unlimited mode**: envelopes with no limit, just to track money flows.
+- **Transfers** between envelopes and **income distribution** into savings envelopes.
+- **Customization**: your own photos or vector icons for each envelope, light/dark themes, drag-to-reorder.
 
-### Personalización Premium
-- **Avatares Personalizados**: Sube tus propias fotos para identificar cada sobre o usa íconos vectoriales modernos.
-- **Paleta de Colores Curada**: Interfaz en modo oscuro con acentos en HSL para una experiencia visual de alto nivel.
+### Transactions
+- **Split expenses** into several parts, with a one-tap "Split into equal parts" button.
+- **Recurring transactions** (including weekly and biweekly) that catch up on missed periods when you open the app.
+- **Notes and receipt photos** on any transaction.
+- **Search** with filters by date, category, payment method and more.
+- **Bank CSV import** to bring in statements.
+- Custom categories and payment methods, and manual dates.
 
-### Datos y Exportación
-- **Exportación a CSV**: Genera reportes detallados de todas tus transacciones y compártelos vía WhatsApp, correo o guárdalos en la nube.
-- **Historial Detallado**: Cada sobre guarda su historial de transacciones con filtros por mes y categorías.
-- **Reinicio Inteligente**: Reinicia sobres individualmente o de forma global para comenzar un nuevo periodo, moviendo automáticamente los datos al historial.
+### Reports and data
+- **Reports** with selectable currency and reorderable sections.
+- **CSV export** to share via WhatsApp, email or the cloud.
+- **Backups**: manual export/import and optional automatic backups, including recurring templates.
+- **Smart reset**: reset envelopes one by one or all at once, moving data to the history.
 
-### Herramientas Avanzadas
-- **Conversión de Moneda**: Soporte para CRC, USD y EUR con tasas de cambio configurables.
-- **Métodos de Pago y Categorías**: Totalmente personalizables para adaptarse a tu estilo de vida.
-- **Fechas Manuales**: Registra transacciones con la fecha exacta en que ocurrieron.
-
----
-
-## Tecnologías Utilizadas
-
-- **Framework**: React Native con Expo (SDK 57).
-- **Iconografía**: Lucide React Native.
-- **Estado Global**: React Context API.
-- **Almacenamiento**: AsyncStorage para persistencia local.
-- **Utilidades**: 
-  - `expo-image-picker` para fotos de perfil.
-  - `expo-sharing` y `expo-file-system` para reportes.
-  - `@react-native-community/datetimepicker` para selección de fechas.
+### Money and security
+- **Currencies**: CRC, USD and EUR, with exchange rates that update automatically (open.er-api.com) or can be set manually.
+- **App lock** with your fingerprint, face or device PIN.
+- **Bill reminders** through local notifications.
+- **Languages**: Spanish and English.
+- Smooth native animations, swipe-to-delete and haptic feedback.
 
 ---
 
-## Instalación y Uso
+## Tech Stack
 
-1. **Clonar el repositorio:**
-   ```bash
-   git clone <url-del-repo>
-   cd trace
-   ```
+- **Framework**: React Native with Expo (SDK 57), TypeScript.
+- **Navigation**: React Navigation (native stack).
+- **State**: React Context.
+- **Storage**: AsyncStorage (local persistence).
+- **Animations and gestures**: Reanimated, Gesture Handler, Draggable FlatList.
+- **Icons**: Lucide React Native.
+- **Device**: `expo-local-authentication`, `expo-notifications`, `expo-haptics`, `expo-image-picker`, `expo-document-picker`, `expo-sharing`, `expo-file-system`, `expo-localization`.
+- **Tests**: Jest with `jest-expo` and Testing Library.
 
-2. **Instalar dependencias:**
-   ```bash
-   npm install
-   ```
+---
 
-3. **Iniciar el servidor de desarrollo:**
-   ```bash
-   npx expo start
-   ```
+## Getting Started
 
-4. **Ejecutar en tu dispositivo:**
-   Escanea el código QR con la app Expo Go (Android/iOS).
+```bash
+git clone https://github.com/Czar81/Trace.git
+cd Trace
+npm install
+npx expo start
+```
 
-## Arquitectura
+Scan the QR code with Expo Go (Android/iOS), or press `a` for an Android emulator.
 
-Capas con dependencias en un solo sentido (`screens → context → services → domain`):
+> Some native modules may require a development build instead of Expo Go. Use the `development` profile in `eas.json` to create one.
 
-- `src/domain/` — lógica pura, sin I/O: `budget/`, `transactions/`, `recurring/`, `reports/`, `backup/`, `shared/`.
-- `src/services/` — efectos, por tema: `storage/`, `backup/`, `notifications/`, `scheduling/`, `device/` (bloqueo, háptico), `currency/`, `files/`.
-- `src/context/` — estado. `useDataStore` serializa los cambios (`runExclusive` + `commit`); `actions/` tiene un hook por área (sobres, transacciones, plantillas, catálogos); `ExpenseContext` los compone y expone `useAppData`.
-- `src/theme/` — colores por tema (`colors.ts`) y escalas compartidas (`tokens.ts`: espaciado, letra, radios).
-- `src/screens/` (`settings/`, `envelopes/`, `transactions/`, `reports/`) y `src/components/` (`forms/`, `feedback/`, `envelope/`, `layout/`) — UI.
+### Scripts
+
+| Command | Description |
+| --- | --- |
+| `npm start` | Start the Expo dev server |
+| `npm run android` / `npm run ios` / `npm run web` | Start on a specific platform |
+| `npm test` | Run the Jest test suite |
+| `npx tsc --noEmit` | Type check |
+
+---
+
+## Architecture
+
+Dependencies flow one way (`screens → context → services → domain`):
+
+- `src/domain/`: pure logic with no I/O (`budget/`, `transactions/`, `recurring/`, `reports/`, `backup/`, `shared/`).
+- `src/services/`: side effects, grouped by topic (`storage/`, `backup/`, `notifications/`, `scheduling/`, `device/`, `currency/`, `files/`).
+- `src/context/`: app state. `useDataStore` serializes changes (`runExclusive` + `commit`); `actions/` has one hook per area (envelopes, transactions, templates, catalogs); `ExpenseContext` composes them and exposes `useAppData`.
+- `src/theme/`: per-theme colors (`colors.ts`) and shared scales (`tokens.ts`: spacing, font sizes, radii).
+- `src/i18n/`: Spanish and English strings.
+- `src/screens/` (`settings/`, `envelopes/`, `transactions/`, `reports/`) and `src/components/` (`forms/`, `feedback/`, `envelope/`, `layout/`): UI.
+
+Behavior is documented as specs in [`openspec/specs`](openspec/specs).
+
+---
+
+## Builds and CI
+
+- **CI** (`.github/workflows/ci.yml`): type check and tests on every push and pull request.
+- **Android builds** (`.eas/workflows/build-main.yml`): an EAS Workflow builds the `preview` profile on every push to `main`.
+- **Releases**: work happens on `dev` and is released through a version-titled pull request into `main`, tagged `vX.Y.Z`.
