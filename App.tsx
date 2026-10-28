@@ -18,7 +18,6 @@ import { AssignIncomeScreen } from './src/screens/envelopes/AssignIncomeScreen';
 import { DebtPayoffPlanScreen } from './src/screens/envelopes/DebtPayoffPlanScreen';
 import { ImportBankCsvScreen } from './src/screens/transactions/ImportBankCsvScreen';
 import { SettingsScreen } from './src/screens/settings/SettingsScreen';
-import { CurrencySettingsScreen } from './src/screens/settings/CurrencySettingsScreen';
 import { PaymentMethodsSettingsScreen } from './src/screens/settings/PaymentMethodsSettingsScreen';
 import { CategoriesSettingsScreen } from './src/screens/settings/CategoriesSettingsScreen';
 import { ReportsScreen } from './src/screens/reports/ReportsScreen';
@@ -48,7 +47,6 @@ function ThemedNavigator() {
           <Stack.Screen name="ImportBankCsv" component={ImportBankCsvScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="AppearanceSettings" component={AppearanceSettingsScreen} />
-          <Stack.Screen name="CurrencySettings" component={CurrencySettingsScreen} />
           <Stack.Screen name="PaymentMethodsSettings" component={PaymentMethodsSettingsScreen} />
           <Stack.Screen name="CategoriesSettings" component={CategoriesSettingsScreen} />
           <Stack.Screen name="Reports" component={ReportsScreen} />

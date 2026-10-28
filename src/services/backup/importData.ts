@@ -1,6 +1,7 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { readAsStringAsync } from 'expo-file-system/legacy';
 import { Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings, RecurringTransactionTemplate } from '../../types';
+import { isCurrencyCode } from '../../domain/shared/currencies';
 import { THEMES } from '../../theme/colors';
 import { DEFAULT_SETTINGS } from '../storage/storage';
 import { translateActive } from '../../i18n';
@@ -51,7 +52,6 @@ export const pickAndImportBackup = async (): Promise<ImportResult | null> => {
 };
 
 const ENVELOPE_TYPES = ['gasto', 'ahorro', 'deuda'];
-const CURRENCIES = ['CRC', 'USD', 'EUR'];
 const TRANSACTION_TYPES = ['expense', 'income', 'transfer'];
 const FREQUENCIES = ['monthly', 'weekly', 'biweekly', 'annual'];
 
@@ -61,7 +61,7 @@ const isValidDate = (v: unknown) => typeof v === 'string' && !Number.isNaN(new D
 
 const isValidEnvelope = (e: any) =>
   isNonEmptyString(e?.id) && typeof e.name === 'string' &&
-  ENVELOPE_TYPES.includes(e.type) && CURRENCIES.includes(e.currency) && isFiniteNumber(e.limit);
+  ENVELOPE_TYPES.includes(e.type) && isCurrencyCode(e.currency) && isFiniteNumber(e.limit);
 
 const isValidTransaction = (t: any) =>
   isNonEmptyString(t?.id) && isNonEmptyString(t.envelopeId) &&
@@ -94,7 +94,7 @@ const sanitizeSettings = (raw: any): AppSettings => {
   return {
     ...DEFAULT_SETTINGS,
     ...rest,
-    defaultCurrency: CURRENCIES.includes(s.defaultCurrency) ? s.defaultCurrency : DEFAULT_SETTINGS.defaultCurrency,
+    defaultCurrency: isCurrencyCode(s.defaultCurrency) ? s.defaultCurrency : DEFAULT_SETTINGS.defaultCurrency,
     expenseCutoffEnabled: bool(s.expenseCutoffEnabled, DEFAULT_SETTINGS.expenseCutoffEnabled),
     expenseCutoffDay,
     budgetAlertsEnabled: bool(s.budgetAlertsEnabled, DEFAULT_SETTINGS.budgetAlertsEnabled),

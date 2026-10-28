@@ -7,6 +7,7 @@ import { ArrowLeft, Bookmark, X } from 'lucide-react-native';
 import { useAppData } from '../../context/ExpenseContext';
 import { RootStackParamList } from '../../navigation/types';
 import { CurrencyInput } from '../../components/forms/CurrencyInput';
+import { CurrencySelector } from '../../components/forms/CurrencySelector';
 import { Dropdown } from '../../components/forms/Dropdown';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
@@ -18,12 +19,6 @@ import { parseAmount } from '../../domain/budget/allocation';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DebtPayoffPlan'>;
-
-const CURRENCY_OPTIONS = [
-  { label: 'CRC', value: 'CRC' },
-  { label: 'USD', value: 'USD' },
-  { label: 'EUR', value: 'EUR' },
-];
 
 export const DebtPayoffPlanScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
@@ -135,7 +130,7 @@ export const DebtPayoffPlanScreen = ({ navigation }: Props) => {
             </View>
           )}
 
-          <Dropdown label={t('envelope.currency')} options={CURRENCY_OPTIONS} value={currency} onSelect={(v) => setCurrency(v as Currency)} />
+          <CurrencySelector label={t('envelope.currency')} value={currency} onSelect={setCurrency} />
 
           {debts.length === 0 ? (
             <Text style={styles.hint}>{t('payoff.noDebts')}</Text>

@@ -1,7 +1,8 @@
+import type { CurrencyCode } from '../domain/shared/currencies';
 import { ThemeId } from '../theme/colors';
 
 export type EnvelopeType = 'gasto' | 'ahorro' | 'deuda';
-export type Currency = 'CRC' | 'USD' | 'EUR';
+export type Currency = CurrencyCode;
 
 export interface PaymentMethod {
   id: string;

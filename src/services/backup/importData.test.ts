@@ -85,7 +85,7 @@ describe('parseBackup validation', () => {
   const envelope = { id: 'e1', name: 'Casa', type: 'gasto', currency: 'CRC', limit: 100, isUnlimited: false, icon: 'x', color: '#000' };
 
   it('rejects envelopes with an unknown type or currency', () => {
-    const result = parseBackup(JSON.stringify({ ...baseBackup, envelopes: [{ ...envelope, currency: 'MXN' }] }));
+    const result = parseBackup(JSON.stringify({ ...baseBackup, envelopes: [{ ...envelope, currency: 'XXX' }] }));
     expect(result.errors).toHaveLength(1);
   });
 

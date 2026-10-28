@@ -13,6 +13,7 @@ import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { TranslationKey } from '../../i18n';
 import { Currency } from '../../types';
+import { CURRENCY_CODES } from '../../domain/shared/currencies';
 import {
   ReportPeriod,
   getSpendingByCategory,
@@ -33,7 +34,6 @@ import { SPACING } from '../../theme/tokens';
 import { makeStyles } from './ReportsScreen.styles';
 
 const TREND_MONTHS = 6;
-const CURRENCY_ORDER: Currency[] = ['CRC', 'USD', 'EUR'];
 
 const PERIOD_OPTIONS: { labelKey: TranslationKey; value: Exclude<ReportPeriod, { kind: 'custom' }> }[] = [
   { labelKey: 'reports.periodThisMonth', value: 'current-month' },
@@ -70,7 +70,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
   // Currencies are never mixed: reports cover one currency at a time, among those in use.
   const usedCurrencies = useMemo(() => {
     const used = new Set(envelopes.map(e => e.currency));
-    const list = CURRENCY_ORDER.filter(c => used.has(c));
+    const list = CURRENCY_CODES.filter(c => used.has(c));
     return list.length > 0 ? list : [settings.defaultCurrency];
   }, [envelopes, settings.defaultCurrency]);
   const currency = usedCurrencies.includes(selectedCurrency) ? selectedCurrency : usedCurrencies[0];

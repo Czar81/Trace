@@ -4,11 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
 import { authenticate, isDeviceAuthAvailable } from '../../services/device/deviceAuth';
-import { ArrowLeft, ChevronRight, ChevronDown, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat, TrendingDown, FileSpreadsheet, Palette, Share2, FolderOpen, X } from 'lucide-react-native';
+import { ArrowLeft, ChevronRight, ChevronDown, CreditCard, Tag, Download, Upload, RefreshCw, BarChart3, Repeat, TrendingDown, FileSpreadsheet, Palette, Share2, FolderOpen, X } from 'lucide-react-native';
 import { exportBackupJson } from '../../services/backup/exportData';
 import { getLatestAutomaticBackupUri, AUTO_BACKUP_INTERVAL_OPTIONS, canUseBackupFolder, pickBackupFolder, backupFolderLabel } from '../../services/backup/autoBackup';
 import { isAvailableAsync, shareAsync } from 'expo-sharing';
 import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
+import { CurrencySelector } from '../../components/forms/CurrencySelector';
 import { DayGridSheet } from '../../components/forms/DayGridSheet';
 import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../context/ThemeContext';
@@ -146,20 +147,11 @@ export const SettingsScreen = ({ navigation }: Props) => {
           <ChevronRight color={colors.secondaryText} size={20} />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('CurrencySettings')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.menuIconWrapper}>
-            <DollarSign color={colors.white} size={18} />
-          </View>
-          <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>{t('settings.currencies')}</Text>
-            <Text style={styles.menuSubtitle}>{t('settings.currenciesSubtitle')}</Text>
-          </View>
-          <ChevronRight color={colors.secondaryText} size={20} />
-        </TouchableOpacity>
+        <CurrencySelector
+          label={t('currency.default')}
+          value={settings.defaultCurrency}
+          onSelect={(defaultCurrency) => updateSettings({ defaultCurrency })}
+        />
 
         <TouchableOpacity
           style={styles.menuItem}

@@ -11,7 +11,6 @@ export type RootStackParamList = {
   ImportBankCsv: undefined;
   Settings: undefined;
   AppearanceSettings: undefined;
-  CurrencySettings: undefined;
   PaymentMethodsSettings: undefined;
   CategoriesSettings: undefined;
   Reports: undefined;

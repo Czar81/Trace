@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Alert, AppState } from 'react-native';
 import { Envelope, Transaction, EnvelopeType, PaymentMethod, TransactionCategory, AppSettings, Currency, RecurringTransactionTemplate } from '../types';
+import { CURRENCY_CODES } from '../domain/shared/currencies';
 import { AutoBackupState, DEFAULT_AUTO_BACKUP_STATE, saveAutoBackupEnabled, saveAutoBackupIntervalDays, saveAutoBackupFolderUri } from '../services/storage/storage';
 import { AppData, loadAppData } from '../services/storage/appData';
 import { pickAndImportBackup } from '../services/backup/importData';
@@ -29,7 +30,6 @@ export interface CurrencyTotal {
   total: number;
 }
 
-const CURRENCY_ORDER: Currency[] = ['CRC', 'USD', 'EUR'];
 
 interface AppContextType {
   envelopes: Envelope[];
@@ -220,7 +220,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       totals.set(env.currency, (totals.get(env.currency) ?? 0) + displayValue);
     }
     return Array.from(totals, ([currency, total]) => ({ currency, total: roundMoney(total) }))
-      .sort((a, b) => CURRENCY_ORDER.indexOf(a.currency) - CURRENCY_ORDER.indexOf(b.currency));
+      .sort((a, b) => CURRENCY_CODES.indexOf(a.currency) - CURRENCY_CODES.indexOf(b.currency));
   }, [envelopes, getEnvelopeBalance]);
 
   // ─── Data actions (each hook owns one slice) ──────────────────────────────
