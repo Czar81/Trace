@@ -18,14 +18,12 @@ import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { TranslationKey } from '../../i18n';
 import { formatCurrency } from '../../domain/shared/formatCurrency';
-import { loadMainDisplayCurrency, saveMainDisplayCurrency } from '../../services/storage/storage';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 import { MENU_ENTERING } from '../../components/feedback/menuMotion';
 import { hapticSelection } from '../../services/device/haptics';
 
 const { width } = Dimensions.get('window');
 
-const CURRENCY_CYCLE: Currency[] = ['CRC', 'USD', 'EUR'];
 const TAB_TYPES: EnvelopeType[] = ['gasto', 'ahorro', 'deuda'];
 const TAB_LABELS: Record<EnvelopeType, TranslationKey> = { gasto: 'main.tabExpenses', ahorro: 'main.tabSavings', deuda: 'main.tabDebts' };
 
@@ -108,22 +106,10 @@ export const MainScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { envelopes, getTotalByType, getEnvelopeBalance, formatAmount, settings, convertToCRC, resetAllEnvelopes, paymentMethods, categories, transactions } = useAppData();
+  const { envelopes, getTotalsByType, getEnvelopeBalance, formatAmount, settings, resetAllEnvelopes, paymentMethods, categories, transactions } = useAppData();
   const [activeTab, setActiveTab] = useState<EnvelopeType>('gasto');
-  const [displayCurrency, setDisplayCurrency] = useState<Currency>(settings.defaultCurrency);
-  // Settings load after the first render (and can change), so follow the saved default.
-  useEffect(() => { setDisplayCurrency(settings.defaultCurrency); }, [settings.defaultCurrency]);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
-
-  // Restore the currency the user last picked for the total.
-  useEffect(() => {
-    let cancelled = false;
-    loadMainDisplayCurrency().then(stored => {
-      if (!cancelled && stored) setDisplayCurrency(stored);
-    });
-    return () => { cancelled = true; };
-  }, []);
 
   const scrollX = useSharedValue(0);
   const listRef = useRef<FlatList<EnvelopeType>>(null);
@@ -155,23 +141,10 @@ export const MainScreen = ({ navigation }: Props) => {
     }
   };
 
-  const totalCRC = getTotalByType(activeTab);
-  const totalDisplay = convertDisplayTotal(totalCRC, displayCurrency, settings.exchangeRates);
-
-  function convertDisplayTotal(crc: number, to: Currency, rates: { USD_TO_CRC: number; EUR_TO_CRC: number }): string {
-    let amount = crc;
-    if (to === 'USD') amount = crc / rates.USD_TO_CRC;
-    else if (to === 'EUR') amount = crc / rates.EUR_TO_CRC;
-    return formatCurrency(Math.abs(amount), to);
-  }
-
-  const cycleCurrency = () => {
-    const idx = CURRENCY_CYCLE.indexOf(displayCurrency);
-    const next = CURRENCY_CYCLE[(idx + 1) % CURRENCY_CYCLE.length];
-    setDisplayCurrency(next);
-    saveMainDisplayCurrency(next);
-  };
-
+  const totals = getTotalsByType(activeTab);
+  // An empty tab still shows a zero total in the default currency.
+  const shownTotals = totals.length > 0 ? totals : [{ currency: settings.defaultCurrency, total: 0 }];
+  const anyExceeded = shownTotals.some(entry => entry.total < 0);
 
   const renderEnvelope = ({ item, index }: { item: Envelope; index: number }) => {
     const balance = getEnvelopeBalance(item.id);
@@ -335,26 +308,19 @@ export const MainScreen = ({ navigation }: Props) => {
 
       <View style={styles.summaryCard}>
         <View style={styles.cardFlap} pointerEvents="none" />
-        <TouchableOpacity
-          onPress={cycleCurrency}
-          style={styles.currencyBtn}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel={t('a11y.changeCurrency', { currency: displayCurrency })}
-        >
-          <Text style={styles.currencyText}>{displayCurrency}</Text>
-        </TouchableOpacity>
         <View style={styles.summaryValues}>
           <Text style={styles.summaryLabel}>
             {activeTab === 'gasto'
-              ? t(totalCRC < 0 ? 'main.totalExceeded' : 'main.totalAvailable')
+              ? t(anyExceeded ? 'main.totalExceeded' : 'main.totalAvailable')
               : activeTab === 'deuda'
               ? t('main.totalToPay')
               : t('main.totalSaved')}
           </Text>
-          <Text style={[styles.summaryTotal, totalCRC < 0 && { color: colors.red }]}>
-            {totalDisplay}
-          </Text>
+          {shownTotals.map(entry => (
+            <Text key={entry.currency} style={[styles.summaryTotal, entry.total < 0 && { color: colors.red }]}>
+              {formatCurrency(Math.abs(entry.total), entry.currency)}
+            </Text>
+          ))}
         </View>
       </View>
 
@@ -397,8 +363,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   tabText: { color: colors.secondaryText, fontSize: FONT_SIZE.lg, fontWeight: '600' },
   summaryCard: { backgroundColor: colors.cardBg, marginHorizontal: SPACING.xl, borderRadius: RADIUS.xl, padding: SPACING.xl, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg, overflow: 'hidden' },
   cardFlap: { position: 'absolute', top: -20, left: '50%', width: 40, height: 40, marginLeft: -20, backgroundColor: colors.cardHighlight, transform: [{ rotate: '45deg' }] },
-  currencyBtn: { paddingVertical: 6, paddingHorizontal: SPACING.md, borderRadius: RADIUS.pill, backgroundColor: colors.divider },
-  currencyText: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '700' },
   summaryValues: { alignItems: 'flex-end' },
   summaryLabel: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, marginBottom: SPACING.xs },
   summaryTotal: { color: colors.white, fontSize: 22, fontWeight: 'bold' },

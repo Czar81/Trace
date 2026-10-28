@@ -22,17 +22,18 @@ import {
   getMonthlyTrend,
   getTopTransactions,
   getSummary,
+  filterByCurrency,
   REPORT_SECTIONS,
   ReportLayoutItem,
   ReportSectionId,
 } from '../../domain/reports/reports';
-import { loadReportLayout, saveReportLayout, loadReportsDisplayCurrency, saveReportsDisplayCurrency } from '../../services/storage/storage';
+import { loadReportLayout, saveReportLayout } from '../../services/storage/storage';
 import { formatCurrency } from '../../domain/shared/formatCurrency';
 import { SPACING } from '../../theme/tokens';
 import { makeStyles } from './ReportsScreen.styles';
 
 const TREND_MONTHS = 6;
-const CURRENCY_CYCLE: Currency[] = ['CRC', 'USD', 'EUR'];
+const CURRENCY_ORDER: Currency[] = ['CRC', 'USD', 'EUR'];
 
 const PERIOD_OPTIONS: { labelKey: TranslationKey; value: Exclude<ReportPeriod, { kind: 'custom' }> }[] = [
   { labelKey: 'reports.periodThisMonth', value: 'current-month' },
@@ -63,29 +64,26 @@ export const ReportsScreen = ({ navigation }: Props) => {
   const formatDate = (date: Date) =>
     date.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { transactions, categories, envelopes, paymentMethods, convertToCRC, settings } = useAppData();
-  const [currency, setCurrency] = useState<Currency>(settings.defaultCurrency);
+  const { transactions, categories, envelopes, paymentMethods, settings } = useAppData();
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>(settings.defaultCurrency);
 
-  useEffect(() => {
-    let cancelled = false;
-    loadReportsDisplayCurrency().then(stored => {
-      if (!cancelled && stored) setCurrency(stored);
-    });
-    return () => { cancelled = true; };
-  }, []);
+  // Currencies are never mixed: reports cover one currency at a time, among those in use.
+  const usedCurrencies = useMemo(() => {
+    const used = new Set(envelopes.map(e => e.currency));
+    const list = CURRENCY_ORDER.filter(c => used.has(c));
+    return list.length > 0 ? list : [settings.defaultCurrency];
+  }, [envelopes, settings.defaultCurrency]);
+  const currency = usedCurrencies.includes(selectedCurrency) ? selectedCurrency : usedCurrencies[0];
 
   const cycleCurrency = () => {
-    const next = CURRENCY_CYCLE[(CURRENCY_CYCLE.indexOf(currency) + 1) % CURRENCY_CYCLE.length];
-    setCurrency(next);
-    saveReportsDisplayCurrency(next);
+    setSelectedCurrency(usedCurrencies[(usedCurrencies.indexOf(currency) + 1) % usedCurrencies.length]);
   };
 
-  // Report totals are computed in CRC; convert only for display.
-  const money = (crc: number) => {
-    const { USD_TO_CRC, EUR_TO_CRC } = settings.exchangeRates;
-    const amount = currency === 'USD' ? crc / USD_TO_CRC : currency === 'EUR' ? crc / EUR_TO_CRC : crc;
-    return formatCurrency(amount, currency);
-  };
+  const money = (amount: number) => formatCurrency(amount, currency);
+  const currencyTransactions = useMemo(
+    () => filterByCurrency(transactions, envelopes, currency),
+    [transactions, envelopes, currency]
+  );
   const [period, setPeriod] = useState<ReportPeriod>('current-month');
   const [customSelected, setCustomSelected] = useState(false);
   const [customStart, setCustomStart] = useState(() => {
@@ -122,33 +120,33 @@ export const ReportsScreen = ({ navigation }: Props) => {
   };
 
   const byCategory = useMemo(
-    () => getSpendingByCategory(transactions, categories, envelopes, period, convertToCRC, reportI18n),
-    [transactions, categories, envelopes, period, convertToCRC, reportI18n]
+    () => getSpendingByCategory(currencyTransactions, categories, period, reportI18n),
+    [currencyTransactions, categories, period, reportI18n]
   );
   const byMonth = useMemo(
-    () => getSpendingByMonth(transactions, envelopes, period, convertToCRC, reportI18n),
-    [transactions, envelopes, period, convertToCRC, reportI18n]
+    () => getSpendingByMonth(currencyTransactions, period, reportI18n),
+    [currencyTransactions, period, reportI18n]
   );
   const byEnvelope = useMemo(
-    () => getSpendingByEnvelope(transactions, envelopes, period, convertToCRC, reportI18n),
-    [transactions, envelopes, period, convertToCRC, reportI18n]
+    () => getSpendingByEnvelope(currencyTransactions, envelopes, period, reportI18n),
+    [currencyTransactions, envelopes, period, reportI18n]
   );
   const byPaymentMethod = useMemo(
-    () => getSpendingByPaymentMethod(transactions, paymentMethods, envelopes, period, convertToCRC, reportI18n),
-    [transactions, paymentMethods, envelopes, period, convertToCRC, reportI18n]
+    () => getSpendingByPaymentMethod(currencyTransactions, paymentMethods, period, reportI18n),
+    [currencyTransactions, paymentMethods, period, reportI18n]
   );
   const trend = useMemo(
-    () => getMonthlyTrend(transactions, envelopes, TREND_MONTHS, convertToCRC, reportI18n),
-    [transactions, envelopes, convertToCRC, reportI18n]
+    () => getMonthlyTrend(currencyTransactions, TREND_MONTHS, reportI18n),
+    [currencyTransactions, reportI18n]
   );
   const topTransactions = useMemo(
-    () => getTopTransactions(transactions, categories, envelopes, period, convertToCRC, undefined, reportI18n),
-    [transactions, categories, envelopes, period, convertToCRC, reportI18n]
+    () => getTopTransactions(currencyTransactions, categories, envelopes, period, undefined, reportI18n),
+    [currencyTransactions, categories, envelopes, period, reportI18n]
   );
 
   const summary = useMemo(
-    () => getSummary(transactions, envelopes, period, convertToCRC),
-    [transactions, envelopes, period, convertToCRC]
+    () => getSummary(currencyTransactions, period),
+    [currencyTransactions, period]
   );
 
   const [layout, setLayout] = useState<ReportLayoutItem[]>(() => REPORT_SECTIONS.map(s => ({ ...s })));
@@ -182,11 +180,11 @@ export const ReportsScreen = ({ navigation }: Props) => {
 
   const resetLayout = () => applyLayout(REPORT_SECTIONS.map(s => ({ ...s })));
 
-  const maxCategoryTotal = Math.max(1, ...byCategory.map(c => c.totalCRC));
-  const maxMonthTotal = Math.max(1, ...byMonth.map(m => m.totalCRC));
-  const maxEnvelopeTotal = Math.max(1, ...byEnvelope.map(e => e.totalCRC));
-  const maxPaymentMethodTotal = Math.max(1, ...byPaymentMethod.map(p => p.totalCRC));
-  const maxTrendValue = Math.max(1, ...trend.map(entry => Math.max(entry.incomeCRC, entry.expenseCRC)));
+  const maxCategoryTotal = Math.max(1, ...byCategory.map(c => c.total));
+  const maxMonthTotal = Math.max(1, ...byMonth.map(m => m.total));
+  const maxEnvelopeTotal = Math.max(1, ...byEnvelope.map(e => e.total));
+  const maxPaymentMethodTotal = Math.max(1, ...byPaymentMethod.map(p => p.total));
+  const maxTrendValue = Math.max(1, ...trend.map(entry => Math.max(entry.income, entry.expense)));
 
   const sectionNodes: Record<ReportSectionId, React.ReactNode> = {
     byCategory: (
@@ -200,10 +198,10 @@ export const ReportsScreen = ({ navigation }: Props) => {
                 <View key={c.categoryId} style={styles.row}>
                   <View style={styles.rowHeader}>
                     <Text style={styles.rowLabel}>{c.name}</Text>
-                    <Text style={styles.rowValue}>{money(c.totalCRC)} · {c.percentage.toFixed(0)}%</Text>
+                    <Text style={styles.rowValue}>{money(c.total)} · {c.percentage.toFixed(0)}%</Text>
                   </View>
                   <View style={styles.barTrack}>
-                    <View style={[styles.barFill, { width: `${(c.totalCRC / maxCategoryTotal) * 100}%` }]} />
+                    <View style={[styles.barFill, { width: `${(c.total / maxCategoryTotal) * 100}%` }]} />
                   </View>
                 </View>
               ))
@@ -222,10 +220,10 @@ export const ReportsScreen = ({ navigation }: Props) => {
                 <View key={m.monthKey} style={styles.row}>
                   <View style={styles.rowHeader}>
                     <Text style={styles.rowLabel}>{m.label}</Text>
-                    <Text style={styles.rowValue}>{money(m.totalCRC)}</Text>
+                    <Text style={styles.rowValue}>{money(m.total)}</Text>
                   </View>
                   <View style={styles.barTrack}>
-                    <View style={[styles.barFill, { width: `${(m.totalCRC / maxMonthTotal) * 100}%` }]} />
+                    <View style={[styles.barFill, { width: `${(m.total / maxMonthTotal) * 100}%` }]} />
                   </View>
                 </View>
               ))
@@ -245,12 +243,12 @@ export const ReportsScreen = ({ navigation }: Props) => {
                   <View style={styles.rowHeader}>
                     <Text style={styles.rowLabel}>{e.name}</Text>
                     <Text style={styles.rowValue}>
-                      {money(e.totalCRC)}
+                      {money(e.total)}
                       {e.percentOfLimit != null ? t('reports.percentOfLimit', { percent: e.percentOfLimit.toFixed(0) }) : ''}
                     </Text>
                   </View>
                   <View style={styles.barTrack}>
-                    <View style={[styles.barFill, { width: `${(e.totalCRC / maxEnvelopeTotal) * 100}%` }]} />
+                    <View style={[styles.barFill, { width: `${(e.total / maxEnvelopeTotal) * 100}%` }]} />
                   </View>
                 </View>
               ))
@@ -269,10 +267,10 @@ export const ReportsScreen = ({ navigation }: Props) => {
                 <View key={p.paymentMethodId} style={styles.row}>
                   <View style={styles.rowHeader}>
                     <Text style={styles.rowLabel}>{p.name}</Text>
-                    <Text style={styles.rowValue}>{money(p.totalCRC)}</Text>
+                    <Text style={styles.rowValue}>{money(p.total)}</Text>
                   </View>
                   <View style={styles.barTrack}>
-                    <View style={[styles.barFill, { width: `${(p.totalCRC / maxPaymentMethodTotal) * 100}%` }]} />
+                    <View style={[styles.barFill, { width: `${(p.total / maxPaymentMethodTotal) * 100}%` }]} />
                   </View>
                 </View>
               ))
@@ -284,22 +282,22 @@ export const ReportsScreen = ({ navigation }: Props) => {
       <>
           <Text style={styles.sectionTitle}>{t('reports.trendTitle', { months: TREND_MONTHS })}</Text>
           <View style={styles.card}>
-            {trend.every(entry => entry.incomeCRC === 0 && entry.expenseCRC === 0) ? (
+            {trend.every(entry => entry.income === 0 && entry.expense === 0) ? (
               <EmptyState />
             ) : (
               trend.map(entry => (
                 <View key={entry.monthKey} style={styles.row}>
                   <Text style={styles.rowLabel}>{entry.label}</Text>
                   <View style={styles.trendLine}>
-                    <Text style={styles.trendIncomeLabel}>{t('reports.incomeAmount', { amount: money(entry.incomeCRC) })}</Text>
+                    <Text style={styles.trendIncomeLabel}>{t('reports.incomeAmount', { amount: money(entry.income) })}</Text>
                     <View style={styles.barTrack}>
-                      <View style={[styles.barFill, { backgroundColor: colors.green, width: `${(entry.incomeCRC / maxTrendValue) * 100}%` }]} />
+                      <View style={[styles.barFill, { backgroundColor: colors.green, width: `${(entry.income / maxTrendValue) * 100}%` }]} />
                     </View>
                   </View>
                   <View style={styles.trendLine}>
-                    <Text style={styles.trendExpenseLabel}>{t('reports.expenseAmount', { amount: money(entry.expenseCRC) })}</Text>
+                    <Text style={styles.trendExpenseLabel}>{t('reports.expenseAmount', { amount: money(entry.expense) })}</Text>
                     <View style={styles.barTrack}>
-                      <View style={[styles.barFill, { backgroundColor: colors.red, width: `${(entry.expenseCRC / maxTrendValue) * 100}%` }]} />
+                      <View style={[styles.barFill, { backgroundColor: colors.red, width: `${(entry.expense / maxTrendValue) * 100}%` }]} />
                     </View>
                   </View>
                 </View>
@@ -323,7 +321,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
                       {entry.envelopeName} · {entry.categoryName} · {new Date(entry.transaction.date).toLocaleDateString(reportI18n.locale)}
                     </Text>
                   </View>
-                  <Text style={styles.rowValue}>{money(entry.amountCRC)}</Text>
+                  <Text style={styles.rowValue}>{money(entry.amount)}</Text>
                 </View>
               ))
             )}
@@ -339,6 +337,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('reports.title')}</Text>
+        {usedCurrencies.length > 1 ? (
         <TouchableOpacity
           onPress={cycleCurrency}
           style={styles.currencyBtn}
@@ -348,6 +347,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
         >
           <Text style={styles.currencyText}>{currency}</Text>
         </TouchableOpacity>
+        ) : <View style={styles.headerBtn} />}
       </View>
 
       <NestableScrollContainer contentContainerStyle={styles.scroll}>

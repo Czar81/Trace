@@ -81,8 +81,6 @@ const isValidTemplate = (t: any) =>
  */
 const sanitizeSettings = (raw: any): AppSettings => {
   const s = raw && typeof raw === 'object' ? raw : {};
-  const rates = s.exchangeRates && typeof s.exchangeRates === 'object' ? s.exchangeRates : {};
-  const positive = (v: unknown, fallback: number) => (isFiniteNumber(v) && v > 0 ? v : fallback);
   const dayOrNull = (v: unknown) => (isFiniteNumber(v) && v >= 1 && v <= 31 ? Math.round(v) : null);
   const bool = (v: unknown, fallback: boolean) => (typeof v === 'boolean' ? v : fallback);
 
@@ -91,15 +89,12 @@ const sanitizeSettings = (raw: any): AppSettings => {
     expenseCutoffDay = new Date(s.expenseCutoffDate).getDate();
   }
 
-  const { expenseCutoffDate: _legacyCutoffDate, ...rest } = s;
+  // Rates from older backups (conversion was removed) are dropped.
+  const { expenseCutoffDate: _legacyCutoffDate, exchangeRates: _legacyRates, autoExchangeRates: _legacyAuto, exchangeRatesUpdatedAt: _legacyRatesAt, ...rest } = s;
   return {
     ...DEFAULT_SETTINGS,
     ...rest,
     defaultCurrency: CURRENCIES.includes(s.defaultCurrency) ? s.defaultCurrency : DEFAULT_SETTINGS.defaultCurrency,
-    exchangeRates: {
-      USD_TO_CRC: positive(rates.USD_TO_CRC, DEFAULT_SETTINGS.exchangeRates.USD_TO_CRC),
-      EUR_TO_CRC: positive(rates.EUR_TO_CRC, DEFAULT_SETTINGS.exchangeRates.EUR_TO_CRC),
-    },
     expenseCutoffEnabled: bool(s.expenseCutoffEnabled, DEFAULT_SETTINGS.expenseCutoffEnabled),
     expenseCutoffDay,
     budgetAlertsEnabled: bool(s.budgetAlertsEnabled, DEFAULT_SETTINGS.budgetAlertsEnabled),

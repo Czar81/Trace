@@ -4,7 +4,7 @@ TBD
 ## Requirements
 
 ### Requirement: Reports screen shows summary metrics for the selected period
-The system SHALL show, at the top of the Reports screen, total income, total expenses, net balance (income minus expenses), average expense per transaction, and the number of expense transactions for the selected period. All amounts SHALL be converted to the common currency, and archived transactions SHALL be excluded.
+The system SHALL show, at the top of the Reports screen, total income, total expenses, net balance (income minus expenses), average expense per transaction, and the number of expense transactions for the selected period. All amounts SHALL be in the currency selected for the report (never converted), and archived transactions SHALL be excluded.
 
 #### Scenario: Summary reflects the selected period
 - **WHEN** the user selects a reporting period

@@ -20,10 +20,6 @@ import {
   DEFAULT_AUTO_BACKUP_STATE,
   loadLanguagePreference,
   saveLanguagePreference,
-  loadMainDisplayCurrency,
-  saveMainDisplayCurrency,
-  loadReportsDisplayCurrency,
-  saveReportsDisplayCurrency,
 } from './storage';
 import { REPORT_SECTIONS } from '../../domain/reports/reports';
 
@@ -156,37 +152,19 @@ describe('language preference storage', () => {
   });
 });
 
-describe('main display currency storage', () => {
-  beforeEach(async () => {
+describe('legacy exchange-rate settings', () => {
+  it('drops stored rates when loading settings', async () => {
     await AsyncStorage.clear();
-  });
-
-  it('is null when nothing is stored', async () => {
-    await expect(loadMainDisplayCurrency()).resolves.toBeNull();
-  });
-
-  it('round-trips each currency', async () => {
-    for (const value of ['USD', 'EUR', 'CRC'] as const) {
-      await saveMainDisplayCurrency(value);
-      await expect(loadMainDisplayCurrency()).resolves.toBe(value);
-    }
-  });
-
-  it('ignores an unknown stored value', async () => {
-    await AsyncStorage.setItem('@trace_main_display_currency', JSON.stringify('GBP'));
-    await expect(loadMainDisplayCurrency()).resolves.toBeNull();
-  });
-});
-
-describe('reports display currency storage', () => {
-  beforeEach(async () => {
-    await AsyncStorage.clear();
-  });
-
-  it('is stored apart from the home total currency', async () => {
-    await expect(loadReportsDisplayCurrency()).resolves.toBeNull();
-    await saveReportsDisplayCurrency('USD');
-    await expect(loadReportsDisplayCurrency()).resolves.toBe('USD');
-    await expect(loadMainDisplayCurrency()).resolves.toBeNull();
+    await AsyncStorage.setItem('@trace_settings', JSON.stringify({
+      defaultCurrency: 'USD',
+      exchangeRates: { USD_TO_CRC: 500, EUR_TO_CRC: 600 },
+      autoExchangeRates: true,
+      exchangeRatesUpdatedAt: '2026-01-01T00:00:00.000Z',
+    }));
+    const settings = await loadSettings();
+    expect(settings.defaultCurrency).toBe('USD');
+    expect(Object.keys(settings)).not.toContain('exchangeRates');
+    expect(Object.keys(settings)).not.toContain('autoExchangeRates');
+    expect(Object.keys(settings)).not.toContain('exchangeRatesUpdatedAt');
   });
 });

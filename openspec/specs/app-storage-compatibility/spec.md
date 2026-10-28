@@ -13,7 +13,7 @@ The system SHALL continue to read envelopes, transactions, payment methods, cate
 
 #### Scenario: Settings default values are unchanged
 - **WHEN** the app loads settings via `loadSettings`
-- **THEN** the default currency, exchange rates, and cutoff settings fall back to the same default values as before this change (`defaultCurrency: 'CRC'`, `exchangeRates: { USD_TO_CRC: 510, EUR_TO_CRC: 550 }`, `expenseCutoffEnabled: false`, `expenseCutoffDay: null`) whenever no stored value exists
+- **THEN** the default currency and cutoff settings fall back to the same default values as before this change (`defaultCurrency: 'CRC'`, `expenseCutoffEnabled: false`, `expenseCutoffDay: null`) whenever no stored value exists
 
 ### Requirement: Legacy expenseCutoffDate settings continue to migrate
 The system SHALL preserve the existing one-way migration in `loadSettings` that derives `expenseCutoffDay` from a legacy stored `expenseCutoffDate` field when `expenseCutoffDay` is not already present.

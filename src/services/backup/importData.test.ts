@@ -98,15 +98,16 @@ describe('parseBackup validation', () => {
     expect(result.errors).toHaveLength(1);
   });
 
-  it('replaces malformed settings fields with defaults and keeps unknown ones', () => {
+  it('replaces malformed settings fields with defaults, drops legacy exchange rates and keeps unknown ones', () => {
     const result = parseBackup(JSON.stringify({
       ...baseBackup,
-      settings: { defaultCurrency: 'XYZ', billReminderLeadDays: 'two', exchangeRates: { USD_TO_CRC: -1 }, futureFlag: true },
+      settings: { defaultCurrency: 'XYZ', billReminderLeadDays: 'two', exchangeRates: { USD_TO_CRC: 500 }, autoExchangeRates: true, futureFlag: true },
     }));
     expect(result.errors).toEqual([]);
     expect(result.backup.settings.defaultCurrency).toBe('CRC');
     expect(result.backup.settings.billReminderLeadDays).toBe(2);
-    expect(result.backup.settings.exchangeRates.USD_TO_CRC).toBe(510);
+    expect(Object.keys(result.backup.settings)).not.toContain('exchangeRates');
+    expect(Object.keys(result.backup.settings)).not.toContain('autoExchangeRates');
     expect((result.backup.settings as any).futureFlag).toBe(true);
   });
 

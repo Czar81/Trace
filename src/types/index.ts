@@ -94,13 +94,6 @@ export interface SavedDebtPlan {
 
 export interface AppSettings {
   defaultCurrency: Currency;
-  exchangeRates: {
-    USD_TO_CRC: number;
-    EUR_TO_CRC: number;
-  };
-  /** When on, rates are refreshed from the internet on app start if older than 12 hours. */
-  autoExchangeRates?: boolean;
-  exchangeRatesUpdatedAt?: string;
   /** Requires the device's fingerprint/face/PIN to open the app. */
   appLockEnabled?: boolean;
   expenseCutoffEnabled: boolean;

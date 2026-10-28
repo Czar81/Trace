@@ -1,5 +1,5 @@
 import { Envelope, Transaction, TransactionCategory } from '../../types';
-import { getSpendingByCategory, getTopTransactions, resolvePeriodRange, getSummary, parseReportLayout, REPORT_SECTIONS } from './reports';
+import { filterByCurrency, getSpendingByCategory, getTopTransactions, resolvePeriodRange, getSummary, parseReportLayout, REPORT_SECTIONS } from './reports';
 
 const envelope: Envelope = {
   id: 'e1',
@@ -11,8 +11,6 @@ const envelope: Envelope = {
   icon: 'wallet',
   color: '#000000',
 };
-
-const convert = (amount: number) => amount;
 
 const tx = (overrides: Partial<Transaction>): Transaction => ({
   id: Math.random().toString(),
@@ -35,16 +33,16 @@ describe('reports ignore income categories', () => {
   ];
 
   it('spending by category counts only expense transactions and only expense categories', () => {
-    const result = getSpendingByCategory(transactions, expenseCategories, [envelope], 'all-time', convert);
+    const result = getSpendingByCategory(transactions, expenseCategories, 'all-time');
 
     expect(result).toEqual([
-      { categoryId: '1', name: 'Comida', totalCRC: 100, percentage: 100 },
+      { categoryId: '1', name: 'Comida', total: 100, percentage: 100 },
     ]);
     expect(result.some(r => r.name === 'Salario')).toBe(false);
   });
 
   it('top transactions excludes income', () => {
-    const result = getTopTransactions(transactions, expenseCategories, [envelope], 'all-time', convert);
+    const result = getTopTransactions(transactions, expenseCategories, [envelope], 'all-time');
 
     expect(result.map(r => r.transaction.id)).toEqual(['exp']);
     expect(incomeCategories).toHaveLength(1); // income catalog is simply not consulted here
@@ -67,30 +65,33 @@ describe('custom report period', () => {
   });
 
   it('includes a transaction on the end date at 23:59 and excludes the next day', () => {
-    const ids = getTopTransactions(transactions, [], [envelope], period, convert).map(e => e.transaction.id);
+    const ids = getTopTransactions(transactions, [], [envelope], period).map(e => e.transaction.id);
     expect(ids.sort()).toEqual(['end', 'start']);
   });
 });
 
 describe('getSummary', () => {
   const usdEnvelope: Envelope = { ...envelope, id: 'e2', currency: 'USD' };
-  const toCRC = (amount: number, from: string) => (from === 'USD' ? amount * 500 : amount);
 
-  it('totals income and expenses across currencies and excludes archived', () => {
+  it('totals income and expenses and excludes archived', () => {
     const result = getSummary(
       [
         tx({ type: 'expense', amount: 1000 }),
-        tx({ type: 'expense', amount: 1, envelopeId: 'e2' }),
+        tx({ type: 'expense', amount: 500 }),
         tx({ type: 'income', amount: 4000 }),
         tx({ type: 'expense', amount: 9999, isArchived: true }),
         tx({ type: 'income', amount: 9999, isArchived: true }),
       ],
-      [envelope, usdEnvelope],
-      'all-time',
-      toCRC
+      'all-time'
     );
 
     expect(result).toEqual({ income: 4000, expenses: 1500, net: 2500, averageExpense: 750, expenseCount: 2 });
+  });
+
+  it('filterByCurrency keeps only transactions of envelopes in that currency', () => {
+    const transactions = [tx({ id: 'crc' }), tx({ id: 'usd', envelopeId: 'e2' })];
+    expect(filterByCurrency(transactions, [envelope, usdEnvelope], 'USD').map(t => t.id)).toEqual(['usd']);
+    expect(filterByCurrency(transactions, [envelope, usdEnvelope], 'CRC').map(t => t.id)).toEqual(['crc']);
   });
 
   it('only counts transactions within the period', () => {
@@ -99,9 +100,7 @@ describe('getSummary', () => {
         tx({ type: 'expense', amount: 100, date: new Date(2024, 0, 15).toISOString() }),
         tx({ type: 'expense', amount: 500, date: new Date(2024, 1, 15).toISOString() }),
       ],
-      [envelope],
-      { kind: 'custom', start: new Date(2024, 0, 1), end: new Date(2024, 0, 31) },
-      convert
+      { kind: 'custom', start: new Date(2024, 0, 1), end: new Date(2024, 0, 31) }
     );
 
     expect(result.expenses).toBe(100);
@@ -109,7 +108,7 @@ describe('getSummary', () => {
   });
 
   it('returns zeros and a null average for an empty period', () => {
-    expect(getSummary([], [envelope], 'all-time', convert)).toEqual({
+    expect(getSummary([], 'all-time')).toEqual({
       income: 0,
       expenses: 0,
       net: 0,

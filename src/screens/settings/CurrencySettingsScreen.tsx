@@ -1,60 +1,25 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform, Switch, Linking } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { ArrowLeft, RefreshCw } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
 import { Dropdown } from '../../components/forms/Dropdown';
 import { Currency } from '../../types';
 import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
-import { canRefreshNow, fetchExchangeRates } from '../../services/currency/exchangeRates';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CurrencySettings'>;
 
 export const CurrencySettingsScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
-  const { t, locale } = useTranslation();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { settings, updateSettings } = useAppData();
-  const [usdRate, setUsdRate] = useState(settings.exchangeRates.USD_TO_CRC.toString());
-  const [eurRate, setEurRate] = useState(settings.exchangeRates.EUR_TO_CRC.toString());
-  const [ratesSaved, setRatesSaved] = useState(false);
-
-  useEffect(() => {
-    setUsdRate(settings.exchangeRates.USD_TO_CRC.toString());
-    setEurRate(settings.exchangeRates.EUR_TO_CRC.toString());
-  }, [settings.exchangeRates]);
-
-  const [fetchStatus, setFetchStatus] = useState<'idle' | 'loading' | 'error' | 'recent'>('idle');
-
-  const handleFetchRates = async () => {
-    if (!canRefreshNow(settings.exchangeRatesUpdatedAt)) {
-      setFetchStatus('recent');
-      return;
-    }
-    setFetchStatus('loading');
-    const rates = await fetchExchangeRates();
-    if (!rates) {
-      setFetchStatus('error');
-      return;
-    }
-    await updateSettings({ exchangeRates: rates, exchangeRatesUpdatedAt: new Date().toISOString() });
-    setFetchStatus('idle');
-  };
-
-  const handleSaveRates = async () => {
-    const usd = parseFloat(usdRate);
-    const eur = parseFloat(eurRate);
-    if (isNaN(usd) || isNaN(eur)) return;
-    await updateSettings({ exchangeRates: { USD_TO_CRC: usd, EUR_TO_CRC: eur } });
-    setRatesSaved(true);
-    setTimeout(() => setRatesSaved(false), 2000);
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -83,58 +48,6 @@ export const CurrencySettingsScreen = ({ navigation }: Props) => {
             onSelect={(val) => updateSettings({ defaultCurrency: val as Currency })}
           />
 
-          <Text style={styles.sectionTitle}>{t('currency.rates')}</Text>
-          <View style={styles.rateRow}>
-            <Text style={styles.rateLabel}>1 USD =</Text>
-            <TextInput
-              style={styles.rateInput}
-              value={usdRate}
-              onChangeText={setUsdRate}
-              keyboardType="numeric"
-              placeholderTextColor={colors.secondaryText}
-            />
-            <Text style={styles.rateSuffix}>CRC</Text>
-          </View>
-          <View style={styles.rateRow}>
-            <Text style={styles.rateLabel}>1 EUR =</Text>
-            <TextInput
-              style={styles.rateInput}
-              value={eurRate}
-              onChangeText={setEurRate}
-              keyboardType="numeric"
-              placeholderTextColor={colors.secondaryText}
-            />
-            <Text style={styles.rateSuffix}>CRC</Text>
-          </View>
-          <TouchableOpacity style={styles.fetchBtn} onPress={handleFetchRates} disabled={fetchStatus === 'loading'} activeOpacity={0.8}>
-            <RefreshCw color={colors.white} size={16} />
-            <Text style={styles.fetchBtnText}>{fetchStatus === 'loading' ? t('currency.fetching') : t('currency.fetchRates')}</Text>
-          </TouchableOpacity>
-          {fetchStatus === 'recent' ? <Text style={styles.fetchInfo}>{t('currency.fetchRecent')}</Text> : null}
-          {fetchStatus === 'error' ? <Text style={styles.fetchError}>{t('currency.fetchError')}</Text> : null}
-          {settings.exchangeRatesUpdatedAt ? (
-            <Text style={styles.fetchInfo}>
-              {t('currency.updatedAt', { date: new Date(settings.exchangeRatesUpdatedAt).toLocaleString(locale) })}
-            </Text>
-          ) : null}
-          <View style={styles.autoRow}>
-            <View style={{ flex: 1, paddingRight: SPACING.md }}>
-              <Text style={styles.autoLabel}>{t('currency.autoUpdate')}</Text>
-              <Text style={styles.fetchInfo}>{t('currency.autoUpdateHint')}</Text>
-            </View>
-            <Switch
-              value={!!settings.autoExchangeRates}
-              onValueChange={(on) => updateSettings({ autoExchangeRates: on })}
-              trackColor={{ false: colors.cardBg, true: colors.green }}
-              thumbColor={colors.white}
-            />
-          </View>
-          <TouchableOpacity onPress={() => Linking.openURL('https://www.exchangerate-api.com')}>
-            <Text style={styles.attribution}>{t('currency.attribution')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.saveBtn, ratesSaved && styles.saveBtnSuccess]} onPress={handleSaveRates}>
-            <Text style={styles.saveBtnText}>{ratesSaved ? t('currency.saved') : t('currency.saveRates')}</Text>
-          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -149,18 +62,4 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   keyboardAvoiding: { flex: 1 },
   scroll: { paddingHorizontal: SPACING.xl, paddingBottom: 60 },
   sectionTitle: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '700', marginTop: 28, marginBottom: SPACING.md },
-  rateRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  rateLabel: { color: colors.secondaryText, fontSize: FONT_SIZE.base, width: 60 },
-  rateInput: { flex: 1, backgroundColor: colors.cardBg, borderRadius: RADIUS.sm, padding: SPACING.md, color: colors.white, fontSize: FONT_SIZE.lg },
-  rateSuffix: { color: colors.secondaryText, fontSize: FONT_SIZE.base, marginLeft: 10, width: 36 },
-  fetchBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, backgroundColor: colors.cardBg, borderRadius: RADIUS.md, padding: 14, marginTop: SPACING.xs },
-  fetchBtnText: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '600' },
-  attribution: { color: colors.secondaryText, fontSize: FONT_SIZE.xs, textDecorationLine: 'underline', marginBottom: SPACING.lg },
-  fetchError: { color: colors.red, fontSize: FONT_SIZE.sm, marginTop: SPACING.sm },
-  fetchInfo: { color: colors.secondaryText, fontSize: FONT_SIZE.xs, marginTop: 6 },
-  autoRow: { flexDirection: 'row', alignItems: 'center', marginVertical: SPACING.lg },
-  autoLabel: { color: colors.white, fontSize: FONT_SIZE.base },
-  saveBtn: { backgroundColor: colors.green, borderRadius: RADIUS.md, padding: 14, alignItems: 'center', marginTop: SPACING.sm, marginBottom: SPACING.xs },
-  saveBtnSuccess: { backgroundColor: '#4ADE80' },
-  saveBtnText: { color: colors.bg, fontSize: FONT_SIZE.lg, fontWeight: '700' },
 });

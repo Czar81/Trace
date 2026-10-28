@@ -33,7 +33,7 @@
 - **Smart reset**: reset envelopes one by one or all at once, moving data to the history.
 
 ### Money and security
-- **Currencies**: CRC, USD and EUR, with exchange rates that update automatically (open.er-api.com) or can be set manually.
+- **Currencies**: CRC, USD and EUR. Currencies are never converted or mixed: totals and reports are shown per currency.
 - **App lock** with your fingerprint, face or device PIN.
 - **Bill reminders** through local notifications.
 - **Languages**: Spanish and English.
