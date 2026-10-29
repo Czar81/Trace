@@ -307,7 +307,7 @@ export const MainScreen = ({ navigation }: Props) => {
       <View style={styles.header}>
         <Text style={styles.title}>TRACE</Text>
         <View style={{ flexDirection: 'row' }}>
-          <HelpButton style={styles.iconBtn} title="help.main.title" body="help.main.body" actionLabel="help.main.tutorial" onAction={() => navigation.navigate('Onboarding')} />
+          <HelpButton style={styles.iconBtn} title="help.main.title" body="help.main.body" />
           <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('AssignIncome')} accessibilityRole="button" accessibilityLabel={t('a11y.assignIncome')}>
             <Coins color={colors.secondaryText} size={22} />
           </TouchableOpacity>

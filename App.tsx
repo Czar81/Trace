@@ -65,10 +65,6 @@ function useOnboardingGate(): [OnboardingGate, () => void] {
   return [gate, finish];
 }
 
-function OnboardingRoute({ navigation }: { navigation: { goBack: () => void } }) {
-  return <OnboardingScreen onFinish={navigation.goBack} />;
-}
-
 function ThemedNavigator() {
   const { colors, isLight } = useTheme();
   const [gate, finishOnboarding] = useOnboardingGate();
@@ -87,7 +83,6 @@ function ThemedNavigator() {
           <Stack.Screen name="AssignIncome" component={AssignIncomeScreen} options={{ animation: 'fade_from_bottom' }} />
           <Stack.Screen name="ImportBankCsv" component={ImportBankCsvScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
-          <Stack.Screen name="Onboarding" component={OnboardingRoute} options={{ animation: 'fade_from_bottom' }} />
           <Stack.Screen name="AppearanceSettings" component={AppearanceSettingsScreen} />
           <Stack.Screen name="PaymentMethodsSettings" component={PaymentMethodsSettingsScreen} />
           <Stack.Screen name="CategoriesSettings" component={CategoriesSettingsScreen} />

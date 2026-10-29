@@ -11,12 +11,6 @@ import { computeSummaryProgress, computeTotalSpent, daysUntilNextCutoff } from '
 
 const WARN_COLOR = '#E3B341';
 
-const HINT_KEYS: Record<EnvelopeType, TranslationKey> = {
-  gasto: 'main.hintExpenses',
-  ahorro: 'main.hintSavings',
-  deuda: 'main.hintDebts',
-};
-
 const SUB_KEYS: Record<EnvelopeType, TranslationKey> = {
   gasto: 'main.progressSpentSub',
   ahorro: 'main.progressSavedSub',
@@ -68,14 +62,11 @@ export const SummaryCard: React.FC<Props> = ({ type, label, totals, envelopes, g
             </Text>
             <Text style={styles.sub}>{t(SUB_KEYS[type])}</Text>
           </View>
-        ) : hasEnvelopes ? (
+        ) : hasEnvelopes && type === 'gasto' ? (
           <View style={styles.left}>
-            {type === 'gasto' && (
-              <Text style={styles.big} numberOfLines={1} adjustsFontSizeToFit>
-                {money(computeTotalSpent(entry.currency, envelopes, getEnvelopeBalance))} <Text style={styles.bigSmall}>{t('main.progressSpentSub')}</Text>
-              </Text>
-            )}
-            <Text style={styles.sub}>{t(HINT_KEYS[type])}</Text>
+            <Text style={styles.big} numberOfLines={1} adjustsFontSizeToFit>
+              {money(computeTotalSpent(entry.currency, envelopes, getEnvelopeBalance))} <Text style={styles.bigSmall}>{t('main.progressSpentSub')}</Text>
+            </Text>
           </View>
         ) : <View style={styles.left} />}
         <View style={styles.right}>
