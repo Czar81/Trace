@@ -96,7 +96,6 @@ const sanitizeSettings = (raw: any): AppSettings => {
     ...rest,
     defaultCurrency: isCurrencyCode(s.defaultCurrency) ? s.defaultCurrency : DEFAULT_SETTINGS.defaultCurrency,
     expenseCutoffDay: expenseCutoffDay ?? DEFAULT_SETTINGS.expenseCutoffDay,
-    budgetAlertsEnabled: bool(s.budgetAlertsEnabled, DEFAULT_SETTINGS.budgetAlertsEnabled),
     billRemindersEnabled: bool(s.billRemindersEnabled, DEFAULT_SETTINGS.billRemindersEnabled),
     billReminderLeadDays: isFiniteNumber(s.billReminderLeadDays) && s.billReminderLeadDays >= 0
       ? Math.round(s.billReminderLeadDays)

@@ -38,10 +38,7 @@ export async function syncReminderSettings(
 
 /** Asks for notification permission the first time a notifying feature is switched on. */
 export async function requestPermissionsIfEnabled(previous: AppSettings, updated: AppSettings): Promise<void> {
-  if (
-    (updated.budgetAlertsEnabled && !previous.budgetAlertsEnabled) ||
-    (updated.billRemindersEnabled && !previous.billRemindersEnabled)
-  ) {
+  if (updated.billRemindersEnabled && !previous.billRemindersEnabled) {
     await requestNotificationPermissions();
   }
 }

@@ -27,7 +27,6 @@ export const DEFAULT_AUTO_BACKUP_INTERVAL_DAYS = 7;
 export const DEFAULT_SETTINGS: AppSettings = {
   defaultCurrency: 'CRC',
   expenseCutoffDay: 1,
-  budgetAlertsEnabled: false,
   billRemindersEnabled: false,
   billReminderLeadDays: 2,
   themeId: DEFAULT_THEME_ID,

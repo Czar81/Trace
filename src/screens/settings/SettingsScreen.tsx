@@ -174,19 +174,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
 
         <SettingsSectionHeader icon={<Bell color={colors.secondaryText} size={14} />} title={t(sectionTitleKey('alerts'))} />
 
-        <View style={styles.toggleRow}>
-          <View style={styles.toggleTextWrapper}>
-            <Text style={styles.menuTitle}>{t('settings.budgetAlerts')}</Text>
-            <Text style={styles.menuSubtitle}>{t('settings.budgetAlertsSubtitle')}</Text>
-          </View>
-          <Switch
-            value={settings.budgetAlertsEnabled}
-            onValueChange={() => updateSettings({ budgetAlertsEnabled: !settings.budgetAlertsEnabled })}
-            trackColor={{ false: colors.cardBg, true: colors.green }}
-            thumbColor={settings.budgetAlertsEnabled ? colors.green : colors.white}
-          />
-        </View>
-
         <View style={styles.reminderCard}>
           <View style={styles.reminderRow}>
             <View style={styles.toggleTextWrapper}>

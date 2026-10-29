@@ -38,11 +38,7 @@ Before confirming a transfer, the system SHALL show the resulting balance of bot
 - **THEN** the system displays a preview of each envelope's balance after the transfer
 
 ### Requirement: Transfers are excluded from expense and income totals
-The system SHALL NOT count a transfer as an expense or as income in any report, summary total, or budget-alert calculation for either the source or destination envelope.
-
-#### Scenario: Transfer out of a gasto envelope with budget alerts enabled
-- **WHEN** budget alerts are enabled and a transfer moves money out of a `gasto` envelope
-- **THEN** the system does not evaluate or send a budget alert for that transfer
+The system SHALL NOT count a transfer as an expense or as income in any report or summary total for either the source or destination envelope.
 
 #### Scenario: Transfer appears in envelope history but not in expense/income reports
 - **WHEN** a transfer has been created between two envelopes

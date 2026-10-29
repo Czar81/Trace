@@ -11,7 +11,7 @@
 ## Features
 
 ### Envelopes
-- **Spending envelopes**: set a budget per period and see what is left, with optional alerts at 80% and 100% usage.
+- **Spending envelopes**: set a budget per period and see what is left.
 - **Savings envelopes**: set a goal, optionally with a deadline, and track progress.
 - **Debt envelopes**: track what you owe.
 - **Unlimited mode**: envelopes with no limit, just to track money flows.

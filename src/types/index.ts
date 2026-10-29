@@ -88,7 +88,6 @@ export interface AppSettings {
   /** Requires the device's fingerprint/face/PIN to open the app. */
   appLockEnabled?: boolean;
   expenseCutoffDay: number;
-  budgetAlertsEnabled: boolean;
   billRemindersEnabled: boolean;
   billReminderLeadDays: number;
   themeId: ThemeId;

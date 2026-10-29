@@ -7,7 +7,7 @@ import { TranslationKey } from '../../i18n';
 export type SettingsItemId =
   | 'appearance' | 'language' | 'currency' | 'tutorial'
   | 'cutoff' | 'categories' | 'paymentMethods'
-  | 'budgetAlerts' | 'billReminders'
+  | 'billReminders'
   | 'appLock'
   | 'dataBackups';
 
@@ -22,7 +22,7 @@ export interface SettingsSection {
 export const SETTINGS_SECTIONS: SettingsSection[] = [
   { id: 'general', titleKey: 'settings.sectionGeneral', items: ['appearance', 'language', 'currency', 'tutorial'] },
   { id: 'finance', titleKey: 'settings.sectionFinance', items: ['cutoff', 'categories', 'paymentMethods'] },
-  { id: 'alerts', titleKey: 'settings.sectionAlerts', items: ['budgetAlerts', 'billReminders'] },
+  { id: 'alerts', titleKey: 'settings.sectionAlerts', items: ['billReminders'] },
   { id: 'security', titleKey: 'settings.sectionSecurity', items: ['appLock'] },
   { id: 'data', titleKey: 'settings.sectionData', items: ['dataBackups'] },
 ];

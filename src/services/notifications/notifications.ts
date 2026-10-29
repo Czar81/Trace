@@ -48,39 +48,6 @@ function debtAnchor(envelope: Envelope): DebtCycleAnchor | null {
   return { interestFrequency: envelope.interestFrequency, dueDay: envelope.dueDay, dueAnchorMonth: envelope.dueAnchorMonth };
 }
 
-// ─── Budget alerts ─────────────────────────────────────────────────────────
-
-/**
- * Fires a local notification only on the transition of a 'gasto' envelope's
- * spent fraction into the 80% or 100% band.
- */
-export async function notifyBudgetThreshold(envelope: Envelope, before: number, after: number): Promise<void> {
-  if (isExpoGo) return;
-  try {
-    if (before < 0.8 && after >= 0.8) {
-      await scheduleNotification({
-        content: {
-          title: translateActive('notif.budget80Title'),
-          body: translateActive('notif.budget80Body', { name: envelope.name, percent: Math.round(after * 100) }),
-        },
-        trigger: null,
-      });
-    }
-
-    if (before < 1.0 && after >= 1.0) {
-      await scheduleNotification({
-        content: {
-          title: translateActive('notif.budgetExceededTitle'),
-          body: translateActive('notif.budgetExceededBody', { name: envelope.name, percent: Math.round(after * 100) }),
-        },
-        trigger: null,
-      });
-    }
-  } catch (e) {
-    console.error('Error scheduling budget alert notification', e);
-  }
-}
-
 // ─── Bill reminders (scheduled ahead of a recurring template's due date) ───
 
 /**

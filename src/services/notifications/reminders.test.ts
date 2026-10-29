@@ -37,7 +37,7 @@ describe('reminders', () => {
   it('asks for permission only when a feature is newly enabled', async () => {
     await requestPermissionsIfEnabled(s, s);
     expect(notifications.requestNotificationPermissions).not.toHaveBeenCalled();
-    await requestPermissionsIfEnabled({ ...s, budgetAlertsEnabled: false }, { ...s, budgetAlertsEnabled: true });
+    await requestPermissionsIfEnabled({ ...s, billRemindersEnabled: false }, { ...s, billRemindersEnabled: true });
     expect(notifications.requestNotificationPermissions).toHaveBeenCalledTimes(1);
   });
   it('anyFieldChanged looks only at the listed fields', () => {
