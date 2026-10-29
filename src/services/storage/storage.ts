@@ -20,6 +20,7 @@ const KEYS = {
   AUTO_BACKUP_FOLDER_URI: '@trace_auto_backup_folder_uri',
   LANGUAGE: '@trace_language',
   DEBT_PLANS: '@trace_debt_plans',
+  ONBOARDING_SEEN: '@trace_onboarding_seen',
 };
 
 export const DEFAULT_AUTO_BACKUP_INTERVAL_DAYS = 7;
@@ -144,6 +145,17 @@ export const loadSettings = async (): Promise<AppSettings> => {
     mergedSettings.expenseCutoffDay = new Date(loaded.expenseCutoffDate).getDate();
   }
   return mergedSettings;
+};
+
+export const saveOnboardingSeen = () => saveDataQuietly(KEYS.ONBOARDING_SEEN, true);
+/** Null when the flag could not be read, so callers don't show the tutorial on a storage error. */
+export const loadOnboardingSeen = async (): Promise<boolean | null> => {
+  try {
+    return (await AsyncStorage.getItem(KEYS.ONBOARDING_SEEN)) != null;
+  } catch (e) {
+    console.error(`Error loading ${KEYS.ONBOARDING_SEEN}`, e);
+    return null;
+  }
 };
 
 export const saveDebtPlans = (data: SavedDebtPlan[]) => saveData(KEYS.DEBT_PLANS, data);

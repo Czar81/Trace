@@ -20,6 +20,8 @@ import {
   DEFAULT_AUTO_BACKUP_STATE,
   loadLanguagePreference,
   saveLanguagePreference,
+  loadOnboardingSeen,
+  saveOnboardingSeen,
 } from './storage';
 import { REPORT_SECTIONS } from '../../domain/reports/reports';
 
@@ -166,5 +168,17 @@ describe('legacy exchange-rate settings', () => {
     expect(Object.keys(settings)).not.toContain('exchangeRates');
     expect(Object.keys(settings)).not.toContain('autoExchangeRates');
     expect(Object.keys(settings)).not.toContain('exchangeRatesUpdatedAt');
+  });
+});
+
+describe('onboarding flag', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('is unseen until saved', async () => {
+    await expect(loadOnboardingSeen()).resolves.toBe(false);
+    await saveOnboardingSeen();
+    await expect(loadOnboardingSeen()).resolves.toBe(true);
   });
 });

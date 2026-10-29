@@ -5,7 +5,7 @@ import { TranslationKey } from '../../i18n';
  * maps each id to its row. "data" opens the BackupSettings sub-screen.
  */
 export type SettingsItemId =
-  | 'appearance' | 'language' | 'currency'
+  | 'appearance' | 'language' | 'currency' | 'tutorial'
   | 'cutoff' | 'categories' | 'paymentMethods'
   | 'reports' | 'recurring' | 'debtPayoff'
   | 'budgetAlerts' | 'billReminders'
@@ -21,7 +21,7 @@ export interface SettingsSection {
 }
 
 export const SETTINGS_SECTIONS: SettingsSection[] = [
-  { id: 'general', titleKey: 'settings.sectionGeneral', items: ['appearance', 'language', 'currency'] },
+  { id: 'general', titleKey: 'settings.sectionGeneral', items: ['appearance', 'language', 'currency', 'tutorial'] },
   { id: 'finance', titleKey: 'settings.sectionFinance', items: ['cutoff', 'categories', 'paymentMethods'] },
   { id: 'tools', titleKey: 'settings.sectionTools', items: ['reports', 'recurring', 'debtPayoff'] },
   { id: 'alerts', titleKey: 'settings.sectionAlerts', items: ['budgetAlerts', 'billReminders'] },

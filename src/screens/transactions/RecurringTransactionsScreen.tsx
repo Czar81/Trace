@@ -10,6 +10,7 @@ import Pause from 'lucide-react-native/icons/pause';
 import Play from 'lucide-react-native/icons/play';
 import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
 import { EmptyState } from '../../components/feedback/EmptyState';
+import { HelpButton } from '../../components/feedback/HelpButton';
 import { RecurringTransactionTemplate } from '../../types';
 import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../context/ThemeContext';
@@ -44,7 +45,7 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('recurring.title')}</Text>
-        <View style={{ width: 32 }} />
+        <HelpButton title="help.recurring.title" body="help.recurring.body" style={{ width: 32, alignItems: 'center' }} />
       </View>
 
       <FlatList
@@ -52,7 +53,11 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
         keyExtractor={item => item.id}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
-          <EmptyState message={t('recurring.empty')} />
+          <EmptyState
+            message={t('recurring.empty')}
+            ctaLabel={t('recurring.emptyCta')}
+            onPress={() => navigation.navigate('CreateRecurringTransaction', {})}
+          />
         }
         renderItem={({ item }) => {
           const envelope = envelopes.find(e => e.id === item.envelopeId);

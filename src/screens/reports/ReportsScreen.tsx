@@ -13,6 +13,7 @@ import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { RootStackParamList } from '../../navigation/types';
 import { EmptyState as SharedEmptyState } from '../../components/feedback/EmptyState';
+import { HelpButton } from '../../components/feedback/HelpButton';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
@@ -342,6 +343,8 @@ export const ReportsScreen = ({ navigation }: Props) => {
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('reports.title')}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <HelpButton title="help.reports.title" body="help.reports.body" />
         {usedCurrencies.length > 1 ? (
         <TouchableOpacity
           onPress={cycleCurrency}
@@ -353,6 +356,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
           <Text style={styles.currencyText}>{currency}</Text>
         </TouchableOpacity>
         ) : <View style={styles.headerBtn} />}
+        </View>
       </View>
 
       <NestableScrollContainer contentContainerStyle={styles.scroll}>

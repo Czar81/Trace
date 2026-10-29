@@ -20,6 +20,7 @@ import Bell from 'lucide-react-native/icons/bell';
 import Shield from 'lucide-react-native/icons/shield';
 import Database from 'lucide-react-native/icons/database';
 import DatabaseBackup from 'lucide-react-native/icons/database-backup';
+import HelpCircle from 'lucide-react-native/icons/circle-help';
 import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
 import { CurrencySelector } from '../../components/forms/CurrencySelector';
 import { DayGridSheet } from '../../components/forms/DayGridSheet';
@@ -133,6 +134,21 @@ export const SettingsScreen = ({ navigation }: Props) => {
             </View>
           </View>
         </View>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('Onboarding')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <HelpCircle color={colors.white} size={18} />
+          </View>
+          <View style={styles.menuTextWrapper}>
+            <Text style={styles.menuTitle}>{t('settings.viewTutorial')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.viewTutorialSubtitle')}</Text>
+          </View>
+          <ChevronRight color={colors.secondaryText} size={20} />
+        </TouchableOpacity>
 
         <SettingsSectionHeader icon={<Wallet color={colors.secondaryText} size={14} />} title={t(sectionTitleKey('finance'))} />
 

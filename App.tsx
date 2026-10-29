@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { AppProvider } from './src/context/ExpenseContext';
+import { AppProvider, useAppData } from './src/context/ExpenseContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { LanguageProvider } from './src/context/LanguageContext';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -26,13 +26,55 @@ import { RecurringTransactionsScreen } from './src/screens/transactions/Recurrin
 import { CreateRecurringTransactionScreen } from './src/screens/transactions/CreateRecurringTransactionScreen';
 import { BackupSettingsScreen } from './src/screens/settings/BackupSettingsScreen';
 import { AppearanceSettingsScreen } from './src/screens/settings/AppearanceSettingsScreen';
+import { OnboardingScreen } from './src/screens/onboarding/OnboardingScreen';
+import { loadOnboardingSeen, saveOnboardingSeen } from './src/services/storage/storage';
 import { AppLockGate } from './src/components/layout/AppLockGate';
 import { RootStackParamList } from './src/navigation/types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+type OnboardingGate = 'checking' | 'show' | 'done';
+
+/**
+ * Decides whether to show the first-run tutorial. It is skipped for anyone who
+ * already has data (e.g. restored from a backup or updating from an older version).
+ */
+function useOnboardingGate(): [OnboardingGate, () => void] {
+  const { isLoaded, envelopes, transactions } = useAppData();
+  const [gate, setGate] = useState<OnboardingGate>('checking');
+  const hasData = envelopes.length > 0 || transactions.length > 0;
+
+  useEffect(() => {
+    if (!isLoaded || gate !== 'checking') return;
+    let cancelled = false;
+    loadOnboardingSeen().then(seen => {
+      if (cancelled) return;
+      if (seen === null) setGate('done');
+      else if (seen) setGate('done');
+      else if (hasData) {
+        saveOnboardingSeen();
+        setGate('done');
+      } else setGate('show');
+    });
+    return () => { cancelled = true; };
+  }, [isLoaded, gate, hasData]);
+
+  const finish = () => {
+    saveOnboardingSeen();
+    setGate('done');
+  };
+  return [gate, finish];
+}
+
+function OnboardingRoute({ navigation }: { navigation: { goBack: () => void } }) {
+  return <OnboardingScreen onFinish={navigation.goBack} />;
+}
+
 function ThemedNavigator() {
   const { colors, isLight } = useTheme();
+  const [gate, finishOnboarding] = useOnboardingGate();
+  if (gate === 'checking') return null;
+  if (gate === 'show') return <OnboardingScreen onFinish={finishOnboarding} />;
   return (
     <>
       <StatusBar barStyle={isLight ? 'dark-content' : 'light-content'} backgroundColor={colors.bg} />
@@ -47,6 +89,7 @@ function ThemedNavigator() {
           <Stack.Screen name="DebtPayoffPlan" component={DebtPayoffPlanScreen} />
           <Stack.Screen name="ImportBankCsv" component={ImportBankCsvScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="Onboarding" component={OnboardingRoute} options={{ animation: 'fade_from_bottom' }} />
           <Stack.Screen name="AppearanceSettings" component={AppearanceSettingsScreen} />
           <Stack.Screen name="PaymentMethodsSettings" component={PaymentMethodsSettingsScreen} />
           <Stack.Screen name="CategoriesSettings" component={CategoriesSettingsScreen} />

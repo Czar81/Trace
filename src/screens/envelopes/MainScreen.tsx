@@ -19,6 +19,7 @@ import Repeat from 'lucide-react-native/icons/repeat';
 import { EnvelopeAvatar } from '../../components/envelope/EnvelopeAvatar';
 import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
 import { EmptyState } from '../../components/feedback/EmptyState';
+import { HelpButton } from '../../components/feedback/HelpButton';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
@@ -107,6 +108,12 @@ const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Main'>;
+
+const EMPTY_MESSAGES = {
+  gasto: 'main.emptyExpenses',
+  ahorro: 'main.emptySavings',
+  deuda: 'main.emptyDebts',
+} as const;
 
 export const MainScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
@@ -233,7 +240,11 @@ export const MainScreen = ({ navigation }: Props) => {
           keyExtractor={item => item.id}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
-            <EmptyState message={t('main.emptyEnvelopes')} />
+            <EmptyState
+              message={t(EMPTY_MESSAGES[type])}
+              ctaLabel={t('main.emptyCta')}
+              onPress={() => navigation.navigate('CreateEnvelope', { envelopeType: type })}
+            />
           }
           renderItem={renderEnvelope}
         />
@@ -268,6 +279,7 @@ export const MainScreen = ({ navigation }: Props) => {
       <View style={styles.header}>
         <Text style={styles.title}>TRACE</Text>
         <View style={{ flexDirection: 'row' }}>
+          <HelpButton style={styles.iconBtn} title="help.main.title" body="help.main.body" />
           <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('AssignIncome')}>
             <Coins color={colors.secondaryText} size={22} />
           </TouchableOpacity>
