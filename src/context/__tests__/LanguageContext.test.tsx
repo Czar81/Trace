@@ -27,7 +27,7 @@ describe('LanguageProvider', () => {
     await act(async () => { await result.current.setPreference('en'); });
     expect(result.current.language).toBe('en');
     expect(result.current.t('common.cancel')).toBe('Cancel');
-    expect(result.current.t('settings.cutoffOn', { day: 3 })).toBe('Ignores expenses before day 3 of each month');
+    expect(result.current.t('bankCsv.toImport', { count: 3 })).toBe('3 transactions to import');
 
     await act(async () => { await result.current.setPreference('es'); });
     expect(result.current.t('common.cancel')).toBe('Cancelar');

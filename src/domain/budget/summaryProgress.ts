@@ -1,5 +1,4 @@
 import { Currency, Envelope, EnvelopeType } from '../../types';
-import { clampDayOfMonth } from '../recurring/recurrence';
 import { roundMoney } from './balance';
 
 export interface SummaryProgress {
@@ -42,22 +41,10 @@ export function computeSummaryProgress(
   return { done, total, percent, remaining: roundMoney(Math.max(0, total - done)) };
 }
 
-/**
- * Days from `now` until the next cutoff (the start of the next period), counting
- * today. The period starts on `cutoffDay` each month (day 1 when there is none),
- * clamped to short months.
- */
-export function daysUntilNextCutoff(now: Date, cutoffDay: number | null): number {
-  const day = cutoffDay && cutoffDay > 0 ? cutoffDay : 1;
+/** Days from `now` until the next cutoff (the 1st of next month), counting today. */
+export function daysUntilNextCutoff(now: Date): number {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const thisMonth = new Date(now.getFullYear(), now.getMonth(), clampDayOfMonth(now.getFullYear(), now.getMonth(), day));
-  let next = thisMonth;
-  if (thisMonth <= today) {
-    const m = now.getMonth() + 1;
-    const y = now.getFullYear() + Math.floor(m / 12);
-    const mm = m % 12;
-    next = new Date(y, mm, clampDayOfMonth(y, mm, day));
-  }
+  const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   // Round to absorb the DST hour when the two dates sit on different offsets.
   return Math.round((next.getTime() - today.getTime()) / 86_400_000);
 }

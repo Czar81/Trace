@@ -6,7 +6,6 @@ import { useAppData } from '../../context/ExpenseContext';
 import { authenticate, isDeviceAuthAvailable } from '../../services/device/deviceAuth';
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
-import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import CreditCard from 'lucide-react-native/icons/credit-card';
 import Tag from 'lucide-react-native/icons/tag';
 import Palette from 'lucide-react-native/icons/palette';
@@ -18,7 +17,6 @@ import Database from 'lucide-react-native/icons/database';
 import DatabaseBackup from 'lucide-react-native/icons/database-backup';
 import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
 import { CurrencySelector } from '../../components/forms/CurrencySelector';
-import { DayGridSheet } from '../../components/forms/DayGridSheet';
 import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from '../../context/LanguageContext';
@@ -43,7 +41,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { settings, updateSettings } = useAppData();
 
-  const [showCutoffSheet, setShowCutoffSheet] = useState(false);
   const [showInfoDialog, setShowInfoDialog] = useState(false);
   const [infoDialogTitle, setInfoDialogTitle] = useState('');
   const [infoDialogMessage, setInfoDialogMessage] = useState('');
@@ -128,19 +125,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
         </View>
 
         <SettingsSectionHeader icon={<Wallet color={colors.secondaryText} size={14} />} title={t(sectionTitleKey('finance'))} />
-
-        <View style={styles.reminderCard}>
-          <View style={styles.reminderRow}>
-            <View style={styles.toggleTextWrapper}>
-              <Text style={styles.menuTitle}>{t('settings.cutoff')}</Text>
-              <Text style={styles.menuSubtitle}>{t('settings.cutoffOn', { day: settings.expenseCutoffDay })}</Text>
-            </View>
-            <TouchableOpacity style={styles.dayPill} onPress={() => setShowCutoffSheet(true)} activeOpacity={0.8}>
-              <Text style={styles.stepperValue}>{t('settings.dayN', { day: settings.expenseCutoffDay })}</Text>
-              <ChevronDown color={colors.secondaryText} size={16} />
-            </TouchableOpacity>
-          </View>
-        </View>
 
         <TouchableOpacity
           style={styles.menuItem}
@@ -247,14 +231,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
         </TouchableOpacity>
       </ScrollView>
 
-      <DayGridSheet
-        visible={showCutoffSheet}
-        title={t('settings.cutoffDay')}
-        subtitle={t('settings.cutoffEveryMonth')}
-        value={settings.expenseCutoffDay}
-        onSelect={day => updateSettings({ expenseCutoffDay: day })}
-        onClose={() => setShowCutoffSheet(false)}
-      />
       <ConfirmDialog
         visible={showInfoDialog}
         title={infoDialogTitle}

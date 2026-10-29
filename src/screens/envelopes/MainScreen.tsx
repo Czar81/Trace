@@ -335,7 +335,6 @@ export const MainScreen = ({ navigation }: Props) => {
         totals={shownTotals}
         envelopes={envelopes}
         getEnvelopeBalance={getEnvelopeBalance}
-        cutoffDay={settings.expenseCutoffDay}
       />
 
       <Animated.FlatList

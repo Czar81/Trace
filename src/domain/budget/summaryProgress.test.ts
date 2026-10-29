@@ -56,25 +56,17 @@ describe('computeSummaryProgress', () => {
 });
 
 describe('daysUntilNextCutoff', () => {
-  it('counts to the cutoff day of the next month once it has passed', () => {
-    expect(daysUntilNextCutoff(new Date(2026, 9, 29, 10), 1)).toBe(3); // Oct 29 -> Nov 1
-    expect(daysUntilNextCutoff(new Date(2026, 9, 29), 15)).toBe(17); // -> Nov 15
+  it('counts to the 1st of next month, including today', () => {
+    expect(daysUntilNextCutoff(new Date(2026, 9, 29, 10))).toBe(3); // Oct 29 -> Nov 1
+    expect(daysUntilNextCutoff(new Date(2026, 9, 31))).toBe(1);
   });
 
-  it('counts to this month when the cutoff day is still ahead', () => {
-    expect(daysUntilNextCutoff(new Date(2026, 9, 5), 20)).toBe(15);
+  it('is a full month on the 1st', () => {
+    expect(daysUntilNextCutoff(new Date(2026, 9, 1))).toBe(31);
+    expect(daysUntilNextCutoff(new Date(2026, 1, 1))).toBe(28);
   });
 
-  it('is a full period when today is the cutoff day', () => {
-    expect(daysUntilNextCutoff(new Date(2026, 9, 20), 20)).toBe(31);
-  });
-
-  it('clamps the cutoff day to short months', () => {
-    expect(daysUntilNextCutoff(new Date(2026, 1, 10), 31)).toBe(18); // Feb 10 -> Feb 28
-    expect(daysUntilNextCutoff(new Date(2026, 0, 31), 31)).toBe(28); // Jan 31 -> Feb 28
-  });
-
-  it('falls back to day 1 without a cutoff day', () => {
-    expect(daysUntilNextCutoff(new Date(2026, 9, 29), null)).toBe(3);
+  it('rolls over the year', () => {
+    expect(daysUntilNextCutoff(new Date(2026, 11, 30))).toBe(2);
   });
 });

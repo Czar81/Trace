@@ -23,11 +23,10 @@ interface Props {
   totals: { currency: Currency; total: number }[];
   envelopes: Envelope[];
   getEnvelopeBalance: (envelopeId: string) => number;
-  cutoffDay: number | null;
 }
 
 /** «Total» card of the home screen: progress on the left, the total on the right, one currency at a time. */
-export const SummaryCard: React.FC<Props> = ({ type, label, totals, envelopes, getEnvelopeBalance, cutoffDay }) => {
+export const SummaryCard: React.FC<Props> = ({ type, label, totals, envelopes, getEnvelopeBalance }) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -40,7 +39,7 @@ export const SummaryCard: React.FC<Props> = ({ type, label, totals, envelopes, g
   const barColor = type === 'gasto' && progress
     ? (progress.percent > 90 ? colors.red : progress.percent > 75 ? WARN_COLOR : colors.green)
     : colors.green;
-  const days = daysUntilNextCutoff(new Date(), cutoffDay);
+  const days = daysUntilNextCutoff(new Date());
   const money = (n: number) => formatCurrency(n, entry.currency);
 
   const caption = !progress ? null

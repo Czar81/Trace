@@ -26,7 +26,6 @@ export const DEFAULT_AUTO_BACKUP_INTERVAL_DAYS = 7;
 
 export const DEFAULT_SETTINGS: AppSettings = {
   defaultCurrency: 'CRC',
-  expenseCutoffDay: 1,
   billRemindersEnabled: false,
   billReminderLeadDays: 2,
   themeId: DEFAULT_THEME_ID,
@@ -134,16 +133,12 @@ export const loadRecurringTemplates = () => loadCriticalData<RecurringTransactio
 
 export const saveSettings = (data: AppSettings) => saveData(KEYS.SETTINGS, data);
 export const loadSettings = async (): Promise<AppSettings> => {
-  const loaded = await loadCriticalData<Partial<AppSettings> & { expenseCutoffDate?: string; exchangeRates?: unknown; autoExchangeRates?: unknown; exchangeRatesUpdatedAt?: unknown }>(KEYS.SETTINGS, DEFAULT_SETTINGS);
+  const loaded = await loadCriticalData<Partial<AppSettings> & { exchangeRates?: unknown; autoExchangeRates?: unknown; exchangeRatesUpdatedAt?: unknown }>(KEYS.SETTINGS, DEFAULT_SETTINGS);
   // Exchange rates were removed; drop what older versions stored.
   const { exchangeRates: _rates, autoExchangeRates: _auto, exchangeRatesUpdatedAt: _ratesAt, ...current } = loaded;
-  // The monthly cutoff is always on; the on/off flag from older versions is dropped.
-  const { expenseCutoffEnabled: _cutoffEnabled, expenseCutoffDay: storedDay, ...rest } = current as typeof current & { expenseCutoffEnabled?: unknown };
-  let expenseCutoffDay = typeof storedDay === 'number' && storedDay >= 1 && storedDay <= 31 ? storedDay : null;
-  if (expenseCutoffDay == null && loaded.expenseCutoffDate) {
-    expenseCutoffDay = new Date(loaded.expenseCutoffDate).getDate();
-  }
-  return { ...DEFAULT_SETTINGS, ...rest, expenseCutoffDay: expenseCutoffDay ?? DEFAULT_SETTINGS.expenseCutoffDay };
+  // The monthly cutoff is fixed at day 1; whatever older versions stored for it is dropped.
+  const { expenseCutoffEnabled: _cutoffEnabled, expenseCutoffDay: _cutoffDay, ...rest } = current as typeof current & { expenseCutoffEnabled?: unknown; expenseCutoffDay?: unknown };
+  return { ...DEFAULT_SETTINGS, ...rest };
 };
 
 export const saveOnboardingSeen = () => saveDataQuietly(KEYS.ONBOARDING_SEEN, true);
