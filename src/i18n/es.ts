@@ -525,8 +525,6 @@ export const es = {
   'onboarding.page4.title': 'Tus datos son tuyos',
   'onboarding.page4.body': 'Todo se guarda en tu dispositivo. Haz respaldos y bloquea la app con tu huella cuando quieras.',
   'onboarding.pageIndicator': 'Página {current} de {total}',
-  'settings.viewTutorial': 'Ver tutorial',
-  'settings.viewTutorialSubtitle': 'Repite la introducción a la app',
   'help.open': 'Ayuda',
   'help.close': 'Entendido',
   'help.main.title': 'Tus sobres',
@@ -538,7 +536,6 @@ export const es = {
   'main.emptyExpenses': 'Aún no tienes sobres de gasto. Crea uno para ponerle un presupuesto, por ejemplo «Comida».',
   'main.emptySavings': 'Aún no tienes sobres de ahorro. Crea uno para juntar dinero hacia una meta.',
   'main.emptyDebts': 'Aún no tienes deudas registradas. Crea una para llevar el saldo y planear sus pagos.',
-  'main.emptyCta': 'Crear sobre',
   'recurring.emptyCta': 'Crear recurrente',
 } as const;
 

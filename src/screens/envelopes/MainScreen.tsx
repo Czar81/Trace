@@ -242,8 +242,6 @@ export const MainScreen = ({ navigation }: Props) => {
           ListEmptyComponent={
             <EmptyState
               message={t(EMPTY_MESSAGES[type])}
-              ctaLabel={t('main.emptyCta')}
-              onPress={() => navigation.navigate('CreateEnvelope', { envelopeType: type })}
             />
           }
           renderItem={renderEnvelope}
@@ -379,7 +377,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   tab: { flex: 1, justifyContent: 'center', alignItems: 'center', zIndex: 1 },
   tabIndicator: { position: 'absolute', top: 4, bottom: 4, left: 4, backgroundColor: colors.green, borderRadius: RADIUS.pill },
   tabText: { color: colors.secondaryText, fontSize: FONT_SIZE.lg, fontWeight: '600' },
-  summaryCard: { backgroundColor: colors.cardBg, marginHorizontal: SPACING.xl, borderRadius: RADIUS.xl, padding: SPACING.xl, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg, overflow: 'hidden' },
+  summaryCard: { backgroundColor: colors.cardBg, marginHorizontal: SPACING.xl, borderRadius: RADIUS.xl, padding: SPACING.xl, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: SPACING.lg, overflow: 'hidden' },
   cardFlap: { position: 'absolute', top: -20, left: '50%', width: 40, height: 40, marginLeft: -20, backgroundColor: colors.cardHighlight, transform: [{ rotate: '45deg' }] },
   summaryValues: { alignItems: 'flex-end' },
   summaryLabel: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, marginBottom: SPACING.xs },

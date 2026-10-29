@@ -524,8 +524,6 @@ export const en: Record<TranslationKey, string> = {
   'onboarding.page4.title': 'Your data is yours',
   'onboarding.page4.body': 'Everything is stored on your device. Make backups and lock the app with your fingerprint whenever you like.',
   'onboarding.pageIndicator': 'Page {current} of {total}',
-  'settings.viewTutorial': 'View tutorial',
-  'settings.viewTutorialSubtitle': 'Replay the app introduction',
   'help.open': 'Help',
   'help.close': 'Got it',
   'help.main.title': 'Your envelopes',
@@ -537,6 +535,5 @@ export const en: Record<TranslationKey, string> = {
   'main.emptyExpenses': 'You have no expense envelopes yet. Create one to set a budget, for example "Food".',
   'main.emptySavings': 'You have no savings envelopes yet. Create one to save up toward a goal.',
   'main.emptyDebts': 'You have no debts yet. Create one to track the balance and plan its payments.',
-  'main.emptyCta': 'Create envelope',
   'recurring.emptyCta': 'Create recurring',
 };
