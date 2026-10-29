@@ -12,7 +12,6 @@ import BookOpen from 'lucide-react-native/icons/book-open';
 import Palette from 'lucide-react-native/icons/palette';
 import Settings2 from 'lucide-react-native/icons/settings-2';
 import Wallet from 'lucide-react-native/icons/wallet';
-import Bell from 'lucide-react-native/icons/bell';
 import Shield from 'lucide-react-native/icons/shield';
 import Database from 'lucide-react-native/icons/database';
 import DatabaseBackup from 'lucide-react-native/icons/database-backup';
@@ -34,7 +33,6 @@ const LANGUAGE_OPTIONS: { value: LanguagePreference; labelKey: 'settings.languag
   { value: 'system', labelKey: 'settings.languageSystem' },
 ];
 
-const LEAD_DAYS_OPTIONS = [1, 2, 3, 5, 7];
 
 export const SettingsScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
@@ -64,11 +62,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
     setInfoDialogMessage(message);
     setShowInfoDialog(true);
   };
-
-  // Saved values from before the chips (e.g. 4 or 6 days) stay selectable.
-  const leadDaysOptions = LEAD_DAYS_OPTIONS.includes(settings.billReminderLeadDays)
-    ? LEAD_DAYS_OPTIONS
-    : [...LEAD_DAYS_OPTIONS, settings.billReminderLeadDays].sort((a, b) => a - b);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -171,48 +164,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
           </View>
           <ChevronRight color={colors.secondaryText} size={20} />
         </TouchableOpacity>
-
-        <SettingsSectionHeader icon={<Bell color={colors.secondaryText} size={14} />} title={t(sectionTitleKey('alerts'))} />
-
-        <View style={styles.reminderCard}>
-          <View style={styles.reminderRow}>
-            <View style={styles.toggleTextWrapper}>
-              <Text style={styles.menuTitle}>{t('settings.billReminders')}</Text>
-              <Text style={styles.menuSubtitle}>
-                {settings.billRemindersEnabled
-                  ? t(settings.billReminderLeadDays > 1 ? 'settings.billRemindersOnOther' : 'settings.billRemindersOnOne', { days: settings.billReminderLeadDays })
-                  : t('settings.billRemindersOff')}
-              </Text>
-            </View>
-            <Switch
-              value={settings.billRemindersEnabled}
-              onValueChange={() => updateSettings({ billRemindersEnabled: !settings.billRemindersEnabled })}
-              trackColor={{ false: colors.cardBg, true: colors.green }}
-              thumbColor={settings.billRemindersEnabled ? colors.green : colors.white}
-            />
-          </View>
-
-          {settings.billRemindersEnabled && (
-            <>
-              <View style={styles.reminderDivider} />
-              <View style={[styles.reminderRow, styles.reminderRowStacked]}>
-                <Text style={styles.leadDaysLabel}>{t('settings.leadDays')}</Text>
-                <View style={[styles.stepper, styles.stepperFull]}>
-                  {leadDaysOptions.map(days => (
-                    <TouchableOpacity
-                      key={days}
-                      style={[styles.intervalChip, settings.billReminderLeadDays === days && styles.intervalChipActive]}
-                      onPress={() => updateSettings({ billReminderLeadDays: days })}
-                    >
-                      <Text style={styles.stepperValue}>{t('settings.autoBackupDaysShort', { days })}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            </>
-          )}
-        </View>
-
 
         <SettingsSectionHeader icon={<Shield color={colors.secondaryText} size={14} />} title={t(sectionTitleKey('security'))} />
 

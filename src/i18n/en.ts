@@ -106,7 +106,6 @@ export const en: Record<TranslationKey, string> = {
   'settings.resetDone': 'All envelopes have been reset.',
   'settings.sectionGeneral': 'General',
   'settings.sectionFinance': 'Finance',
-  'settings.sectionAlerts': 'Alerts',
   'settings.sectionSecurity': 'Security',
   'settings.sectionData': 'Data and backups',
   'settings.dataBackups': 'Data and backups',

@@ -107,7 +107,6 @@ export const es = {
   'settings.resetDone': 'Todos los sobres han sido reiniciados.',
   'settings.sectionGeneral': 'General',
   'settings.sectionFinance': 'Finanzas',
-  'settings.sectionAlerts': 'Avisos',
   'settings.sectionSecurity': 'Seguridad',
   'settings.sectionData': 'Datos y respaldos',
   'settings.dataBackups': 'Datos y respaldos',
