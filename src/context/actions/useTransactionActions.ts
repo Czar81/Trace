@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { Transaction } from '../../types';
 import { Store } from '../useDataStore';
 import { newId } from '../../domain/shared/helpers';
-import { roundMoney, calculateEnvelopeBalance } from '../../domain/budget/balance';
+import { roundMoney } from '../../domain/budget/balance';
 import { validateTransfer } from '../../domain/transactions/transfer';
 import { translateActive } from '../../i18n';
 import { deleteUnreferencedReceipts } from '../../services/files/receipts';
