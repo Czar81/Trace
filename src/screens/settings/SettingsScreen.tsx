@@ -9,8 +9,6 @@ import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import CreditCard from 'lucide-react-native/icons/credit-card';
 import Tag from 'lucide-react-native/icons/tag';
-import BarChart3 from 'lucide-react-native/icons/chart-column';
-import Repeat from 'lucide-react-native/icons/repeat';
 import TrendingDown from 'lucide-react-native/icons/trending-down';
 import Palette from 'lucide-react-native/icons/palette';
 import Settings2 from 'lucide-react-native/icons/settings-2';
@@ -215,36 +213,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
         </TouchableOpacity>
 
         <SettingsSectionHeader icon={<Wrench color={colors.secondaryText} size={14} />} title={t(sectionTitleKey('tools'))} />
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('Reports')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.menuIconWrapper}>
-            <BarChart3 color={colors.white} size={18} />
-          </View>
-          <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>{t('settings.reports')}</Text>
-            <Text style={styles.menuSubtitle}>{t('settings.reportsSubtitle')}</Text>
-          </View>
-          <ChevronRight color={colors.secondaryText} size={20} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('Recurring')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.menuIconWrapper}>
-            <Repeat color={colors.white} size={18} />
-          </View>
-          <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>{t('settings.recurring')}</Text>
-            <Text style={styles.menuSubtitle}>{t('settings.recurringSubtitle')}</Text>
-          </View>
-          <ChevronRight color={colors.secondaryText} size={20} />
-        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.menuItem}
