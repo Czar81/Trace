@@ -20,12 +20,12 @@ All reports SHALL compute their totals using only transactions where `isArchived
 - **WHEN** a transaction has been archived (`isArchived: true`)
 - **THEN** that transaction's amount SHALL be excluded from every report total
 
-### Requirement: Reports normalize multi-currency amounts
-All report totals SHALL convert each transaction's amount to a single common currency before summing, so totals combining transactions in different currencies are accurate.
+### Requirement: Reports never mix currencies
+Report totals SHALL cover one currency at a time, with no currency conversion. When envelopes use more than one currency, the Reports header SHALL offer a selector to switch between those currencies; each report only includes transactions of envelopes in the selected currency.
 
-#### Scenario: Transactions in different currencies are combined
-- **WHEN** the transactions included in a report use more than one currency
-- **THEN** the report SHALL convert each amount to the common currency before computing totals, and SHALL NOT sum raw amounts across differing currencies
+#### Scenario: Transactions in different currencies exist
+- **WHEN** the user has envelopes in more than one currency
+- **THEN** the report SHALL include only transactions in the selected currency, and SHALL NOT sum raw amounts across differing currencies
 
 ### Requirement: User can select a reporting period
 The system SHALL let the user choose a period — current month, last 3 months, last 6 months, all time, or a custom range with a start date and an end date — that filters every report on the Reports screen by transaction date.

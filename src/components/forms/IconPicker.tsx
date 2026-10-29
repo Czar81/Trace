@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { Modal, View, SectionList, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { EnvelopeIcon, CATEGORIZED_ICONS, IconName } from '../envelope/EnvelopeIcon';
-import { Check, Image as ImageIcon } from 'lucide-react-native';
+import Check from 'lucide-react-native/icons/check';
+import ImageIcon from 'lucide-react-native/icons/image';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';

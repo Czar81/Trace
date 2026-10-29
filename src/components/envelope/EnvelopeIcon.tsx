@@ -1,18 +1,84 @@
 import React from 'react';
 import { TranslationKey } from '../../i18n';
-import {
-  Home, Car, Coffee, ShoppingBag, Heart, Zap, Film, Music,
-  BookOpen, GraduationCap, Briefcase, Gift, Plane, Gamepad2,
-  Smartphone, DollarSign, PiggyBank, Utensils, ShoppingCart,
-  Bus, Wallet, CreditCard, Dumbbell, Baby, Dog, Wrench, Scissors,
-  Globe, Building2, Star, Bike, Beef, Pizza, Tv, Shirt, Fuel,
-  TreePine, Stethoscope, Beer, Box,
-  Bird, Bone, Bug, Cat, Fish, FishSymbol, PawPrint, Rabbit, Turtle,
-  FilePieChart, FileText, File, Mail, Printer, Calendar, Folder, Pen, Paintbrush, PenTool, Trash, Trash2,
-  Warehouse, Bed, Hammer, Lamp, Lightbulb, Lock, Sofa, Droplet,
-  Cake, CakeSlice, PartyPopper, Balloon, Drill,
-  Soup, Cookie, Sandwich, Wine, UtensilsCrossed
-} from 'lucide-react-native';
+import Home from 'lucide-react-native/icons/house';
+import Car from 'lucide-react-native/icons/car';
+import Coffee from 'lucide-react-native/icons/coffee';
+import ShoppingBag from 'lucide-react-native/icons/shopping-bag';
+import Heart from 'lucide-react-native/icons/heart';
+import Zap from 'lucide-react-native/icons/zap';
+import Film from 'lucide-react-native/icons/film';
+import Music from 'lucide-react-native/icons/music';
+import BookOpen from 'lucide-react-native/icons/book-open';
+import GraduationCap from 'lucide-react-native/icons/graduation-cap';
+import Briefcase from 'lucide-react-native/icons/briefcase';
+import Gift from 'lucide-react-native/icons/gift';
+import Plane from 'lucide-react-native/icons/plane';
+import Gamepad2 from 'lucide-react-native/icons/gamepad-2';
+import Smartphone from 'lucide-react-native/icons/smartphone';
+import DollarSign from 'lucide-react-native/icons/dollar-sign';
+import PiggyBank from 'lucide-react-native/icons/piggy-bank';
+import Utensils from 'lucide-react-native/icons/utensils';
+import ShoppingCart from 'lucide-react-native/icons/shopping-cart';
+import Bus from 'lucide-react-native/icons/bus';
+import Wallet from 'lucide-react-native/icons/wallet';
+import CreditCard from 'lucide-react-native/icons/credit-card';
+import Dumbbell from 'lucide-react-native/icons/dumbbell';
+import Baby from 'lucide-react-native/icons/baby';
+import Dog from 'lucide-react-native/icons/dog';
+import Wrench from 'lucide-react-native/icons/wrench';
+import Scissors from 'lucide-react-native/icons/scissors';
+import Globe from 'lucide-react-native/icons/globe';
+import Building2 from 'lucide-react-native/icons/building-2';
+import Star from 'lucide-react-native/icons/star';
+import Bike from 'lucide-react-native/icons/bike';
+import Beef from 'lucide-react-native/icons/beef';
+import Pizza from 'lucide-react-native/icons/pizza';
+import Tv from 'lucide-react-native/icons/tv';
+import Shirt from 'lucide-react-native/icons/shirt';
+import Fuel from 'lucide-react-native/icons/fuel';
+import TreePine from 'lucide-react-native/icons/tree-pine';
+import Stethoscope from 'lucide-react-native/icons/stethoscope';
+import Beer from 'lucide-react-native/icons/beer';
+import Box from 'lucide-react-native/icons/box';
+import Bird from 'lucide-react-native/icons/bird';
+import Bone from 'lucide-react-native/icons/bone';
+import Bug from 'lucide-react-native/icons/bug';
+import Cat from 'lucide-react-native/icons/cat';
+import Fish from 'lucide-react-native/icons/fish';
+import FishSymbol from 'lucide-react-native/icons/fish-symbol';
+import PawPrint from 'lucide-react-native/icons/paw-print';
+import Rabbit from 'lucide-react-native/icons/rabbit';
+import Turtle from 'lucide-react-native/icons/turtle';
+import FilePieChart from 'lucide-react-native/icons/file-chart-pie';
+import FileText from 'lucide-react-native/icons/file-text';
+import File from 'lucide-react-native/icons/file';
+import Mail from 'lucide-react-native/icons/mail';
+import Printer from 'lucide-react-native/icons/printer';
+import Calendar from 'lucide-react-native/icons/calendar';
+import Folder from 'lucide-react-native/icons/folder';
+import Pen from 'lucide-react-native/icons/pen';
+import Paintbrush from 'lucide-react-native/icons/paintbrush';
+import PenTool from 'lucide-react-native/icons/pen-tool';
+import Trash from 'lucide-react-native/icons/trash';
+import Trash2 from 'lucide-react-native/icons/trash-2';
+import Warehouse from 'lucide-react-native/icons/warehouse';
+import Bed from 'lucide-react-native/icons/bed';
+import Hammer from 'lucide-react-native/icons/hammer';
+import Lamp from 'lucide-react-native/icons/lamp';
+import Lightbulb from 'lucide-react-native/icons/lightbulb';
+import Lock from 'lucide-react-native/icons/lock';
+import Sofa from 'lucide-react-native/icons/sofa';
+import Droplet from 'lucide-react-native/icons/droplet';
+import Cake from 'lucide-react-native/icons/cake';
+import CakeSlice from 'lucide-react-native/icons/cake-slice';
+import PartyPopper from 'lucide-react-native/icons/party-popper';
+import Balloon from 'lucide-react-native/icons/balloon';
+import Drill from 'lucide-react-native/icons/drill';
+import Soup from 'lucide-react-native/icons/soup';
+import Cookie from 'lucide-react-native/icons/cookie';
+import Sandwich from 'lucide-react-native/icons/sandwich';
+import Wine from 'lucide-react-native/icons/wine';
+import UtensilsCrossed from 'lucide-react-native/icons/utensils-crossed';
 
 export type IconName =
   | 'home' | 'car' | 'coffee' | 'shopping-bag' | 'heart' | 'zap' | 'film'

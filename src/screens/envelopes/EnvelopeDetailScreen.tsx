@@ -9,7 +9,14 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
-import { ArrowLeft, RefreshCw, Edit2, Trash2, Calendar, X, ArrowLeftRight, Paperclip } from 'lucide-react-native';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import RefreshCw from 'lucide-react-native/icons/refresh-cw';
+import Edit2 from 'lucide-react-native/icons/pen';
+import Trash2 from 'lucide-react-native/icons/trash-2';
+import Calendar from 'lucide-react-native/icons/calendar';
+import X from 'lucide-react-native/icons/x';
+import ArrowLeftRight from 'lucide-react-native/icons/arrow-left-right';
+import Paperclip from 'lucide-react-native/icons/paperclip';
 import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { RootStackParamList } from '../../navigation/types';

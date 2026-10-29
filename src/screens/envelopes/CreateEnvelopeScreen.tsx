@@ -4,13 +4,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { ArrowLeft, Check } from 'lucide-react-native';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import Check from 'lucide-react-native/icons/check';
 import { EnvelopeType, Currency, DebtInterestFrequency } from '../../types';
 import { RootStackParamList } from '../../navigation/types';
 import { CurrencyInput } from '../../components/forms/CurrencyInput';
 import { EnvelopeIcon, IconName } from '../../components/envelope/EnvelopeIcon';
 import { IconPicker } from '../../components/forms/IconPicker';
 import { EnvelopeAvatar } from '../../components/envelope/EnvelopeAvatar';
+import { CurrencySelector } from '../../components/forms/CurrencySelector';
 import { Dropdown } from '../../components/forms/Dropdown';
 import { DateField } from '../../components/forms/DateField';
 import { useTheme } from '../../context/ThemeContext';
@@ -19,12 +21,6 @@ import { useTranslation } from '../../context/LanguageContext';
 import { TranslationKey } from '../../i18n';
 import { hapticSave } from '../../services/device/haptics';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
-
-const CURRENCY_OPTIONS = [
-  { label: 'CRC', value: 'CRC' },
-  { label: 'USD', value: 'USD' },
-  { label: 'EUR', value: 'EUR' },
-];
 
 const INTEREST_FREQUENCY_OPTIONS: { labelKey: TranslationKey; value: string }[] = [
   { labelKey: 'envelope.freqMonthly', value: 'mensual' },
@@ -177,12 +173,7 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
           autoFocus={!isEditing}
         />
 
-        <Dropdown
-          label={t('envelope.currency')}
-          options={CURRENCY_OPTIONS}
-          value={currency}
-          onSelect={(value) => setCurrency(value as Currency)}
-        />
+        <CurrencySelector label={t('envelope.currency')} value={currency} onSelect={setCurrency} />
 
         {!isUnlimited && (
           <>

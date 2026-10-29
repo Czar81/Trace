@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Alert, AppState } from 'react-native';
 import { Envelope, Transaction, EnvelopeType, PaymentMethod, TransactionCategory, AppSettings, Currency, RecurringTransactionTemplate } from '../types';
+import { CURRENCY_CODES } from '../domain/shared/currencies';
 import { AutoBackupState, DEFAULT_AUTO_BACKUP_STATE, saveAutoBackupEnabled, saveAutoBackupIntervalDays, saveAutoBackupFolderUri } from '../services/storage/storage';
 import { AppData, loadAppData } from '../services/storage/appData';
-import { areRatesStale, fetchExchangeRates } from '../services/currency/exchangeRates';
 import { pickAndImportBackup } from '../services/backup/importData';
 import { runAutoBackup as performAutoBackup } from '../services/backup/autoBackupRunner';
 import { computeScheduledWork } from '../services/scheduling/scheduledWork';
@@ -24,6 +24,12 @@ import { useCatalogActions } from './actions/useCatalogActions';
 
 // Re-exported for backward compatibility — other modules and tests import these from here.
 export { clampDayOfMonth, calculateEnvelopeBalance, getCutoffPeriodStart, accrueDebtInterest };
+
+export interface CurrencyTotal {
+  currency: Currency;
+  total: number;
+}
+
 
 interface AppContextType {
   envelopes: Envelope[];
@@ -91,9 +97,8 @@ interface AppContextType {
 
   // Computed helpers
   getEnvelopeBalance: (envelopeId: string) => number;
-  /** Returns total in settings.defaultCurrency */
-  getTotalByType: (type: EnvelopeType) => number;
-  convertToCRC: (amount: number, from: Currency) => number;
+  /** Totals per currency (never converted); only currencies that have envelopes of this type. */
+  getTotalsByType: (type: EnvelopeType) => CurrencyTotal[];
   formatAmount: (amount: number, currency: Currency) => string;
 }
 
@@ -122,17 +127,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (result) setAutoBackup(result);
   }, [data, writesBlocked]);
 
-  // Refreshes exchange rates in the background; offline or API errors keep the saved rates.
-  const refreshExchangeRates = useCallback((current: AppSettings) => {
-    if (!current.autoExchangeRates || !areRatesStale(current.exchangeRatesUpdatedAt)) return;
-    void fetchExchangeRates().then(rates => {
-      if (!rates) return;
-      return runExclusive(() => commit({
-        settings: { ...data.current.settings, exchangeRates: rates, exchangeRatesUpdatedAt: new Date().toISOString() },
-      }));
-    }).catch(() => undefined);
-  }, [data, runExclusive, commit]);
-
   useEffect(() => {
     const initData = async () => {
       const now = new Date();
@@ -147,7 +141,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         await commit(loaded);
         setSettingsLoaded(true);
-        refreshExchangeRates(loaded.settings);
         await processScheduledWork(now);
       } catch (e) {
         console.error('Could not load stored data', e);
@@ -160,7 +153,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await runExclusive(() => runAutoBackup(now));
     };
     initData();
-  }, [commit, processScheduledWork, runAutoBackup, runExclusive, refreshExchangeRates, releaseInit, writesBlocked]);
+  }, [commit, processScheduledWork, runAutoBackup, runExclusive, releaseInit, writesBlocked]);
 
   // Returning to the app on a later day (or after a while) generates what
   // came due meanwhile and refreshes date-based balances such as the cutoff.
@@ -186,13 +179,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   // ─── Currency helpers ──────────────────────────────────────────────────────
-  const convertToCRC = useCallback((amount: number, from: Currency): number => {
-    if (from === 'CRC') return amount;
-    if (from === 'USD') return amount * settings.exchangeRates.USD_TO_CRC;
-    if (from === 'EUR') return amount * settings.exchangeRates.EUR_TO_CRC;
-    return amount;
-  }, [settings.exchangeRates]);
-
   const formatAmount = useCallback((amount: number, currency: Currency): string => {
     return formatCurrency(amount, currency);
   }, []);
@@ -200,10 +186,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // ─── Balance computation ───────────────────────────────────────────────────
   /** Envelope id -> balance, computed once per change (and per day) so lookups are O(1). */
   const envelopeBalanceMap = useMemo(
-    () => computeEnvelopeBalances(transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay),
+    () => computeEnvelopeBalances(transactions, envelopes),
     // `today` recomputes the cutoff window when the date changes while the app is open.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay, today]
+    [transactions, envelopes, today]
   );
 
   const getEnvelopeBalance = useCallback((envelopeId: string): number => {
@@ -212,28 +198,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [envelopeBalanceMap]);
 
   /**
-   * getTotalByType computes the sum of all envelope *available balances*
-   * converted to CRC for display in the summary card.
+   * getTotalsByType sums the envelope *available balances* of a type, one total
+   * per currency (currencies are never mixed).
    * For 'gasto': sum of (limit + balance) per envelope — total disponible.
    * For 'ahorro': sum of balances — total ahorrado.
    * For 'deuda': sum of (limit - balance) per non-unlimited envelope — total por pagar.
    */
-  const getTotalByType = useCallback((type: EnvelopeType): number => {
-    return roundMoney(envelopes
-      .filter(e => e.type === type)
-      .reduce((total, env) => {
-        // Exclude unlimited envelopes from the 'Total Disponible' / 'Total por pagar' totals
-        if ((type === 'gasto' || type === 'deuda') && env.isUnlimited) return total;
+  const getTotalsByType = useCallback((type: EnvelopeType): CurrencyTotal[] => {
+    const totals = new Map<Currency, number>();
+    for (const env of envelopes) {
+      if (env.type !== type) continue;
+      // Exclude unlimited envelopes from the 'Total Disponible' / 'Total por pagar' totals
+      if ((type === 'gasto' || type === 'deuda') && env.isUnlimited) continue;
 
-        const balance = getEnvelopeBalance(env.id);
-        const displayValue = type === 'gasto'
-          ? env.limit + balance
-          : type === 'deuda'
-          ? env.limit - balance
-          : balance;
-        return total + convertToCRC(displayValue, env.currency);
-      }, 0));
-  }, [envelopes, getEnvelopeBalance, convertToCRC]);
+      const balance = getEnvelopeBalance(env.id);
+      const displayValue = type === 'gasto'
+        ? env.limit + balance
+        : type === 'deuda'
+        ? env.limit - balance
+        : balance;
+      totals.set(env.currency, (totals.get(env.currency) ?? 0) + displayValue);
+    }
+    return Array.from(totals, ([currency, total]) => ({ currency, total: roundMoney(total) }))
+      .sort((a, b) => CURRENCY_CODES.indexOf(a.currency) - CURRENCY_CODES.indexOf(b.currency));
+  }, [envelopes, getEnvelopeBalance]);
 
   // ─── Data actions (each hook owns one slice) ──────────────────────────────
   const envelopeActions = useEnvelopeActions(store);
@@ -301,13 +289,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ...envelopeActions, ...transactionActions, ...templateActions, ...catalogActions,
     updateSettings,
     importFromBackup,
-    getEnvelopeBalance, getTotalByType, convertToCRC, formatAmount,
+    getEnvelopeBalance, getTotalsByType, formatAmount,
   }), [
     envelopes, transactions, paymentMethods, categories, incomeCategories, settings, settingsLoaded, recurringTemplates, isLoaded, autoBackup, updateAutoBackup,
     envelopeActions, transactionActions, templateActions, catalogActions,
     updateSettings,
     importFromBackup,
-    getEnvelopeBalance, getTotalByType, convertToCRC, formatAmount,
+    getEnvelopeBalance, getTotalsByType, formatAmount,
   ]);
 
   return (

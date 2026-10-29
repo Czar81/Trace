@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera, Image as ImageIcon, X } from 'lucide-react-native';
+import Camera from 'lucide-react-native/icons/camera';
+import ImageIcon from 'lucide-react-native/icons/image';
+import X from 'lucide-react-native/icons/x';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';

@@ -77,11 +77,11 @@ The system SHALL show a "Deudas" tab/section on the main envelope list, alongsid
 - **THEN** the "Deudas" tab shows the same empty-state pattern used by the other envelope-type tabs, with a call to action to create a debt envelope
 
 ### Requirement: Summary total for the Deudas tab shows total amount still owed
-When the "Deudas" tab is active, the main screen's summary total SHALL show the sum of "amount remaining to pay" (`limit - balance`) across all non-unlimited `deuda` envelopes, converted to the display currency — analogous to how the "Gastos" tab totals available budget and the "Ahorros" tab totals amount saved.
+When the "Deudas" tab is active, the main screen's summary total SHALL show the sum of "amount remaining to pay" (`limit - balance`) across all non-unlimited `deuda` envelopes, per currency (no conversion) — analogous to how the "Gastos" tab totals available budget and the "Ahorros" tab totals amount saved.
 
 #### Scenario: User views the summary total on the Deudas tab
 - **WHEN** the user has the "Deudas" tab active and has one or more non-unlimited debt envelopes
-- **THEN** the summary total shown is the sum of each envelope's remaining-to-pay amount, converted to the currently selected display currency
+- **THEN** the summary total shown is the sum of each envelope's remaining-to-pay amount, shown separately for each currency in use
 
 #### Scenario: Unlimited debt envelopes are excluded from the total
 - **WHEN** one or more `deuda` envelopes are marked `isUnlimited`

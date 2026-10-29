@@ -80,7 +80,7 @@ export function accrueDebtInterest(
     for (const cycleDate of cycles) {
       const endOfCycleDay = new Date(cycleDate.getFullYear(), cycleDate.getMonth(), cycleDate.getDate() + 1);
       const asOfCycle = [...charged, ...transactions].filter(t => new Date(t.date) < endOfCycleDay);
-      const balance = computeEnvelopeBalances(asOfCycle, [envelope], false, null).get(envelope.id) ?? 0;
+      const balance = computeEnvelopeBalances(asOfCycle, [envelope]).get(envelope.id) ?? 0;
       const amountOwed = envelope.limit - balance;
       // Nothing owed (paid off or overpaid) -> no interest to charge, but the
       // cycle is still marked handled so it isn't re-evaluated on every app open.

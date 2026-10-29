@@ -2,9 +2,24 @@ import { Transaction } from '../../types';
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+// Reused across calls so grouping doesn't allocate a Date per transaction.
+const scratch = new Date(0);
+
 const dayKey = (dateStr: string) => {
-  const d = new Date(dateStr);
+  const d = scratch;
+  d.setTime(Date.parse(dateStr));
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+// Building an Intl formatter is the expensive part of toLocaleDateString, so keep one per locale.
+const formatters = new Map<string, Intl.DateTimeFormat>();
+const formatDay = (ms: number, locale: string) => {
+  let format = formatters.get(locale);
+  if (!format) {
+    format = new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'long', year: 'numeric' });
+    formatters.set(locale, format);
+  }
+  return format.format(ms);
 };
 
 export interface TransactionDaySection {
@@ -20,9 +35,7 @@ export const groupTransactionsByDay = (transactions: Transaction[], locale: stri
     const key = dayKey(t.date);
     let section = sectionByKey.get(key);
     if (!section) {
-      const title = capitalize(
-        new Date(t.date).toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' })
-      );
+      const title = capitalize(formatDay(Date.parse(t.date), locale));
       section = { title, data: [] };
       sectionByKey.set(key, section);
       sections.push(section);

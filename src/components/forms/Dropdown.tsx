@@ -3,7 +3,8 @@ import {
   View, Text, TouchableOpacity, Modal, SectionList,
   StyleSheet, SafeAreaView, TextInput,
 } from 'react-native';
-import { ChevronDown, Check } from 'lucide-react-native';
+import ChevronDown from 'lucide-react-native/icons/chevron-down';
+import Check from 'lucide-react-native/icons/check';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
@@ -39,6 +40,10 @@ interface DropdownProps {
   onSelect: (value: string) => void;
   placeholder?: string;
   searchable?: boolean;
+  /** Inline trigger (no wrapper margin, no stretch, no background) for use inside a settings row; the label is only the sheet title. */
+  compact?: boolean;
+  /** Shorter text for the compact trigger, e.g. the currency code. */
+  compactLabel?: string;
 }
 
 const OVERLAY = 'rgba(0,0,0,0.6)';
@@ -50,6 +55,8 @@ export const Dropdown: React.FC<DropdownProps> = ({
   onSelect,
   placeholder,
   searchable = false,
+  compact = false,
+  compactLabel,
 }) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -70,12 +77,12 @@ export const Dropdown: React.FC<DropdownProps> = ({
   };
 
   return (
-    <View style={styles.wrapper}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+    <View style={compact ? undefined : styles.wrapper}>
+      {label && !compact ? <Text style={styles.label}>{label}</Text> : null}
 
-      <TouchableOpacity style={styles.trigger} onPress={() => setOpen(true)} activeOpacity={0.8}>
-        <Text style={[styles.triggerText, !selected && { color: colors.secondaryText }]}>
-          {selected ? selected.label : (placeholder ?? t('common.select'))}
+      <TouchableOpacity style={compact ? styles.triggerCompact : styles.trigger} onPress={() => setOpen(true)} activeOpacity={0.8}>
+        <Text style={[compact ? styles.triggerTextCompact : styles.triggerText, !selected && { color: colors.secondaryText }]}>
+          {selected ? (compact && compactLabel ? compactLabel : selected.label) : (placeholder ?? t('common.select'))}
         </Text>
         <ChevronDown color={colors.secondaryText} size={18} />
       </TouchableOpacity>
@@ -133,6 +140,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.lg,
   },
+  triggerCompact: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, backgroundColor: colors.bg, borderRadius: RADIUS.pill, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm },
+  triggerTextCompact: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '600' },
   triggerText: { color: colors.white, fontSize: FONT_SIZE.lg, flex: 1 },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: OVERLAY },
   sheet: {

@@ -51,8 +51,8 @@ describe('translate', () => {
   });
 
   it('fills {params} and leaves unknown placeholders untouched', () => {
-    expect(translate(en, 'settings.cutoffOn', { day: 5 })).toBe('Ignores expenses before day 5 of each month');
-    expect(translate(en, 'settings.cutoffOn', {})).toContain('{day}');
+    expect(translate(en, 'bankCsv.toImport', { count: 5 })).toBe('5 transactions to import');
+    expect(translate(en, 'bankCsv.toImport', {})).toContain('{count}');
   });
 });
 

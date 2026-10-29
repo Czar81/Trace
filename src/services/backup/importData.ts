@@ -1,6 +1,7 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { readAsStringAsync } from 'expo-file-system/legacy';
 import { Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings, RecurringTransactionTemplate } from '../../types';
+import { isCurrencyCode } from '../../domain/shared/currencies';
 import { THEMES } from '../../theme/colors';
 import { DEFAULT_SETTINGS } from '../storage/storage';
 import { translateActive } from '../../i18n';
@@ -51,7 +52,6 @@ export const pickAndImportBackup = async (): Promise<ImportResult | null> => {
 };
 
 const ENVELOPE_TYPES = ['gasto', 'ahorro', 'deuda'];
-const CURRENCIES = ['CRC', 'USD', 'EUR'];
 const TRANSACTION_TYPES = ['expense', 'income', 'transfer'];
 const FREQUENCIES = ['monthly', 'weekly', 'biweekly', 'annual'];
 
@@ -61,7 +61,7 @@ const isValidDate = (v: unknown) => typeof v === 'string' && !Number.isNaN(new D
 
 const isValidEnvelope = (e: any) =>
   isNonEmptyString(e?.id) && typeof e.name === 'string' &&
-  ENVELOPE_TYPES.includes(e.type) && CURRENCIES.includes(e.currency) && isFiniteNumber(e.limit);
+  ENVELOPE_TYPES.includes(e.type) && isCurrencyCode(e.currency) && isFiniteNumber(e.limit);
 
 const isValidTransaction = (t: any) =>
   isNonEmptyString(t?.id) && isNonEmptyString(t.envelopeId) &&
@@ -81,28 +81,14 @@ const isValidTemplate = (t: any) =>
  */
 const sanitizeSettings = (raw: any): AppSettings => {
   const s = raw && typeof raw === 'object' ? raw : {};
-  const rates = s.exchangeRates && typeof s.exchangeRates === 'object' ? s.exchangeRates : {};
-  const positive = (v: unknown, fallback: number) => (isFiniteNumber(v) && v > 0 ? v : fallback);
-  const dayOrNull = (v: unknown) => (isFiniteNumber(v) && v >= 1 && v <= 31 ? Math.round(v) : null);
   const bool = (v: unknown, fallback: boolean) => (typeof v === 'boolean' ? v : fallback);
 
-  let expenseCutoffDay = s.expenseCutoffDay === null ? null : dayOrNull(s.expenseCutoffDay) ?? DEFAULT_SETTINGS.expenseCutoffDay;
-  if (s.expenseCutoffDate && expenseCutoffDay == null && isValidDate(s.expenseCutoffDate)) {
-    expenseCutoffDay = new Date(s.expenseCutoffDate).getDate();
-  }
-
-  const { expenseCutoffDate: _legacyCutoffDate, ...rest } = s;
+  // Rates (conversion was removed) and the cutoff settings (now fixed at day 1) from older backups are dropped.
+  const { expenseCutoffDate: _legacyCutoffDate, expenseCutoffEnabled: _legacyCutoffEnabled, expenseCutoffDay: _legacyCutoffDay, exchangeRates: _legacyRates, autoExchangeRates: _legacyAuto, exchangeRatesUpdatedAt: _legacyRatesAt, ...rest } = s;
   return {
     ...DEFAULT_SETTINGS,
     ...rest,
-    defaultCurrency: CURRENCIES.includes(s.defaultCurrency) ? s.defaultCurrency : DEFAULT_SETTINGS.defaultCurrency,
-    exchangeRates: {
-      USD_TO_CRC: positive(rates.USD_TO_CRC, DEFAULT_SETTINGS.exchangeRates.USD_TO_CRC),
-      EUR_TO_CRC: positive(rates.EUR_TO_CRC, DEFAULT_SETTINGS.exchangeRates.EUR_TO_CRC),
-    },
-    expenseCutoffEnabled: bool(s.expenseCutoffEnabled, DEFAULT_SETTINGS.expenseCutoffEnabled),
-    expenseCutoffDay,
-    budgetAlertsEnabled: bool(s.budgetAlertsEnabled, DEFAULT_SETTINGS.budgetAlertsEnabled),
+    defaultCurrency: isCurrencyCode(s.defaultCurrency) ? s.defaultCurrency : DEFAULT_SETTINGS.defaultCurrency,
     billRemindersEnabled: bool(s.billRemindersEnabled, DEFAULT_SETTINGS.billRemindersEnabled),
     billReminderLeadDays: isFiniteNumber(s.billReminderLeadDays) && s.billReminderLeadDays >= 0
       ? Math.round(s.billReminderLeadDays)

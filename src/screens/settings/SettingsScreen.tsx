@@ -4,18 +4,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
 import { authenticate, isDeviceAuthAvailable } from '../../services/device/deviceAuth';
-import { ArrowLeft, ChevronRight, ChevronDown, CreditCard, DollarSign, Tag, Download, Upload, RefreshCw, BarChart3, Repeat, TrendingDown, FileSpreadsheet, Palette, Share2, FolderOpen, X } from 'lucide-react-native';
-import { exportBackupJson } from '../../services/backup/exportData';
-import { getLatestAutomaticBackupUri, AUTO_BACKUP_INTERVAL_OPTIONS, canUseBackupFolder, pickBackupFolder, backupFolderLabel } from '../../services/backup/autoBackup';
-import { isAvailableAsync, shareAsync } from 'expo-sharing';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import ChevronRight from 'lucide-react-native/icons/chevron-right';
+import CreditCard from 'lucide-react-native/icons/credit-card';
+import Tag from 'lucide-react-native/icons/tag';
+import BookOpen from 'lucide-react-native/icons/book-open';
+import Palette from 'lucide-react-native/icons/palette';
+import Settings2 from 'lucide-react-native/icons/settings-2';
+import Wallet from 'lucide-react-native/icons/wallet';
+import Bell from 'lucide-react-native/icons/bell';
+import Shield from 'lucide-react-native/icons/shield';
+import Database from 'lucide-react-native/icons/database';
+import DatabaseBackup from 'lucide-react-native/icons/database-backup';
 import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
-import { DayGridSheet } from '../../components/forms/DayGridSheet';
+import { CurrencySelector } from '../../components/forms/CurrencySelector';
 import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../context/ThemeContext';
-import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { LanguagePreference } from '../../i18n';
-import { SPACING } from '../../theme/tokens';
+import { SettingsSectionHeader } from './SettingsSectionHeader';
+import { sectionTitleKey } from './settingsSections';
 import { makeStyles } from './SettingsScreen.styles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
@@ -32,13 +40,8 @@ export const SettingsScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
   const { t, preference, setPreference } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const {
-    envelopes, transactions, paymentMethods, categories, incomeCategories, recurringTemplates, settings,
-    importFromBackup, resetAllEnvelopes, updateSettings, autoBackup, updateAutoBackup,
-  } = useAppData();
+  const { settings, updateSettings } = useAppData();
 
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [showCutoffSheet, setShowCutoffSheet] = useState(false);
   const [showInfoDialog, setShowInfoDialog] = useState(false);
   const [infoDialogTitle, setInfoDialogTitle] = useState('');
   const [infoDialogMessage, setInfoDialogMessage] = useState('');
@@ -62,61 +65,10 @@ export const SettingsScreen = ({ navigation }: Props) => {
     setShowInfoDialog(true);
   };
 
-  const handleImport = async () => {
-    const result = await importFromBackup();
-    showInfo(
-      result.success ? t('settings.importSuccessTitle') : t('settings.importErrorTitle'),
-      result.message
-    );
-  };
-
-  const handleCutoffToggle = (value: boolean) => {
-    updateSettings({
-      expenseCutoffEnabled: value,
-      expenseCutoffDay: value ? (settings.expenseCutoffDay ?? 1) : settings.expenseCutoffDay,
-    });
-  };
-
   // Saved values from before the chips (e.g. 4 or 6 days) stay selectable.
   const leadDaysOptions = LEAD_DAYS_OPTIONS.includes(settings.billReminderLeadDays)
     ? LEAD_DAYS_OPTIONS
     : [...LEAD_DAYS_OPTIONS, settings.billReminderLeadDays].sort((a, b) => a - b);
-
-  const handleExport = async () => {
-    try {
-      await exportBackupJson({ envelopes, transactions, paymentMethods, categories, incomeCategories, recurringTemplates, settings });
-      showInfo(t('settings.exportTitle'), t('settings.exportDone'));
-    } catch (e) {
-      console.error('Error exporting data:', e);
-      showInfo(t('settings.exportTitle'), t('settings.exportFailed'));
-    }
-  };
-
-  const handleShareLatestBackup = async () => {
-    const uri = await getLatestAutomaticBackupUri();
-    if (!uri || !(await isAvailableAsync())) {
-      showInfo(t('settings.autoBackupTitle'), t('settings.noAutoBackupToShare'));
-      return;
-    }
-    try {
-      await shareAsync(uri, { UTI: 'public.json', mimeType: 'application/json' });
-    } catch {
-      showInfo(t('settings.autoBackupTitle'), t('settings.autoBackupOpenFailed'));
-    }
-  };
-
-  const handlePickBackupFolder = async () => {
-    try {
-      const folderUri = await pickBackupFolder();
-      if (folderUri) await updateAutoBackup({ folderUri });
-    } catch (e) {
-      console.error('Error picking backup folder', e);
-    }
-  };
-
-  const handleResetAll = () => {
-    setShowResetConfirm(true);
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -129,7 +81,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={styles.sectionTitle}>{t('settings.configureApp')}</Text>
+        <SettingsSectionHeader icon={<Settings2 color={colors.secondaryText} size={14} />} title={t(sectionTitleKey('general'))} />
 
         <TouchableOpacity
           style={styles.menuItem}
@@ -146,17 +98,61 @@ export const SettingsScreen = ({ navigation }: Props) => {
           <ChevronRight color={colors.secondaryText} size={20} />
         </TouchableOpacity>
 
+        <View style={styles.reminderCard}>
+          <View style={styles.reminderRow}>
+            <Text style={styles.leadDaysLabel}>{t('currency.default')}</Text>
+            <CurrencySelector
+              compact
+              label={t('currency.default')}
+              value={settings.defaultCurrency}
+              onSelect={(defaultCurrency) => updateSettings({ defaultCurrency })}
+            />
+          </View>
+          <View style={styles.settingsRowDivider} />
+          <View style={styles.reminderRow}>
+            <Text style={styles.leadDaysLabel}>{t('settings.language')}</Text>
+            <View style={styles.stepper}>
+              {LANGUAGE_OPTIONS.map(option => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[styles.intervalChip, preference === option.value && styles.intervalChipActive]}
+                  onPress={() => setPreference(option.value)}
+                >
+                  <Text style={styles.stepperValue}>{t(option.labelKey)}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+
         <TouchableOpacity
           style={styles.menuItem}
-          onPress={() => navigation.navigate('CurrencySettings')}
+          onPress={() => navigation.navigate('Onboarding')}
           activeOpacity={0.8}
         >
           <View style={styles.menuIconWrapper}>
-            <DollarSign color={colors.white} size={18} />
+            <BookOpen color={colors.white} size={18} />
           </View>
           <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>{t('settings.currencies')}</Text>
-            <Text style={styles.menuSubtitle}>{t('settings.currenciesSubtitle')}</Text>
+            <Text style={styles.menuTitle}>{t('settings.tutorial')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.tutorialSubtitle')}</Text>
+          </View>
+          <ChevronRight color={colors.secondaryText} size={20} />
+        </TouchableOpacity>
+
+        <SettingsSectionHeader icon={<Wallet color={colors.secondaryText} size={14} />} title={t(sectionTitleKey('finance'))} />
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('CategoriesSettings')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <Tag color={colors.white} size={18} />
+          </View>
+          <View style={styles.menuTextWrapper}>
+            <Text style={styles.menuTitle}>{t('settings.categories')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.categoriesSubtitle')}</Text>
           </View>
           <ChevronRight color={colors.secondaryText} size={20} />
         </TouchableOpacity>
@@ -176,114 +172,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
           <ChevronRight color={colors.secondaryText} size={20} />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('CategoriesSettings')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.menuIconWrapper}>
-            <Tag color={colors.white} size={18} />
-          </View>
-          <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>{t('settings.categories')}</Text>
-            <Text style={styles.menuSubtitle}>{t('settings.categoriesSubtitle')}</Text>
-          </View>
-          <ChevronRight color={colors.secondaryText} size={20} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('Reports')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.menuIconWrapper}>
-            <BarChart3 color={colors.white} size={18} />
-          </View>
-          <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>{t('settings.reports')}</Text>
-            <Text style={styles.menuSubtitle}>{t('settings.reportsSubtitle')}</Text>
-          </View>
-          <ChevronRight color={colors.secondaryText} size={20} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('Recurring')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.menuIconWrapper}>
-            <Repeat color={colors.white} size={18} />
-          </View>
-          <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>{t('settings.recurring')}</Text>
-            <Text style={styles.menuSubtitle}>{t('settings.recurringSubtitle')}</Text>
-          </View>
-          <ChevronRight color={colors.secondaryText} size={20} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('DebtPayoffPlan')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.menuIconWrapper}>
-            <TrendingDown color={colors.white} size={18} />
-          </View>
-          <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>{t('settings.debtPayoff')}</Text>
-            <Text style={styles.menuSubtitle}>{t('settings.debtPayoffSubtitle')}</Text>
-          </View>
-          <ChevronRight color={colors.secondaryText} size={20} />
-        </TouchableOpacity>
-
-        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>{t('settings.language')}</Text>
-
-        <View style={styles.reminderCard}>
-          <View style={styles.reminderRow}>
-            <Text style={styles.leadDaysLabel}>{t('settings.language')}</Text>
-            <View style={styles.stepper}>
-              {LANGUAGE_OPTIONS.map(option => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[styles.intervalChip, preference === option.value && styles.intervalChipActive]}
-                  onPress={() => setPreference(option.value)}
-                >
-                  <Text style={styles.stepperValue}>{t(option.labelKey)}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </View>
-
-        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>{t('lock.section')}</Text>
-
-        <View style={styles.toggleRow}>
-          <View style={styles.toggleTextWrapper}>
-            <Text style={styles.menuTitle}>{t('lock.title')}</Text>
-            <Text style={styles.menuSubtitle}>{t('lock.subtitle')}</Text>
-          </View>
-          <Switch
-            value={!!settings.appLockEnabled}
-            onValueChange={handleToggleAppLock}
-            trackColor={{ false: colors.cardBg, true: colors.green }}
-            thumbColor={settings.appLockEnabled ? colors.green : colors.white}
-          />
-        </View>
-
-        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>{t('settings.alerts')}</Text>
-
-        <View style={styles.toggleRow}>
-          <View style={styles.toggleTextWrapper}>
-            <Text style={styles.menuTitle}>{t('settings.budgetAlerts')}</Text>
-            <Text style={styles.menuSubtitle}>{t('settings.budgetAlertsSubtitle')}</Text>
-          </View>
-          <Switch
-            value={settings.budgetAlertsEnabled}
-            onValueChange={() => updateSettings({ budgetAlertsEnabled: !settings.budgetAlertsEnabled })}
-            trackColor={{ false: colors.cardBg, true: colors.green }}
-            thumbColor={settings.budgetAlertsEnabled ? colors.green : colors.white}
-          />
-        </View>
+        <SettingsSectionHeader icon={<Bell color={colors.secondaryText} size={14} />} title={t(sectionTitleKey('alerts'))} />
 
         <View style={styles.reminderCard}>
           <View style={styles.reminderRow}>
@@ -324,206 +213,39 @@ export const SettingsScreen = ({ navigation }: Props) => {
           )}
         </View>
 
-        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>{t('settings.cutoffSection')}</Text>
 
-        <View style={styles.reminderCard}>
-          <View style={styles.reminderRow}>
-            <View style={styles.toggleTextWrapper}>
-              <Text style={styles.menuTitle}>{t('settings.cutoff')}</Text>
-              <Text style={styles.menuSubtitle}>
-                {settings.expenseCutoffEnabled
-                  ? t('settings.cutoffOn', { day: settings.expenseCutoffDay ?? 1 })
-                  : t('settings.cutoffOff')}
-              </Text>
-            </View>
-            <Switch
-              value={settings.expenseCutoffEnabled}
-              onValueChange={handleCutoffToggle}
-              trackColor={{ false: colors.cardBg, true: colors.green }}
-              thumbColor={settings.expenseCutoffEnabled ? colors.green : colors.white}
-            />
+        <SettingsSectionHeader icon={<Shield color={colors.secondaryText} size={14} />} title={t(sectionTitleKey('security'))} />
+
+        <View style={styles.toggleRow}>
+          <View style={styles.toggleTextWrapper}>
+            <Text style={styles.menuTitle}>{t('lock.title')}</Text>
+            <Text style={styles.menuSubtitle}>{t('lock.subtitle')}</Text>
           </View>
-
-          {settings.expenseCutoffEnabled && (
-            <>
-              <View style={styles.reminderDivider} />
-              <View style={styles.reminderRow}>
-                <Text style={styles.leadDaysLabel}>{t('settings.cutoffDay')}</Text>
-                <TouchableOpacity style={styles.dayPill} onPress={() => setShowCutoffSheet(true)} activeOpacity={0.8}>
-                  <Text style={styles.stepperValue}>{t('settings.dayN', { day: settings.expenseCutoffDay ?? 1 })}</Text>
-                  <ChevronDown color={colors.secondaryText} size={16} />
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
+          <Switch
+            value={!!settings.appLockEnabled}
+            onValueChange={handleToggleAppLock}
+            trackColor={{ false: colors.cardBg, true: colors.green }}
+            thumbColor={settings.appLockEnabled ? colors.green : colors.white}
+          />
         </View>
 
-        <Text style={[styles.sectionTitle, { marginTop: 10 }]}>{t('settings.backupSection')}</Text>
+        <SettingsSectionHeader icon={<Database color={colors.secondaryText} size={14} />} title={t(sectionTitleKey('data'))} />
 
         <TouchableOpacity
           style={styles.menuItem}
-          onPress={() => navigation.navigate('ImportBankCsv')}
+          onPress={() => navigation.navigate('BackupSettings')}
           activeOpacity={0.8}
         >
           <View style={styles.menuIconWrapper}>
-            <FileSpreadsheet color={colors.white} size={18} />
+            <DatabaseBackup color={colors.white} size={18} />
           </View>
           <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>{t('settings.importBankCsv')}</Text>
-            <Text style={styles.menuSubtitle}>{t('settings.importBankCsvSubtitle')}</Text>
+            <Text style={styles.menuTitle}>{t('settings.dataBackups')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.dataBackupsSubtitle')}</Text>
           </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={handleImport}
-          activeOpacity={0.8}
-        >
-          <View style={styles.menuIconWrapper}>
-            <Upload color={colors.white} size={18} />
-          </View>
-          <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>{t('settings.importBackup')}</Text>
-            <Text style={styles.menuSubtitle}>{t('settings.importBackupSubtitle')}</Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={handleExport}
-          activeOpacity={0.8}
-        >
-          <View style={styles.menuIconWrapper}>
-            <Download color={colors.white} size={18} />
-          </View>
-          <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>{t('settings.exportBackup')}</Text>
-            <Text style={styles.menuSubtitle}>{t('settings.exportBackupSubtitle')}</Text>
-          </View>
-        </TouchableOpacity>
-
-        <View style={styles.reminderCard}>
-          <View style={styles.reminderRow}>
-            <View style={styles.toggleTextWrapper}>
-              <Text style={styles.menuTitle}>{t('settings.autoBackups')}</Text>
-              <Text style={styles.menuSubtitle}>
-                {autoBackup.enabled
-                  ? t(autoBackup.intervalDays > 1 ? 'settings.autoBackupsOnOther' : 'settings.autoBackupsOnOne', { days: autoBackup.intervalDays })
-                  : t('settings.autoBackupsOff')}
-              </Text>
-            </View>
-            <Switch
-              value={autoBackup.enabled}
-              onValueChange={(value) => updateAutoBackup({ enabled: value })}
-              trackColor={{ false: colors.cardBg, true: colors.green }}
-              thumbColor={autoBackup.enabled ? colors.green : colors.white}
-            />
-          </View>
-
-          {autoBackup.enabled && (
-            <>
-              <View style={styles.reminderDivider} />
-              <View style={styles.reminderRow}>
-                <Text style={styles.leadDaysLabel}>{t('settings.autoBackupEvery')}</Text>
-                <View style={styles.stepper}>
-                  {AUTO_BACKUP_INTERVAL_OPTIONS.map(days => (
-                    <TouchableOpacity
-                      key={days}
-                      style={[styles.intervalChip, autoBackup.intervalDays === days && styles.intervalChipActive]}
-                      onPress={() => updateAutoBackup({ intervalDays: days })}
-                    >
-                      <Text style={styles.stepperValue}>{t('settings.autoBackupDaysShort', { days })}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-              {canUseBackupFolder && (
-                <>
-                  <View style={styles.reminderDivider} />
-                  <TouchableOpacity style={styles.reminderRow} onPress={handlePickBackupFolder} activeOpacity={0.8}>
-                    <View style={styles.toggleTextWrapper}>
-                      <Text style={styles.leadDaysLabel}>{t('settings.backupFolder')}</Text>
-                      <Text style={styles.menuSubtitle}>
-                        {autoBackup.folderUri
-                          ? t('settings.backupFolderSet', { folder: backupFolderLabel(autoBackup.folderUri) })
-                          : t('settings.backupFolderNone')}
-                      </Text>
-                    </View>
-                    {autoBackup.folderUri ? (
-                      <TouchableOpacity
-                        onPress={() => updateAutoBackup({ folderUri: null })}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        accessibilityLabel={t('settings.backupFolderRemove')}
-                      >
-                        <X color={colors.secondaryText} size={18} />
-                      </TouchableOpacity>
-                    ) : (
-                      <FolderOpen color={colors.secondaryText} size={18} />
-                    )}
-                  </TouchableOpacity>
-                </>
-              )}
-              <View style={styles.reminderDivider} />
-              <TouchableOpacity style={styles.reminderRow} onPress={handleShareLatestBackup} activeOpacity={0.8}>
-                <View style={styles.toggleTextWrapper}>
-                  <Text style={styles.leadDaysLabel}>
-                    {autoBackup.lastSuccessAt
-                      ? t('settings.lastBackup', { date: new Date(autoBackup.lastSuccessAt).toLocaleDateString() })
-                      : t('settings.noAutoBackups')}
-                  </Text>
-                  {autoBackup.lastError && (
-                    <Text style={[styles.menuSubtitle, { color: colors.red }]}>
-                      {t('settings.lastBackupFailed', { error: autoBackup.lastError })}
-                    </Text>
-                  )}
-                </View>
-                <Share2 color={colors.secondaryText} size={18} />
-              </TouchableOpacity>
-            </>
-          )}
-          <View style={styles.reminderDivider} />
-          <Text style={[styles.menuSubtitle, { padding: SPACING.lg }]}>
-            {autoBackup.enabled && autoBackup.folderUri ? t('settings.autoBackupNoteFolder') : t('settings.autoBackupNote')}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={handleResetAll}
-          activeOpacity={0.8}
-        >
-          <View style={styles.menuIconWrapper}>
-            <RefreshCw color={colors.white} size={18} />
-          </View>
-          <View style={styles.menuTextWrapper}>
-            <Text style={[styles.menuTitle, { color: colors.red }]}>{t('settings.resetAll')}</Text>
-            <Text style={styles.menuSubtitle}>{t('settings.resetAllSubtitle')}</Text>
-          </View>
+          <ChevronRight color={colors.secondaryText} size={20} />
         </TouchableOpacity>
       </ScrollView>
-
-      <DayGridSheet
-        visible={showCutoffSheet}
-        title={t('settings.cutoffDay')}
-        subtitle={t('settings.cutoffEveryMonth')}
-        value={settings.expenseCutoffDay ?? 1}
-        onSelect={day => updateSettings({ expenseCutoffDay: day })}
-        onClose={() => setShowCutoffSheet(false)}
-      />
-      <ConfirmDialog
-        visible={showResetConfirm}
-        title={t('settings.resetDialogTitle')}
-        message={t('settings.resetDialogMessage')}
-        confirmLabel={t('settings.resetDialogConfirm')}
-        cancelLabel={t('common.cancel')}
-        destructive
-        onConfirm={async () => {
-          await resetAllEnvelopes();
-          setShowResetConfirm(false);
-          showInfo(t('common.success'), t('settings.resetDone'));
-        }}
-        onCancel={() => setShowResetConfirm(false)}
-      />
 
       <ConfirmDialog
         visible={showInfoDialog}

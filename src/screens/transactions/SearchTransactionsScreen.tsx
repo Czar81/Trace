@@ -3,7 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, SectionList, Platf
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
-import { ArrowLeft, Search, SlidersHorizontal, X } from 'lucide-react-native';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import Search from 'lucide-react-native/icons/search';
+import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
+import X from 'lucide-react-native/icons/x';
 import { Dropdown } from '../../components/forms/Dropdown';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { DateField } from '../../components/forms/DateField';
@@ -13,7 +16,7 @@ import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { filterTransactions, hasActiveSearch, SearchFilters } from '../../domain/transactions/transactionSearch';
 import { groupTransactionsByDay } from '../../domain/transactions/transactionGrouping';
-import { Transaction } from '../../types';
+import { Transaction, Currency } from '../../types';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Search'>;
@@ -226,8 +229,8 @@ const TransactionResultRow: React.FC<{
   envelopeName: string;
   categoryName: string;
   paymentMethodName: string;
-  currency: 'CRC' | 'USD' | 'EUR';
-  formatAmount: (amount: number, currency: 'CRC' | 'USD' | 'EUR') => string;
+  currency: Currency;
+  formatAmount: (amount: number, currency: Currency) => string;
   locale: string;
   onPress: () => void;
 }> = ({ item, envelopeName, categoryName, paymentMethodName, currency, formatAmount, locale, onPress }) => {

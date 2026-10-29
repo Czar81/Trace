@@ -9,23 +9,31 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
 import { EnvelopeType, Currency, Envelope } from '../../types';
 import { RootStackParamList } from '../../navigation/types';
-import { Settings, MoreVertical, RefreshCw, Search, Coins, BarChart3, Repeat } from 'lucide-react-native';
+import Settings from 'lucide-react-native/icons/settings';
+import MoreVertical from 'lucide-react-native/icons/ellipsis-vertical';
+import RefreshCw from 'lucide-react-native/icons/refresh-cw';
+import Search from 'lucide-react-native/icons/search';
+import Coins from 'lucide-react-native/icons/coins';
+import BarChart3 from 'lucide-react-native/icons/chart-column';
+import Repeat from 'lucide-react-native/icons/repeat';
 import { EnvelopeAvatar } from '../../components/envelope/EnvelopeAvatar';
 import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
 import { EmptyState } from '../../components/feedback/EmptyState';
+import { HelpButton } from '../../components/feedback/HelpButton';
+import { FirstStepsCard } from '../../components/onboarding/FirstStepsCard';
+import { useFirstSteps } from '../../components/onboarding/useFirstSteps';
+import { FirstStepId } from '../../domain/onboarding/firstSteps';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { TranslationKey } from '../../i18n';
-import { formatCurrency } from '../../domain/shared/formatCurrency';
-import { loadMainDisplayCurrency, saveMainDisplayCurrency } from '../../services/storage/storage';
+import { SummaryCard } from '../../components/envelope/SummaryCard';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 import { MENU_ENTERING } from '../../components/feedback/menuMotion';
 import { hapticSelection } from '../../services/device/haptics';
 
 const { width } = Dimensions.get('window');
 
-const CURRENCY_CYCLE: Currency[] = ['CRC', 'USD', 'EUR'];
 const TAB_TYPES: EnvelopeType[] = ['gasto', 'ahorro', 'deuda'];
 const TAB_LABELS: Record<EnvelopeType, TranslationKey> = { gasto: 'main.tabExpenses', ahorro: 'main.tabSavings', deuda: 'main.tabDebts' };
 
@@ -71,8 +79,8 @@ const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
     <Animated.View
       entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 45)}
       exiting={FadeOut.duration(180)}
-      style={pressStyle}
     >
+      <Animated.View style={pressStyle}>
       <Pressable
         style={styles.envelopeCard}
         onPress={onPress}
@@ -98,32 +106,45 @@ const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
           <Text style={styles.envelopeSubtext}>{subtext}</Text>
         </View>
       </Pressable>
+      </Animated.View>
     </Animated.View>
   );
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Main'>;
 
+const EMPTY_MESSAGES = {
+  gasto: 'main.emptyExpenses',
+  ahorro: 'main.emptySavings',
+  deuda: 'main.emptyDebts',
+} as const;
+
 export const MainScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { envelopes, getTotalByType, getEnvelopeBalance, formatAmount, settings, convertToCRC, resetAllEnvelopes, paymentMethods, categories, transactions } = useAppData();
+  const { envelopes, getTotalsByType, getEnvelopeBalance, formatAmount, settings, resetAllEnvelopes, paymentMethods, categories, transactions } = useAppData();
   const [activeTab, setActiveTab] = useState<EnvelopeType>('gasto');
-  const [displayCurrency, setDisplayCurrency] = useState<Currency>(settings.defaultCurrency);
-  // Settings load after the first render (and can change), so follow the saved default.
-  useEffect(() => { setDisplayCurrency(settings.defaultCurrency); }, [settings.defaultCurrency]);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
+  const firstSteps = useFirstSteps();
+  const { refresh: refreshFirstSteps } = firstSteps;
 
-  // Restore the currency the user last picked for the total.
-  useEffect(() => {
-    let cancelled = false;
-    loadMainDisplayCurrency().then(stored => {
-      if (!cancelled && stored) setDisplayCurrency(stored);
-    });
-    return () => { cancelled = true; };
-  }, []);
+  useEffect(() => navigation.addListener('focus', () => { refreshFirstSteps(); }), [navigation, refreshFirstSteps]);
+
+  const handleFirstStep = (id: FirstStepId) => {
+    const firstEnvelope = envelopes[0];
+    switch (id) {
+      case 'createEnvelope': return navigation.navigate('CreateEnvelope', { envelopeType: activeTab });
+      case 'assignIncome': return navigation.navigate('AssignIncome');
+      // Needs an envelope to record into, so send the user to create one first.
+      case 'firstExpense': return firstEnvelope
+        ? navigation.navigate('CreateTransaction', { envelopeId: firstEnvelope.id })
+        : navigation.navigate('CreateEnvelope', { envelopeType: 'gasto' });
+      case 'transfer': return navigation.navigate('CreateTransfer');
+      case 'backup': return navigation.navigate('BackupSettings');
+    }
+  };
 
   const scrollX = useSharedValue(0);
   const listRef = useRef<FlatList<EnvelopeType>>(null);
@@ -155,23 +176,10 @@ export const MainScreen = ({ navigation }: Props) => {
     }
   };
 
-  const totalCRC = getTotalByType(activeTab);
-  const totalDisplay = convertDisplayTotal(totalCRC, displayCurrency, settings.exchangeRates);
-
-  function convertDisplayTotal(crc: number, to: Currency, rates: { USD_TO_CRC: number; EUR_TO_CRC: number }): string {
-    let amount = crc;
-    if (to === 'USD') amount = crc / rates.USD_TO_CRC;
-    else if (to === 'EUR') amount = crc / rates.EUR_TO_CRC;
-    return formatCurrency(Math.abs(amount), to);
-  }
-
-  const cycleCurrency = () => {
-    const idx = CURRENCY_CYCLE.indexOf(displayCurrency);
-    const next = CURRENCY_CYCLE[(idx + 1) % CURRENCY_CYCLE.length];
-    setDisplayCurrency(next);
-    saveMainDisplayCurrency(next);
-  };
-
+  const totals = getTotalsByType(activeTab);
+  // An empty tab still shows a zero total in the default currency.
+  const shownTotals = totals.length > 0 ? totals : [{ currency: settings.defaultCurrency, total: 0 }];
+  const anyExceeded = shownTotals.some(entry => entry.total < 0);
 
   const renderEnvelope = ({ item, index }: { item: Envelope; index: number }) => {
     const balance = getEnvelopeBalance(item.id);
@@ -253,8 +261,18 @@ export const MainScreen = ({ navigation }: Props) => {
           itemLayoutAnimation={LinearTransition.duration(220)}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.list}
+          ListHeaderComponent={firstSteps.state ? (
+            <FirstStepsCard
+              progress={firstSteps.progress}
+              state={firstSteps.state}
+              onStepPress={handleFirstStep}
+              onStateChange={firstSteps.changeState}
+            />
+          ) : null}
           ListEmptyComponent={
-            <EmptyState message={t('main.emptyEnvelopes')} />
+            <EmptyState
+              message={t(EMPTY_MESSAGES[type])}
+            />
           }
           renderItem={renderEnvelope}
         />
@@ -289,7 +307,8 @@ export const MainScreen = ({ navigation }: Props) => {
       <View style={styles.header}>
         <Text style={styles.title}>TRACE</Text>
         <View style={{ flexDirection: 'row' }}>
-          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('AssignIncome')}>
+          <HelpButton style={styles.iconBtn} title="help.main.title" body="help.main.body" actionLabel="help.main.tutorial" onAction={() => navigation.navigate('Onboarding')} />
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('AssignIncome')} accessibilityRole="button" accessibilityLabel={t('a11y.assignIncome')}>
             <Coins color={colors.secondaryText} size={22} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Search')} accessibilityRole="button" accessibilityLabel={t('search.title')}>
@@ -333,30 +352,19 @@ export const MainScreen = ({ navigation }: Props) => {
         ))}
       </View>
 
-      <View style={styles.summaryCard}>
-        <View style={styles.cardFlap} pointerEvents="none" />
-        <TouchableOpacity
-          onPress={cycleCurrency}
-          style={styles.currencyBtn}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel={t('a11y.changeCurrency', { currency: displayCurrency })}
-        >
-          <Text style={styles.currencyText}>{displayCurrency}</Text>
-        </TouchableOpacity>
-        <View style={styles.summaryValues}>
-          <Text style={styles.summaryLabel}>
-            {activeTab === 'gasto'
-              ? t(totalCRC < 0 ? 'main.totalExceeded' : 'main.totalAvailable')
-              : activeTab === 'deuda'
-              ? t('main.totalToPay')
-              : t('main.totalSaved')}
-          </Text>
-          <Text style={[styles.summaryTotal, totalCRC < 0 && { color: colors.red }]}>
-            {totalDisplay}
-          </Text>
-        </View>
-      </View>
+      <SummaryCard
+        type={activeTab}
+        label={
+          activeTab === 'gasto'
+            ? t(anyExceeded ? 'main.totalExceeded' : 'main.totalAvailable')
+            : activeTab === 'deuda'
+            ? t('main.totalToPay')
+            : t('main.totalSaved')
+        }
+        totals={shownTotals}
+        envelopes={envelopes}
+        getEnvelopeBalance={getEnvelopeBalance}
+      />
 
       <Animated.FlatList
         ref={listRef}
@@ -395,13 +403,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   tab: { flex: 1, justifyContent: 'center', alignItems: 'center', zIndex: 1 },
   tabIndicator: { position: 'absolute', top: 4, bottom: 4, left: 4, backgroundColor: colors.green, borderRadius: RADIUS.pill },
   tabText: { color: colors.secondaryText, fontSize: FONT_SIZE.lg, fontWeight: '600' },
-  summaryCard: { backgroundColor: colors.cardBg, marginHorizontal: SPACING.xl, borderRadius: RADIUS.xl, padding: SPACING.xl, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg, overflow: 'hidden' },
-  cardFlap: { position: 'absolute', top: -20, left: '50%', width: 40, height: 40, marginLeft: -20, backgroundColor: colors.cardHighlight, transform: [{ rotate: '45deg' }] },
-  currencyBtn: { paddingVertical: 6, paddingHorizontal: SPACING.md, borderRadius: RADIUS.pill, backgroundColor: colors.divider },
-  currencyText: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '700' },
-  summaryValues: { alignItems: 'flex-end' },
-  summaryLabel: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, marginBottom: SPACING.xs },
-  summaryTotal: { color: colors.white, fontSize: 22, fontWeight: 'bold' },
   list: { paddingHorizontal: SPACING.xl, paddingBottom: 120 },
   emptyText: { color: colors.secondaryText, fontSize: FONT_SIZE.base, textAlign: 'center', marginTop: 40, fontStyle: 'italic' },
   envelopeCard: { backgroundColor: colors.cardBg, borderRadius: RADIUS.pill, padding: SPACING.lg, flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md },

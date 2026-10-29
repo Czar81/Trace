@@ -2,11 +2,10 @@ import { useCallback, useMemo } from 'react';
 import { Transaction } from '../../types';
 import { Store } from '../useDataStore';
 import { newId } from '../../domain/shared/helpers';
-import { roundMoney, calculateEnvelopeBalance } from '../../domain/budget/balance';
+import { roundMoney } from '../../domain/budget/balance';
 import { validateTransfer } from '../../domain/transactions/transfer';
 import { translateActive } from '../../i18n';
 import { deleteUnreferencedReceipts } from '../../services/files/receipts';
-import { isExpoGo, notifyBudgetThreshold } from '../../services/notifications/notifications';
 
 type NewTransaction = Omit<Transaction, 'id' | 'isArchived'>;
 type TransferResult = Promise<{ success: boolean; error?: string }>;
@@ -20,24 +19,6 @@ interface TransferFields {
 }
 
 export function useTransactionActions({ data, runExclusive, commit }: Store) {
-  /**
-   * Compares an envelope's spent fraction before/after a transaction mutation
-   * and notifies on the transition into the 80% or 100% band, per budget-alerts
-   * spec. No-op for non-'gasto' envelopes (a growing debt balance is not
-   * "overspending"), unlimited ones, or when the setting is off.
-   */
-  const checkBudgetAlerts = useCallback(async (envelopeId: string, beforeTxns: Transaction[], afterTxns: Transaction[]) => {
-    const { envelopes: envs, settings: s } = data.current;
-    if (!s.budgetAlertsEnabled || isExpoGo) return;
-
-    const envelope = envs.find(e => e.id === envelopeId);
-    if (!envelope || envelope.type !== 'gasto' || envelope.isUnlimited || !envelope.limit) return;
-
-    const spent = (txns: Transaction[]) =>
-      -calculateEnvelopeBalance(envelopeId, txns, envs, s.expenseCutoffEnabled, s.expenseCutoffDay) / envelope.limit;
-    await notifyBudgetThreshold(envelope, spent(beforeTxns), spent(afterTxns));
-  }, [data]);
-
   const build = (item: NewTransaction): Transaction => ({
     ...item,
     amount: roundMoney(item.amount),
@@ -51,8 +32,7 @@ export function useTransactionActions({ data, runExclusive, commit }: Store) {
     const created = build(transactionData);
     const updated = [created, ...before];
     await commit({ transactions: updated });
-    if (created.type === 'expense') await checkBudgetAlerts(created.envelopeId, before, updated);
-  }), [data, runExclusive, commit, checkBudgetAlerts]);
+  }), [data, runExclusive, commit]);
 
   /** Adds several transactions with a single save (avoids stale-state clobbering from looping addTransaction). */
   const addTransactions = useCallback((list: NewTransaction[]) => runExclusive(async () => {
@@ -61,11 +41,7 @@ export function useTransactionActions({ data, runExclusive, commit }: Store) {
     const created = list.map(build);
     const updated = [...created.slice().reverse(), ...before];
     await commit({ transactions: updated });
-    const expenseEnvelopeIds = new Set(created.filter(c => c.type === 'expense').map(c => c.envelopeId));
-    for (const envelopeId of expenseEnvelopeIds) {
-      await checkBudgetAlerts(envelopeId, before, updated);
-    }
-  }), [data, runExclusive, commit, checkBudgetAlerts]);
+  }), [data, runExclusive, commit]);
 
   const updateTransaction = useCallback((id: string, updates: Partial<Omit<Transaction, 'id'>>) => runExclusive(async () => {
     const before = data.current.transactions;
@@ -79,11 +55,7 @@ export function useTransactionActions({ data, runExclusive, commit }: Store) {
         updated
       );
     }
-    const updatedTransaction = updated.find(t => t.id === id);
-    if (updatedTransaction && updatedTransaction.type === 'expense') {
-      await checkBudgetAlerts(updatedTransaction.envelopeId, before, updated);
-    }
-  }), [data, runExclusive, commit, checkBudgetAlerts]);
+  }), [data, runExclusive, commit]);
 
   const deleteTransaction = useCallback((id: string) => runExclusive(async () => {
     const before = data.current.transactions;
@@ -108,8 +80,7 @@ export function useTransactionActions({ data, runExclusive, commit }: Store) {
   /**
    * Creates a transfer transaction moving `amount` from `envelopeId` (source)
    * to `toEnvelopeId` (destination). Validates same-envelope and currency-match
-   * defensively (the UI is expected to validate first), and never triggers
-   * budget alerts since addTransaction only checks them for expenses.
+   * defensively (the UI is expected to validate first).
    */
   const addTransfer = useCallback(async (transfer: TransferFields): TransferResult => {
     // Validate against the data as it will be once earlier queued changes land.

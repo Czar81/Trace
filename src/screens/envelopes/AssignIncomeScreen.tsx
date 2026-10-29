@@ -3,10 +3,12 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platfo
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { ArrowLeft, Check } from 'lucide-react-native';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import Check from 'lucide-react-native/icons/check';
 import { useAppData } from '../../context/ExpenseContext';
 import { RootStackParamList } from '../../navigation/types';
 import { CurrencyInput } from '../../components/forms/CurrencyInput';
+import { CurrencySelector } from '../../components/forms/CurrencySelector';
 import { Dropdown } from '../../components/forms/Dropdown';
 import { EnvelopeAvatar } from '../../components/envelope/EnvelopeAvatar';
 import { useTheme } from '../../context/ThemeContext';
@@ -18,12 +20,6 @@ import { getUnallocated, parseAmount, toInputString } from '../../domain/budget/
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AssignIncome'>;
-
-const CURRENCY_OPTIONS = [
-  { label: 'CRC', value: 'CRC' },
-  { label: 'USD', value: 'USD' },
-  { label: 'EUR', value: 'EUR' },
-];
 
 export const AssignIncomeScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
@@ -97,7 +93,7 @@ export const AssignIncomeScreen = ({ navigation }: Props) => {
         <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
           <Text style={styles.hint}>{t('assign.hint')}</Text>
 
-          <Dropdown label={t('envelope.currency')} options={CURRENCY_OPTIONS} value={currency} onSelect={handleCurrencyChange} />
+          <CurrencySelector label={t('envelope.currency')} value={currency} onSelect={handleCurrencyChange} />
 
           <CurrencyInput
             label={t('assign.total')}

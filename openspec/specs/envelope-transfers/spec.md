@@ -38,21 +38,17 @@ Before confirming a transfer, the system SHALL show the resulting balance of bot
 - **THEN** the system displays a preview of each envelope's balance after the transfer
 
 ### Requirement: Transfers are excluded from expense and income totals
-The system SHALL NOT count a transfer as an expense or as income in any report, summary total, or budget-alert calculation for either the source or destination envelope.
-
-#### Scenario: Transfer out of a gasto envelope with budget alerts enabled
-- **WHEN** budget alerts are enabled and a transfer moves money out of a `gasto` envelope
-- **THEN** the system does not evaluate or send a budget alert for that transfer
+The system SHALL NOT count a transfer as an expense or as income in any report or summary total for either the source or destination envelope.
 
 #### Scenario: Transfer appears in envelope history but not in expense/income reports
 - **WHEN** a transfer has been created between two envelopes
 - **THEN** the transfer appears in each envelope's transaction history, but is not included in expense or income totals in the Reportes screen
 
 ### Requirement: Transfers are excluded from expense-cutoff-period filtering
-A transfer's effect on an envelope's balance SHALL NOT be filtered by the expense-cutoff-period setting; it always applies to the envelope's current balance regardless of the transfer's date relative to the cutoff.
+A transfer's effect on an envelope's balance SHALL NOT be filtered by the expense-cutoff-period filtering; it always applies to the envelope's current balance regardless of the transfer's date relative to the cutoff.
 
 #### Scenario: Cutoff enabled and a transfer is dated before the current cutoff period start
-- **WHEN** expense cutoff is enabled and a transfer's date falls before the current cutoff period's start
+- **WHEN** a transfer's date falls before the current cutoff period's start
 - **THEN** the transfer still affects both envelopes' current balances (it is not excluded the way a pre-cutoff expense would be)
 
 ### Requirement: Transfer entry point from an envelope's detail screen

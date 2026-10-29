@@ -18,8 +18,8 @@ The first time the user enables bill reminders, the system SHALL request OS noti
 - **WHEN** the user turns on "Recordatorios de facturas" and the app has not yet asked for notification permission
 - **THEN** the system requests permission from the OS before the setting takes effect
 
-#### Scenario: Permission already granted via budget alerts
-- **WHEN** the user turns on "Recordatorios de facturas" and OS notification permission was already granted (e.g. via enabling budget alerts previously)
+#### Scenario: Permission already granted
+- **WHEN** the user turns on "Recordatorios de facturas" and OS notification permission was already granted
 - **THEN** the system does not re-prompt and reminders take effect immediately
 
 #### Scenario: User has denied permission previously

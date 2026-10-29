@@ -1,7 +1,8 @@
+import type { CurrencyCode } from '../domain/shared/currencies';
 import { ThemeId } from '../theme/colors';
 
 export type EnvelopeType = 'gasto' | 'ahorro' | 'deuda';
-export type Currency = 'CRC' | 'USD' | 'EUR';
+export type Currency = CurrencyCode;
 
 export interface PaymentMethod {
   id: string;
@@ -82,30 +83,10 @@ export interface RecurringTransactionTemplate {
   lastReminderScheduledPeriod: string | null; // occurrence key, same scheme as lastGeneratedPeriod
 }
 
-export interface SavedDebtPlan {
-  id: string;
-  name: string;
-  currency: Currency;
-  strategy: 'snowball' | 'avalanche';
-  /** Monthly payment for all debts; null means "just the minimum payments". */
-  monthlyBudget: number | null;
-  createdAt: string;
-}
-
 export interface AppSettings {
   defaultCurrency: Currency;
-  exchangeRates: {
-    USD_TO_CRC: number;
-    EUR_TO_CRC: number;
-  };
-  /** When on, rates are refreshed from the internet on app start if older than 12 hours. */
-  autoExchangeRates?: boolean;
-  exchangeRatesUpdatedAt?: string;
   /** Requires the device's fingerprint/face/PIN to open the app. */
   appLockEnabled?: boolean;
-  expenseCutoffEnabled: boolean;
-  expenseCutoffDay: number | null;
-  budgetAlertsEnabled: boolean;
   billRemindersEnabled: boolean;
   billReminderLeadDays: number;
   themeId: ThemeId;

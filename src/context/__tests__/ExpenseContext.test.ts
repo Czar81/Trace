@@ -81,29 +81,9 @@ describe('accrueDebtInterest', () => {
 });
 
 describe('getCutoffPeriodStart', () => {
-  it('returns this month\'s cutoff day when it falls within the current month and has already passed', () => {
-    const now = new Date(2026, 2, 20); // March 20, 2026
-    const result = getCutoffPeriodStart(now, 15);
-    expect(result).toEqual(new Date(2026, 2, 15, 0, 0, 0, 0));
-  });
-
-  it('clamps the cutoff day to the last day of a short month when rolling back into it (e.g. cutoffDay 31, previous month is February)', () => {
-    const now = new Date(2026, 2, 1); // March 1, 2026 -> hasn't reached cutoff day 31 yet, rolls back to February
-    const result = getCutoffPeriodStart(now, 31);
-    // February 2026 has 28 days, so clamp to Feb 28
-    expect(result).toEqual(new Date(2026, 1, 28, 0, 0, 0, 0));
-  });
-
-  it('rolls back to the previous month when now is before the cutoff day', () => {
-    const now = new Date(2026, 3, 5); // April 5, 2026, cutoff day 20 -> previous month is March
-    const result = getCutoffPeriodStart(now, 20);
-    expect(result).toEqual(new Date(2026, 2, 20, 0, 0, 0, 0));
-  });
-
-  it('stays in the current month when now is exactly on or after the cutoff day', () => {
-    const now = new Date(2026, 4, 10); // May 10, 2026
-    const result = getCutoffPeriodStart(now, 10);
-    expect(result).toEqual(new Date(2026, 4, 10, 0, 0, 0, 0));
+  it('is the first day of the current month', () => {
+    expect(getCutoffPeriodStart(new Date(2026, 2, 20, 15, 30))).toEqual(new Date(2026, 2, 1, 0, 0, 0, 0));
+    expect(getCutoffPeriodStart(new Date(2026, 4, 1))).toEqual(new Date(2026, 4, 1, 0, 0, 0, 0));
   });
 });
 
@@ -153,7 +133,7 @@ describe('getEnvelopeBalance (via useAppData)', () => {
     expect(result.current.getEnvelopeBalance(id)).toBe(150);
   });
 
-  it('reflects added expenses and income for a gasto envelope with no cutoff', async () => {
+  it('reflects added expenses and income for a gasto envelope', async () => {
     const { result } = await renderHook(() => useAppData(), { wrapper });
 
     await act(async () => {
@@ -185,17 +165,12 @@ describe('getEnvelopeBalance (via useAppData)', () => {
     expect(result.current.getEnvelopeBalance(id)).toBe(-200);
   });
 
-  it('excludes transactions dated before the current cutoff period start for a gasto envelope with cutoff enabled', async () => {
+  it('excludes transactions dated before the current cutoff period start for a gasto envelope', async () => {
     const { result } = await renderHook(() => useAppData(), { wrapper });
 
     const now = new Date();
     // Well before any possible cutoff period start.
     const longAgo = new Date(now.getFullYear() - 1, now.getMonth(), 1);
-    const cutoffDay = now.getDate();
-
-    await act(async () => {
-      await result.current.updateSettings({ expenseCutoffEnabled: true, expenseCutoffDay: cutoffDay });
-    });
 
     await act(async () => {
       await result.current.addEnvelope(baseEnvelope({ name: 'Gasto Cutoff', type: 'gasto', limit: 0 }));
@@ -229,10 +204,6 @@ describe('getEnvelopeBalance (via useAppData)', () => {
 
   it('sums/subtracts transactions directly for an ahorro envelope, with no cutoff logic applied', async () => {
     const { result } = await renderHook(() => useAppData(), { wrapper });
-
-    await act(async () => {
-      await result.current.updateSettings({ expenseCutoffEnabled: true, expenseCutoffDay: new Date().getDate() });
-    });
 
     await act(async () => {
       await result.current.addEnvelope(baseEnvelope({ name: 'Ahorro Envelope', type: 'ahorro', limit: 0 }));

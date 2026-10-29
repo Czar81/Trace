@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SavedDebtPlan, Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings, RecurringTransactionTemplate, Currency } from '../../types';
+import { Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings, RecurringTransactionTemplate } from '../../types';
 import { DEFAULT_THEME_ID } from '../../theme/colors';
 import { LanguagePreference, DEFAULT_LANGUAGE_PREFERENCE, isLanguagePreference, translateActive } from '../../i18n';
 import { ReportLayoutItem, parseReportLayout } from '../../domain/reports/reports';
@@ -19,19 +19,14 @@ const KEYS = {
   AUTO_BACKUP_LAST_ERROR: '@trace_auto_backup_last_error',
   AUTO_BACKUP_FOLDER_URI: '@trace_auto_backup_folder_uri',
   LANGUAGE: '@trace_language',
-  DEBT_PLANS: '@trace_debt_plans',
-  MAIN_DISPLAY_CURRENCY: '@trace_main_display_currency',
-  REPORTS_DISPLAY_CURRENCY: '@trace_reports_display_currency',
+  ONBOARDING_SEEN: '@trace_onboarding_seen',
+  FIRST_STEPS_STATE: '@trace_first_steps_state',
 };
 
 export const DEFAULT_AUTO_BACKUP_INTERVAL_DAYS = 7;
 
 export const DEFAULT_SETTINGS: AppSettings = {
   defaultCurrency: 'CRC',
-  exchangeRates: { USD_TO_CRC: 510, EUR_TO_CRC: 550 },
-  expenseCutoffEnabled: false,
-  expenseCutoffDay: null,
-  budgetAlertsEnabled: false,
   billRemindersEnabled: false,
   billReminderLeadDays: 2,
   themeId: DEFAULT_THEME_ID,
@@ -139,16 +134,32 @@ export const loadRecurringTemplates = () => loadCriticalData<RecurringTransactio
 
 export const saveSettings = (data: AppSettings) => saveData(KEYS.SETTINGS, data);
 export const loadSettings = async (): Promise<AppSettings> => {
-  const loaded = await loadCriticalData<Partial<AppSettings> & { expenseCutoffDate?: string }>(KEYS.SETTINGS, DEFAULT_SETTINGS);
-  const mergedSettings = { ...DEFAULT_SETTINGS, ...loaded };
-  if (loaded.expenseCutoffDate && mergedSettings.expenseCutoffDay == null) {
-    mergedSettings.expenseCutoffDay = new Date(loaded.expenseCutoffDate).getDate();
-  }
-  return mergedSettings;
+  const loaded = await loadCriticalData<Partial<AppSettings> & { exchangeRates?: unknown; autoExchangeRates?: unknown; exchangeRatesUpdatedAt?: unknown }>(KEYS.SETTINGS, DEFAULT_SETTINGS);
+  // Exchange rates were removed; drop what older versions stored.
+  const { exchangeRates: _rates, autoExchangeRates: _auto, exchangeRatesUpdatedAt: _ratesAt, ...current } = loaded;
+  // The monthly cutoff is fixed at day 1; whatever older versions stored for it is dropped.
+  const { expenseCutoffEnabled: _cutoffEnabled, expenseCutoffDay: _cutoffDay, ...rest } = current as typeof current & { expenseCutoffEnabled?: unknown; expenseCutoffDay?: unknown };
+  return { ...DEFAULT_SETTINGS, ...rest };
 };
 
-export const saveDebtPlans = (data: SavedDebtPlan[]) => saveData(KEYS.DEBT_PLANS, data);
-export const loadDebtPlans = () => loadData<SavedDebtPlan[]>(KEYS.DEBT_PLANS, []);
+export type FirstStepsState = 'open' | 'collapsed' | 'closed';
+export const saveFirstStepsState = (v: FirstStepsState) => saveDataQuietly(KEYS.FIRST_STEPS_STATE, v);
+export const loadFirstStepsState = async (): Promise<FirstStepsState> => {
+  const stored = await loadData<unknown>(KEYS.FIRST_STEPS_STATE, 'open');
+  return stored === 'collapsed' || stored === 'closed' ? stored : 'open';
+};
+
+export const saveOnboardingSeen = () => saveDataQuietly(KEYS.ONBOARDING_SEEN, true);
+/** Null when the flag could not be read, so callers don't show the tutorial on a storage error. */
+export const loadOnboardingSeen = async (): Promise<boolean | null> => {
+  try {
+    return (await AsyncStorage.getItem(KEYS.ONBOARDING_SEEN)) != null;
+  } catch (e) {
+    console.error(`Error loading ${KEYS.ONBOARDING_SEEN}`, e);
+    return null;
+  }
+};
+
 
 export const saveReportLayout = (data: ReportLayoutItem[]) => saveDataQuietly(KEYS.REPORT_LAYOUT, data);
 export const loadReportLayout = async (): Promise<ReportLayoutItem[]> => {
@@ -200,19 +211,3 @@ export const loadLanguagePreference = async (): Promise<LanguagePreference> => {
   const stored = await loadData<unknown>(KEYS.LANGUAGE, DEFAULT_LANGUAGE_PREFERENCE);
   return isLanguagePreference(stored) ? stored : DEFAULT_LANGUAGE_PREFERENCE;
 };
-
-const CURRENCIES: Currency[] = ['CRC', 'USD', 'EUR'];
-
-const loadCurrency = async (key: string): Promise<Currency | null> => {
-  const stored = await loadData<unknown>(key, null);
-  return CURRENCIES.includes(stored as Currency) ? (stored as Currency) : null;
-};
-
-// The currencies the home total and Reports are shown in are UI preferences
-// with their own keys (not in AppSettings), so they are not part of a backup.
-// null means "use the default currency".
-export const saveMainDisplayCurrency = (v: Currency) => saveData(KEYS.MAIN_DISPLAY_CURRENCY, v);
-export const loadMainDisplayCurrency = () => loadCurrency(KEYS.MAIN_DISPLAY_CURRENCY);
-
-export const saveReportsDisplayCurrency = (v: Currency) => saveData(KEYS.REPORTS_DISPLAY_CURRENCY, v);
-export const loadReportsDisplayCurrency = () => loadCurrency(KEYS.REPORTS_DISPLAY_CURRENCY);

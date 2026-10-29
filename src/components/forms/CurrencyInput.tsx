@@ -1,11 +1,11 @@
 import React, { useCallback, useMemo } from 'react';
 import { View, Text, TextInput, StyleSheet, TextInputProps } from 'react-native';
 import { Currency } from '../../types';
+import { getCurrencySymbol } from '../../domain/shared/formatCurrency';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
-const SYMBOLS: Record<Currency, string> = { CRC: '₡', USD: '$', EUR: '€' };
 
 interface CurrencyInputProps extends Omit<TextInputProps, 'value' | 'onChangeText'> {
   value: string;               // raw numeric string, e.g. "12500.5"
@@ -68,7 +68,7 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
 }) => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const symbol = SYMBOLS[currency] ?? '₡';
+  const symbol = getCurrencySymbol(currency);
   const display = formatDisplay(value);
 
   const handleChange = useCallback((text: string) => {

@@ -13,21 +13,21 @@ The system SHALL continue to read envelopes, transactions, payment methods, cate
 
 #### Scenario: Settings default values are unchanged
 - **WHEN** the app loads settings via `loadSettings`
-- **THEN** the default currency, exchange rates, and cutoff settings fall back to the same default values as before this change (`defaultCurrency: 'CRC'`, `exchangeRates: { USD_TO_CRC: 510, EUR_TO_CRC: 550 }`, `expenseCutoffEnabled: false`, `expenseCutoffDay: null`) whenever no stored value exists
+- **THEN** the default currency falls back to the same default value as before this change (`defaultCurrency: 'CRC'`) whenever no stored value exists
 
-### Requirement: Legacy expenseCutoffDate settings continue to migrate
-The system SHALL preserve the existing one-way migration in `loadSettings` that derives `expenseCutoffDay` from a legacy stored `expenseCutoffDate` field when `expenseCutoffDay` is not already present.
+### Requirement: Legacy cutoff settings are dropped
+The system SHALL ignore `expenseCutoffEnabled`, `expenseCutoffDay` and `expenseCutoffDate` in stored settings and imported backups, because the monthly cutoff is fixed at day 1.
 
-#### Scenario: User has only the legacy cutoff date field stored
-- **WHEN** a user's stored settings contain `expenseCutoffDate` but no `expenseCutoffDay`
-- **THEN** the system SHALL derive `expenseCutoffDay` from the day-of-month of `expenseCutoffDate` and use it, exactly as before this change
+#### Scenario: Stored settings carry legacy cutoff fields
+- **WHEN** a user's stored settings contain any of those fields
+- **THEN** `loadSettings` returns settings without them and the cutoff applies on day 1
 
 ### Requirement: Backup import/export shape is unchanged
 The system SHALL keep the full-backup JSON shape produced by `exportDataToCSV` and consumed by `parseBackup`/`pickAndImportBackup` compatible, changing it only by adding an `incomeCategories` field. Backups created before this change (without `incomeCategories`) SHALL still import while preserving their existing behavior, and backups created after this change remain importable by the same logic.
 
 #### Scenario: Importing a backup created before this refactor
 - **WHEN** a user imports a JSON backup file exported by a version of the app prior to this refactor
-- **THEN** the import succeeds and populates envelopes, transactions, payment methods, categories, and settings exactly as `parseBackup` did before this change, including the `expenseCutoffDate` migration path
+- **THEN** the import succeeds and populates envelopes, transactions, payment methods, categories, and settings exactly as `parseBackup` did before this change, with legacy cutoff fields dropped
 
 #### Scenario: Importing a legacy backup leaves income categories intact
 - **WHEN** a user imports a backup that has no `incomeCategories` field
