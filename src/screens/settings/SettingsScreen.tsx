@@ -110,11 +110,16 @@ export const SettingsScreen = ({ navigation }: Props) => {
         </TouchableOpacity>
 
         <View style={styles.reminderCard}>
-          <CurrencySelector
-            label={t('currency.default')}
-            value={settings.defaultCurrency}
-            onSelect={(defaultCurrency) => updateSettings({ defaultCurrency })}
-          />
+          <View style={styles.reminderRow}>
+            <Text style={styles.leadDaysLabel}>{t('currency.default')}</Text>
+            <CurrencySelector
+              compact
+              label={t('currency.default')}
+              value={settings.defaultCurrency}
+              onSelect={(defaultCurrency) => updateSettings({ defaultCurrency })}
+            />
+          </View>
+          <View style={styles.settingsRowDivider} />
           <View style={styles.reminderRow}>
             <Text style={styles.leadDaysLabel}>{t('settings.language')}</Text>
             <View style={styles.stepper}>

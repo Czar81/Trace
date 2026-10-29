@@ -76,8 +76,8 @@ const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
     <Animated.View
       entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 45)}
       exiting={FadeOut.duration(180)}
-      style={pressStyle}
     >
+      <Animated.View style={pressStyle}>
       <Pressable
         style={styles.envelopeCard}
         onPress={onPress}
@@ -103,6 +103,7 @@ const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
           <Text style={styles.envelopeSubtext}>{subtext}</Text>
         </View>
       </Pressable>
+      </Animated.View>
     </Animated.View>
   );
 };

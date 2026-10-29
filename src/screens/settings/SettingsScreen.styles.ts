@@ -21,6 +21,7 @@ export const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   reminderDivider: { height: 1, backgroundColor: colors.divider },
   reminderRowStacked: { flexDirection: 'column', alignItems: 'flex-start', gap: SPACING.md },
   stepperFull: { alignSelf: 'stretch', justifyContent: 'space-between' },
+  settingsRowDivider: { height: 1, backgroundColor: colors.divider },
   leadDaysLabel: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '600' },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xxs, backgroundColor: colors.bg, borderRadius: RADIUS.pill, padding: SPACING.xs },
   stepperBtn: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.cardHighlight },
