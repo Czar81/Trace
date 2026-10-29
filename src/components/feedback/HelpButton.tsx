@@ -11,10 +11,13 @@ interface HelpButtonProps {
   title: TranslationKey;
   body: TranslationKey;
   style?: object;
+  /** Optional secondary action shown above the close button (e.g. "View tutorial"). */
+  actionLabel?: TranslationKey;
+  onAction?: () => void;
 }
 
 /** A "?" icon that opens a short help dialog for the current screen. */
-export const HelpButton: React.FC<HelpButtonProps> = ({ title, body, style }) => {
+export const HelpButton: React.FC<HelpButtonProps> = ({ title, body, style, actionLabel, onAction }) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -37,6 +40,11 @@ export const HelpButton: React.FC<HelpButtonProps> = ({ title, body, style }) =>
           <View style={styles.card}>
             <Text style={styles.title}>{t(title)}</Text>
             <Text style={styles.body}>{t(body)}</Text>
+            {actionLabel && onAction ? (
+              <TouchableOpacity style={styles.secondaryBtn} onPress={() => { setVisible(false); onAction(); }} activeOpacity={0.85} accessibilityRole="button">
+                <Text style={styles.secondaryBtnText}>{t(actionLabel)}</Text>
+              </TouchableOpacity>
+            ) : null}
             <TouchableOpacity style={styles.btn} onPress={() => setVisible(false)} activeOpacity={0.85} accessibilityRole="button">
               <Text style={styles.btnText}>{t('help.close')}</Text>
             </TouchableOpacity>
@@ -54,5 +62,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   title: { color: colors.white, fontSize: FONT_SIZE.xl, fontWeight: '700', marginBottom: SPACING.sm },
   body: { color: colors.secondaryText, fontSize: FONT_SIZE.md, lineHeight: 21, marginBottom: SPACING.xl },
   btn: { backgroundColor: colors.green, borderRadius: RADIUS.sheet, paddingVertical: SPACING.md, alignItems: 'center' },
+  secondaryBtn: { borderWidth: 1, borderColor: colors.progressTrack, borderRadius: RADIUS.sheet, paddingVertical: SPACING.md, alignItems: 'center', marginBottom: SPACING.sm },
+  secondaryBtnText: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '600' },
   btnText: { color: colors.bg, fontSize: FONT_SIZE.base, fontWeight: '700' },
 });

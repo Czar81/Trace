@@ -20,6 +20,9 @@ import { EnvelopeAvatar } from '../../components/envelope/EnvelopeAvatar';
 import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { HelpButton } from '../../components/feedback/HelpButton';
+import { FirstStepsCard } from '../../components/onboarding/FirstStepsCard';
+import { useFirstSteps } from '../../components/onboarding/useFirstSteps';
+import { FirstStepId } from '../../domain/onboarding/firstSteps';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
@@ -124,6 +127,24 @@ export const MainScreen = ({ navigation }: Props) => {
   const [activeTab, setActiveTab] = useState<EnvelopeType>('gasto');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
+  const firstSteps = useFirstSteps();
+  const { refresh: refreshFirstSteps } = firstSteps;
+
+  useEffect(() => navigation.addListener('focus', () => { refreshFirstSteps(); }), [navigation, refreshFirstSteps]);
+
+  const handleFirstStep = (id: FirstStepId) => {
+    const firstEnvelope = envelopes[0];
+    switch (id) {
+      case 'createEnvelope': return navigation.navigate('CreateEnvelope', { envelopeType: activeTab });
+      case 'assignIncome': return navigation.navigate('AssignIncome');
+      // Needs an envelope to record into, so send the user to create one first.
+      case 'firstExpense': return firstEnvelope
+        ? navigation.navigate('CreateTransaction', { envelopeId: firstEnvelope.id })
+        : navigation.navigate('CreateEnvelope', { envelopeType: 'gasto' });
+      case 'transfer': return navigation.navigate('CreateTransfer');
+      case 'backup': return navigation.navigate('BackupSettings');
+    }
+  };
 
   const scrollX = useSharedValue(0);
   const listRef = useRef<FlatList<EnvelopeType>>(null);
@@ -240,6 +261,14 @@ export const MainScreen = ({ navigation }: Props) => {
           itemLayoutAnimation={LinearTransition.duration(220)}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.list}
+          ListHeaderComponent={firstSteps.state ? (
+            <FirstStepsCard
+              progress={firstSteps.progress}
+              state={firstSteps.state}
+              onStepPress={handleFirstStep}
+              onStateChange={firstSteps.changeState}
+            />
+          ) : null}
           ListEmptyComponent={
             <EmptyState
               message={t(EMPTY_MESSAGES[type])}
@@ -278,8 +307,8 @@ export const MainScreen = ({ navigation }: Props) => {
       <View style={styles.header}>
         <Text style={styles.title}>TRACE</Text>
         <View style={{ flexDirection: 'row' }}>
-          <HelpButton style={styles.iconBtn} title="help.main.title" body="help.main.body" />
-          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('AssignIncome')}>
+          <HelpButton style={styles.iconBtn} title="help.main.title" body="help.main.body" actionLabel="help.main.tutorial" onAction={() => navigation.navigate('Onboarding')} />
+          <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('AssignIncome')} accessibilityRole="button" accessibilityLabel={t('a11y.assignIncome')}>
             <Coins color={colors.secondaryText} size={22} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => navigation.navigate('Search')} accessibilityRole="button" accessibilityLabel={t('search.title')}>

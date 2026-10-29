@@ -20,6 +20,7 @@ const KEYS = {
   AUTO_BACKUP_FOLDER_URI: '@trace_auto_backup_folder_uri',
   LANGUAGE: '@trace_language',
   ONBOARDING_SEEN: '@trace_onboarding_seen',
+  FIRST_STEPS_STATE: '@trace_first_steps_state',
 };
 
 export const DEFAULT_AUTO_BACKUP_INTERVAL_DAYS = 7;
@@ -145,6 +146,13 @@ export const loadSettings = async (): Promise<AppSettings> => {
     expenseCutoffDay = new Date(loaded.expenseCutoffDate).getDate();
   }
   return { ...DEFAULT_SETTINGS, ...rest, expenseCutoffDay: expenseCutoffDay ?? DEFAULT_SETTINGS.expenseCutoffDay };
+};
+
+export type FirstStepsState = 'open' | 'collapsed' | 'closed';
+export const saveFirstStepsState = (v: FirstStepsState) => saveDataQuietly(KEYS.FIRST_STEPS_STATE, v);
+export const loadFirstStepsState = async (): Promise<FirstStepsState> => {
+  const stored = await loadData<unknown>(KEYS.FIRST_STEPS_STATE, 'open');
+  return stored === 'collapsed' || stored === 'closed' ? stored : 'open';
 };
 
 export const saveOnboardingSeen = () => saveDataQuietly(KEYS.ONBOARDING_SEEN, true);

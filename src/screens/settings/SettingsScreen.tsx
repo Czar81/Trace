@@ -9,6 +9,7 @@ import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import CreditCard from 'lucide-react-native/icons/credit-card';
 import Tag from 'lucide-react-native/icons/tag';
+import BookOpen from 'lucide-react-native/icons/book-open';
 import Palette from 'lucide-react-native/icons/palette';
 import Settings2 from 'lucide-react-native/icons/settings-2';
 import Wallet from 'lucide-react-native/icons/wallet';
@@ -126,6 +127,21 @@ export const SettingsScreen = ({ navigation }: Props) => {
             </View>
           </View>
         </View>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('Onboarding')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <BookOpen color={colors.white} size={18} />
+          </View>
+          <View style={styles.menuTextWrapper}>
+            <Text style={styles.menuTitle}>{t('settings.tutorial')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.tutorialSubtitle')}</Text>
+          </View>
+          <ChevronRight color={colors.secondaryText} size={20} />
+        </TouchableOpacity>
 
         <SettingsSectionHeader icon={<Wallet color={colors.secondaryText} size={14} />} title={t(sectionTitleKey('finance'))} />
 
