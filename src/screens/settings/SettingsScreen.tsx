@@ -9,11 +9,9 @@ import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import CreditCard from 'lucide-react-native/icons/credit-card';
 import Tag from 'lucide-react-native/icons/tag';
-import TrendingDown from 'lucide-react-native/icons/trending-down';
 import Palette from 'lucide-react-native/icons/palette';
 import Settings2 from 'lucide-react-native/icons/settings-2';
 import Wallet from 'lucide-react-native/icons/wallet';
-import Wrench from 'lucide-react-native/icons/wrench';
 import Bell from 'lucide-react-native/icons/bell';
 import Shield from 'lucide-react-native/icons/shield';
 import Database from 'lucide-react-native/icons/database';
@@ -196,23 +194,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
           <View style={styles.menuTextWrapper}>
             <Text style={styles.menuTitle}>{t('settings.paymentMethods')}</Text>
             <Text style={styles.menuSubtitle}>{t('settings.paymentMethodsSubtitle')}</Text>
-          </View>
-          <ChevronRight color={colors.secondaryText} size={20} />
-        </TouchableOpacity>
-
-        <SettingsSectionHeader icon={<Wrench color={colors.secondaryText} size={14} />} title={t(sectionTitleKey('tools'))} />
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('DebtPayoffPlan')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.menuIconWrapper}>
-            <TrendingDown color={colors.white} size={18} />
-          </View>
-          <View style={styles.menuTextWrapper}>
-            <Text style={styles.menuTitle}>{t('settings.debtPayoff')}</Text>
-            <Text style={styles.menuSubtitle}>{t('settings.debtPayoffSubtitle')}</Text>
           </View>
           <ChevronRight color={colors.secondaryText} size={20} />
         </TouchableOpacity>

@@ -15,7 +15,6 @@ import { CreateEnvelopeScreen } from './src/screens/envelopes/CreateEnvelopeScre
 import { CreateTransactionScreen } from './src/screens/transactions/CreateTransactionScreen';
 import { CreateTransferScreen } from './src/screens/transactions/CreateTransferScreen';
 import { AssignIncomeScreen } from './src/screens/envelopes/AssignIncomeScreen';
-import { DebtPayoffPlanScreen } from './src/screens/envelopes/DebtPayoffPlanScreen';
 import { ImportBankCsvScreen } from './src/screens/transactions/ImportBankCsvScreen';
 import { SettingsScreen } from './src/screens/settings/SettingsScreen';
 import { PaymentMethodsSettingsScreen } from './src/screens/settings/PaymentMethodsSettingsScreen';
@@ -86,7 +85,6 @@ function ThemedNavigator() {
           <Stack.Screen name="CreateTransaction" component={CreateTransactionScreen} options={{ animation: 'fade_from_bottom' }} />
           <Stack.Screen name="CreateTransfer" component={CreateTransferScreen} options={{ animation: 'fade_from_bottom' }} />
           <Stack.Screen name="AssignIncome" component={AssignIncomeScreen} options={{ animation: 'fade_from_bottom' }} />
-          <Stack.Screen name="DebtPayoffPlan" component={DebtPayoffPlanScreen} />
           <Stack.Screen name="ImportBankCsv" component={ImportBankCsvScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="Onboarding" component={OnboardingRoute} options={{ animation: 'fade_from_bottom' }} />

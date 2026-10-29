@@ -9,8 +9,8 @@ describe('SETTINGS_SECTIONS', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('has the six grouped sections in order', () => {
-    expect(SETTINGS_SECTIONS.map(s => s.id)).toEqual(['general', 'finance', 'tools', 'alerts', 'security', 'data']);
+  it('has the five grouped sections in order', () => {
+    expect(SETTINGS_SECTIONS.map(s => s.id)).toEqual(['general', 'finance', 'alerts', 'security', 'data']);
   });
 
   it('keeps automatic backups behind the single sub-screen', () => {

@@ -13,7 +13,7 @@
 ### Envelopes
 - **Spending envelopes**: set a budget per period and see what is left, with optional alerts at 80% and 100% usage.
 - **Savings envelopes**: set a goal, optionally with a deadline, and track progress.
-- **Debt envelopes**: track what you owe and generate a payoff plan.
+- **Debt envelopes**: track what you owe.
 - **Unlimited mode**: envelopes with no limit, just to track money flows.
 - **Transfers** between envelopes and **income distribution** into savings envelopes.
 - **Customization**: your own photos or vector icons for each envelope, light/dark themes, drag-to-reorder.

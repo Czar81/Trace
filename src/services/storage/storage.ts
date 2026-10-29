@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SavedDebtPlan, Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings, RecurringTransactionTemplate } from '../../types';
+import { Envelope, Transaction, PaymentMethod, TransactionCategory, AppSettings, RecurringTransactionTemplate } from '../../types';
 import { DEFAULT_THEME_ID } from '../../theme/colors';
 import { LanguagePreference, DEFAULT_LANGUAGE_PREFERENCE, isLanguagePreference, translateActive } from '../../i18n';
 import { ReportLayoutItem, parseReportLayout } from '../../domain/reports/reports';
@@ -19,7 +19,6 @@ const KEYS = {
   AUTO_BACKUP_LAST_ERROR: '@trace_auto_backup_last_error',
   AUTO_BACKUP_FOLDER_URI: '@trace_auto_backup_folder_uri',
   LANGUAGE: '@trace_language',
-  DEBT_PLANS: '@trace_debt_plans',
   ONBOARDING_SEEN: '@trace_onboarding_seen',
 };
 
@@ -158,8 +157,6 @@ export const loadOnboardingSeen = async (): Promise<boolean | null> => {
   }
 };
 
-export const saveDebtPlans = (data: SavedDebtPlan[]) => saveData(KEYS.DEBT_PLANS, data);
-export const loadDebtPlans = () => loadData<SavedDebtPlan[]>(KEYS.DEBT_PLANS, []);
 
 export const saveReportLayout = (data: ReportLayoutItem[]) => saveDataQuietly(KEYS.REPORT_LAYOUT, data);
 export const loadReportLayout = async (): Promise<ReportLayoutItem[]> => {
