@@ -24,6 +24,7 @@ import { ReportsScreen } from './src/screens/reports/ReportsScreen';
 import { SearchTransactionsScreen } from './src/screens/transactions/SearchTransactionsScreen';
 import { RecurringTransactionsScreen } from './src/screens/transactions/RecurringTransactionsScreen';
 import { CreateRecurringTransactionScreen } from './src/screens/transactions/CreateRecurringTransactionScreen';
+import { BackupSettingsScreen } from './src/screens/settings/BackupSettingsScreen';
 import { AppearanceSettingsScreen } from './src/screens/settings/AppearanceSettingsScreen';
 import { AppLockGate } from './src/components/layout/AppLockGate';
 import { RootStackParamList } from './src/navigation/types';
@@ -49,6 +50,7 @@ function ThemedNavigator() {
           <Stack.Screen name="AppearanceSettings" component={AppearanceSettingsScreen} />
           <Stack.Screen name="PaymentMethodsSettings" component={PaymentMethodsSettingsScreen} />
           <Stack.Screen name="CategoriesSettings" component={CategoriesSettingsScreen} />
+          <Stack.Screen name="BackupSettings" component={BackupSettingsScreen} />
           <Stack.Screen name="Reports" component={ReportsScreen} />
           <Stack.Screen name="Search" component={SearchTransactionsScreen} />
           <Stack.Screen name="Recurring" component={RecurringTransactionsScreen} />
