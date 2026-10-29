@@ -52,7 +52,7 @@ The system SHALL NOT count a transfer as an expense or as income in any report, 
 A transfer's effect on an envelope's balance SHALL NOT be filtered by the expense-cutoff-period setting; it always applies to the envelope's current balance regardless of the transfer's date relative to the cutoff.
 
 #### Scenario: Cutoff enabled and a transfer is dated before the current cutoff period start
-- **WHEN** expense cutoff is enabled and a transfer's date falls before the current cutoff period's start
+- **WHEN** a transfer's date falls before the current cutoff period's start
 - **THEN** the transfer still affects both envelopes' current balances (it is not excluded the way a pre-cutoff expense would be)
 
 ### Requirement: Transfer entry point from an envelope's detail screen

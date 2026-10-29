@@ -4,7 +4,7 @@
 TBD - created by archiving change fix-expense-cutoff-period. Update Purpose after archive.
 ## Requirements
 ### Requirement: Gasto envelope balance only counts expenses from the current cutoff period
-When `settings.expenseCutoffEnabled` is true and `settings.expenseCutoffDay` is set, the system SHALL exclude a `gasto` envelope's expense transactions dated before the start of the current billing period (the most recent date on which the day-of-month equals `expenseCutoffDay`, at or before today) from that envelope's computed balance. This filtering SHALL apply only to `gasto` envelopes; `ahorro` and `deuda` envelopes are never subject to it, regardless of cutoff settings.
+The monthly cutoff is always active (it cannot be turned off; `settings.expenseCutoffDay` defaults to 1). The system SHALL exclude a `gasto` envelope's expense transactions dated before the start of the current billing period (the most recent date on which the day-of-month equals `expenseCutoffDay`, at or before today) from that envelope's computed balance. This filtering SHALL apply only to `gasto` envelopes; `ahorro` and `deuda` envelopes are never subject to it, regardless of cutoff settings.
 
 #### Scenario: Expense from before this period's cutoff day is excluded
 - **WHEN** `expenseCutoffDay` is 15, today is any date in the current period (on/after day 15 of this month, or before day 15 meaning the period started on day 15 of last month), and a `gasto` envelope has an expense transaction dated before that period's start date
@@ -22,9 +22,9 @@ When `settings.expenseCutoffEnabled` is true and `settings.expenseCutoffDay` is 
 - **WHEN** `expenseCutoffDay` is 31 and the target month for the period start has fewer than 31 days (e.g. February)
 - **THEN** the period SHALL start on that month's last day, not roll over into the next month
 
-#### Scenario: Cutoff disabled or unset leaves balance unaffected
-- **WHEN** `expenseCutoffEnabled` is false, or `expenseCutoffDay` is null
-- **THEN** all non-archived expense transactions for the envelope SHALL be counted regardless of date, as before this change
+#### Scenario: Default cutoff day is the 1st
+- **WHEN** no cutoff day has been chosen (new install, old settings, or a backup without one)
+- **THEN** `expenseCutoffDay` is 1 and a `gasto` envelope only counts expenses from the current calendar month
 
 #### Scenario: Savings envelopes are unaffected
 - **WHEN** an envelope's type is `ahorro`

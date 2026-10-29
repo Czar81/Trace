@@ -34,7 +34,7 @@ export function useTransactionActions({ data, runExclusive, commit }: Store) {
     if (!envelope || envelope.type !== 'gasto' || envelope.isUnlimited || !envelope.limit) return;
 
     const spent = (txns: Transaction[]) =>
-      -calculateEnvelopeBalance(envelopeId, txns, envs, s.expenseCutoffEnabled, s.expenseCutoffDay) / envelope.limit;
+      -calculateEnvelopeBalance(envelopeId, txns, envs, s.expenseCutoffDay) / envelope.limit;
     await notifyBudgetThreshold(envelope, spent(beforeTxns), spent(afterTxns));
   }, [data]);
 

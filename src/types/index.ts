@@ -87,8 +87,7 @@ export interface AppSettings {
   defaultCurrency: Currency;
   /** Requires the device's fingerprint/face/PIN to open the app. */
   appLockEnabled?: boolean;
-  expenseCutoffEnabled: boolean;
-  expenseCutoffDay: number | null;
+  expenseCutoffDay: number;
   budgetAlertsEnabled: boolean;
   billRemindersEnabled: boolean;
   billReminderLeadDays: number;

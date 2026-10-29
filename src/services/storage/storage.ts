@@ -26,8 +26,7 @@ export const DEFAULT_AUTO_BACKUP_INTERVAL_DAYS = 7;
 
 export const DEFAULT_SETTINGS: AppSettings = {
   defaultCurrency: 'CRC',
-  expenseCutoffEnabled: false,
-  expenseCutoffDay: null,
+  expenseCutoffDay: 1,
   budgetAlertsEnabled: false,
   billRemindersEnabled: false,
   billReminderLeadDays: 2,
@@ -139,11 +138,13 @@ export const loadSettings = async (): Promise<AppSettings> => {
   const loaded = await loadCriticalData<Partial<AppSettings> & { expenseCutoffDate?: string; exchangeRates?: unknown; autoExchangeRates?: unknown; exchangeRatesUpdatedAt?: unknown }>(KEYS.SETTINGS, DEFAULT_SETTINGS);
   // Exchange rates were removed; drop what older versions stored.
   const { exchangeRates: _rates, autoExchangeRates: _auto, exchangeRatesUpdatedAt: _ratesAt, ...current } = loaded;
-  const mergedSettings = { ...DEFAULT_SETTINGS, ...current };
-  if (loaded.expenseCutoffDate && mergedSettings.expenseCutoffDay == null) {
-    mergedSettings.expenseCutoffDay = new Date(loaded.expenseCutoffDate).getDate();
+  // The monthly cutoff is always on; the on/off flag from older versions is dropped.
+  const { expenseCutoffEnabled: _cutoffEnabled, expenseCutoffDay: storedDay, ...rest } = current as typeof current & { expenseCutoffEnabled?: unknown };
+  let expenseCutoffDay = typeof storedDay === 'number' && storedDay >= 1 && storedDay <= 31 ? storedDay : null;
+  if (expenseCutoffDay == null && loaded.expenseCutoffDate) {
+    expenseCutoffDay = new Date(loaded.expenseCutoffDate).getDate();
   }
-  return mergedSettings;
+  return { ...DEFAULT_SETTINGS, ...rest, expenseCutoffDay: expenseCutoffDay ?? DEFAULT_SETTINGS.expenseCutoffDay };
 };
 
 export const saveOnboardingSeen = () => saveDataQuietly(KEYS.ONBOARDING_SEEN, true);

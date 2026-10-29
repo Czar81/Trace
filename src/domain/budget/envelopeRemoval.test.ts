@@ -26,9 +26,9 @@ describe('removeEnvelopeReferences', () => {
   ];
 
   it('leaves the remaining envelopes balances unchanged when deleting a savings envelope', () => {
-    const before = computeEnvelopeBalances(transactions, envelopes, false, null);
+    const before = computeEnvelopeBalances(transactions, envelopes, 1, new Date(2026, 0, 15));
     const result = removeEnvelopeReferences('s', transactions, []);
-    const after = computeEnvelopeBalances(result.transactions, envelopes, false, null);
+    const after = computeEnvelopeBalances(result.transactions, envelopes, 1, new Date(2026, 0, 15));
 
     expect(after.get('g')).toBe(before.get('g'));
     expect(after.get('x')).toBe(before.get('x'));
@@ -37,9 +37,9 @@ describe('removeEnvelopeReferences', () => {
   });
 
   it('moves an expense funded from savings onto the savings envelope when its own envelope is deleted', () => {
-    const before = computeEnvelopeBalances(transactions, envelopes, false, null);
+    const before = computeEnvelopeBalances(transactions, envelopes, 1, new Date(2026, 0, 15));
     const result = removeEnvelopeReferences('g', transactions, []);
-    const after = computeEnvelopeBalances(result.transactions, envelopes, false, null);
+    const after = computeEnvelopeBalances(result.transactions, envelopes, 1, new Date(2026, 0, 15));
 
     expect(after.get('s')).toBe(before.get('s'));
     expect(after.get('x')).toBe(before.get('x'));

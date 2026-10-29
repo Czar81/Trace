@@ -23,23 +23,20 @@ export function getCutoffPeriodStart(now: Date, cutoffDay: number): Date {
 export function computeEnvelopeBalances(
   transactions: Transaction[],
   envelopes: Envelope[],
-  expenseCutoffEnabled: boolean,
-  expenseCutoffDay: number | null,
+  expenseCutoffDay: number,
   now: Date = new Date()
 ): Map<string, number> {
   const map = new Map<string, number>();
   const envelopeById = new Map(envelopes.map(e => [e.id, e]));
-  const cutoffPeriodStart = expenseCutoffEnabled && expenseCutoffDay
-    ? getCutoffPeriodStart(now, expenseCutoffDay)
-    : null;
+  const cutoffPeriodStart = getCutoffPeriodStart(now, expenseCutoffDay);
 
   for (const t of transactions) {
     if (t.isArchived) continue;
 
     if (t.envelopeId) {
       // Explicit 'gasto' check — 'ahorro' and 'deuda' envelopes are never cutoff-filtered.
-      const hasCutoff = envelopeById.get(t.envelopeId)?.type === 'gasto' && cutoffPeriodStart != null;
-      const skip = hasCutoff && t.type === 'expense' && new Date(t.date) < (cutoffPeriodStart as Date);
+      const hasCutoff = envelopeById.get(t.envelopeId)?.type === 'gasto';
+      const skip = hasCutoff && t.type === 'expense' && new Date(t.date) < cutoffPeriodStart;
       if (!skip) {
         const delta = t.type === 'income' ? t.amount : -t.amount;
         map.set(t.envelopeId, (map.get(t.envelopeId) ?? 0) + delta);
@@ -64,10 +61,9 @@ export function calculateEnvelopeBalance(
   envelopeId: string,
   transactions: Transaction[],
   envelopes: Envelope[],
-  expenseCutoffEnabled: boolean,
-  expenseCutoffDay: number | null
+  expenseCutoffDay: number
 ): number {
-  return computeEnvelopeBalances(transactions, envelopes, expenseCutoffEnabled, expenseCutoffDay).get(envelopeId) ?? 0;
+  return computeEnvelopeBalances(transactions, envelopes, expenseCutoffDay).get(envelopeId) ?? 0;
 }
 
 /** Rounds to cents, so sums of decimal amounts don't show float noise (0.1 + 0.2). */

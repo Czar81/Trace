@@ -248,7 +248,7 @@ export async function scheduleDebtReminders(
 
     const amountDue = envelope.minimumPayment && envelope.minimumPayment > 0
       ? envelope.minimumPayment
-      : Math.max(0, envelope.limit - calculateEnvelopeBalance(envelope.id, transactionsList, envelopesList, false, null));
+      : Math.max(0, envelope.limit - calculateEnvelopeBalance(envelope.id, transactionsList, envelopesList, 1));
     const amountLabel = formatCurrency(amountDue, envelope.currency);
 
     try {

@@ -67,13 +67,6 @@ export const SettingsScreen = ({ navigation }: Props) => {
     setShowInfoDialog(true);
   };
 
-  const handleCutoffToggle = (value: boolean) => {
-    updateSettings({
-      expenseCutoffEnabled: value,
-      expenseCutoffDay: value ? (settings.expenseCutoffDay ?? 1) : settings.expenseCutoffDay,
-    });
-  };
-
   // Saved values from before the chips (e.g. 4 or 6 days) stay selectable.
   const leadDaysOptions = LEAD_DAYS_OPTIONS.includes(settings.billReminderLeadDays)
     ? LEAD_DAYS_OPTIONS
@@ -140,32 +133,13 @@ export const SettingsScreen = ({ navigation }: Props) => {
           <View style={styles.reminderRow}>
             <View style={styles.toggleTextWrapper}>
               <Text style={styles.menuTitle}>{t('settings.cutoff')}</Text>
-              <Text style={styles.menuSubtitle}>
-                {settings.expenseCutoffEnabled
-                  ? t('settings.cutoffOn', { day: settings.expenseCutoffDay ?? 1 })
-                  : t('settings.cutoffOff')}
-              </Text>
+              <Text style={styles.menuSubtitle}>{t('settings.cutoffOn', { day: settings.expenseCutoffDay })}</Text>
             </View>
-            <Switch
-              value={settings.expenseCutoffEnabled}
-              onValueChange={handleCutoffToggle}
-              trackColor={{ false: colors.cardBg, true: colors.green }}
-              thumbColor={settings.expenseCutoffEnabled ? colors.green : colors.white}
-            />
+            <TouchableOpacity style={styles.dayPill} onPress={() => setShowCutoffSheet(true)} activeOpacity={0.8}>
+              <Text style={styles.stepperValue}>{t('settings.dayN', { day: settings.expenseCutoffDay })}</Text>
+              <ChevronDown color={colors.secondaryText} size={16} />
+            </TouchableOpacity>
           </View>
-
-          {settings.expenseCutoffEnabled && (
-            <>
-              <View style={styles.reminderDivider} />
-              <View style={styles.reminderRow}>
-                <Text style={styles.leadDaysLabel}>{t('settings.cutoffDay')}</Text>
-                <TouchableOpacity style={styles.dayPill} onPress={() => setShowCutoffSheet(true)} activeOpacity={0.8}>
-                  <Text style={styles.stepperValue}>{t('settings.dayN', { day: settings.expenseCutoffDay ?? 1 })}</Text>
-                  <ChevronDown color={colors.secondaryText} size={16} />
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
         </View>
 
         <TouchableOpacity
@@ -290,7 +264,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
         visible={showCutoffSheet}
         title={t('settings.cutoffDay')}
         subtitle={t('settings.cutoffEveryMonth')}
-        value={settings.expenseCutoffDay ?? 1}
+        value={settings.expenseCutoffDay}
         onSelect={day => updateSettings({ expenseCutoffDay: day })}
         onClose={() => setShowCutoffSheet(false)}
       />

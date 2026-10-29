@@ -77,7 +77,6 @@ export const es = {
   'settings.cutoffSection': 'Corte de gastos',
   'settings.cutoff': 'Corte mensual',
   'settings.cutoffOn': 'Ignora gastos previos al día {day} de cada mes',
-  'settings.cutoffOff': 'Ignora gastos previos al día de corte en sobres de gasto',
   'settings.dayN': 'Día {day}',
   'settings.cutoffEveryMonth': 'Cada mes',
   'settings.cutoffDay': 'Día de corte',

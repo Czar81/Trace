@@ -76,7 +76,6 @@ export const en: Record<TranslationKey, string> = {
   'settings.cutoffSection': 'Spending cutoff',
   'settings.cutoff': 'Monthly cutoff',
   'settings.cutoffOn': 'Ignores expenses before day {day} of each month',
-  'settings.cutoffOff': 'Ignores expenses before the cutoff day in spending envelopes',
   'settings.dayN': 'Day {day}',
   'settings.cutoffEveryMonth': 'Every month',
   'settings.cutoffDay': 'Cutoff day',

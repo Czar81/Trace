@@ -186,10 +186,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // ─── Balance computation ───────────────────────────────────────────────────
   /** Envelope id -> balance, computed once per change (and per day) so lookups are O(1). */
   const envelopeBalanceMap = useMemo(
-    () => computeEnvelopeBalances(transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay),
+    () => computeEnvelopeBalances(transactions, envelopes, settings.expenseCutoffDay),
     // `today` recomputes the cutoff window when the date changes while the app is open.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [transactions, envelopes, settings.expenseCutoffEnabled, settings.expenseCutoffDay, today]
+    [transactions, envelopes, settings.expenseCutoffDay, today]
   );
 
   const getEnvelopeBalance = useCallback((envelopeId: string): number => {

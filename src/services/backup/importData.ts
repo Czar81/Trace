@@ -84,19 +84,18 @@ const sanitizeSettings = (raw: any): AppSettings => {
   const dayOrNull = (v: unknown) => (isFiniteNumber(v) && v >= 1 && v <= 31 ? Math.round(v) : null);
   const bool = (v: unknown, fallback: boolean) => (typeof v === 'boolean' ? v : fallback);
 
-  let expenseCutoffDay = s.expenseCutoffDay === null ? null : dayOrNull(s.expenseCutoffDay) ?? DEFAULT_SETTINGS.expenseCutoffDay;
+  let expenseCutoffDay = dayOrNull(s.expenseCutoffDay);
   if (s.expenseCutoffDate && expenseCutoffDay == null && isValidDate(s.expenseCutoffDate)) {
     expenseCutoffDay = new Date(s.expenseCutoffDate).getDate();
   }
 
   // Rates from older backups (conversion was removed) are dropped.
-  const { expenseCutoffDate: _legacyCutoffDate, exchangeRates: _legacyRates, autoExchangeRates: _legacyAuto, exchangeRatesUpdatedAt: _legacyRatesAt, ...rest } = s;
+  const { expenseCutoffDate: _legacyCutoffDate, expenseCutoffEnabled: _legacyCutoffEnabled, exchangeRates: _legacyRates, autoExchangeRates: _legacyAuto, exchangeRatesUpdatedAt: _legacyRatesAt, ...rest } = s;
   return {
     ...DEFAULT_SETTINGS,
     ...rest,
     defaultCurrency: isCurrencyCode(s.defaultCurrency) ? s.defaultCurrency : DEFAULT_SETTINGS.defaultCurrency,
-    expenseCutoffEnabled: bool(s.expenseCutoffEnabled, DEFAULT_SETTINGS.expenseCutoffEnabled),
-    expenseCutoffDay,
+    expenseCutoffDay: expenseCutoffDay ?? DEFAULT_SETTINGS.expenseCutoffDay,
     budgetAlertsEnabled: bool(s.budgetAlertsEnabled, DEFAULT_SETTINGS.budgetAlertsEnabled),
     billRemindersEnabled: bool(s.billRemindersEnabled, DEFAULT_SETTINGS.billRemindersEnabled),
     billReminderLeadDays: isFiniteNumber(s.billReminderLeadDays) && s.billReminderLeadDays >= 0

@@ -194,7 +194,7 @@ describe('getEnvelopeBalance (via useAppData)', () => {
     const cutoffDay = now.getDate();
 
     await act(async () => {
-      await result.current.updateSettings({ expenseCutoffEnabled: true, expenseCutoffDay: cutoffDay });
+      await result.current.updateSettings({ expenseCutoffDay: cutoffDay });
     });
 
     await act(async () => {
@@ -231,7 +231,7 @@ describe('getEnvelopeBalance (via useAppData)', () => {
     const { result } = await renderHook(() => useAppData(), { wrapper });
 
     await act(async () => {
-      await result.current.updateSettings({ expenseCutoffEnabled: true, expenseCutoffDay: new Date().getDate() });
+      await result.current.updateSettings({ expenseCutoffDay: new Date().getDate() });
     });
 
     await act(async () => {
