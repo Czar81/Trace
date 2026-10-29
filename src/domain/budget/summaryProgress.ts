@@ -48,3 +48,16 @@ export function daysUntilNextCutoff(now: Date): number {
   // Round to absorb the DST hour when the two dates sit on different offsets.
   return Math.round((next.getTime() - today.getTime()) / 86_400_000);
 }
+
+/** Net spent in a currency across every gasto envelope, limit or not; shown when none has a limit to measure against. */
+export function computeTotalSpent(
+  currency: Currency,
+  envelopes: Envelope[],
+  getBalance: (envelopeId: string) => number,
+): number {
+  let spent = 0;
+  for (const env of envelopes) {
+    if (env.type === 'gasto' && env.currency === currency) spent -= getBalance(env.id);
+  }
+  return Math.max(0, roundMoney(spent));
+}

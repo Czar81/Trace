@@ -142,6 +142,9 @@ export const es = {
   'main.progressMissing': 'faltan {amount}',
   'main.progressDaysLeft': 'quedan {n} días',
   'main.progressDayLeft': 'queda 1 día',
+  'main.hintExpenses': 'Pon un límite a tus sobres para ver tu presupuesto',
+  'main.hintSavings': 'Define la meta de tus sobres de ahorro para ver el progreso',
+  'main.hintDebts': 'Define el monto de tus deudas para ver cuánto llevas pagado',
   // components
   'common.confirm': 'Confirmar',
   'common.select': 'Seleccionar...',

@@ -7,9 +7,15 @@ import { ThemeColors } from '../../theme/colors';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 import { TranslationKey } from '../../i18n';
 import { formatCurrency } from '../../domain/shared/formatCurrency';
-import { computeSummaryProgress, daysUntilNextCutoff } from '../../domain/budget/summaryProgress';
+import { computeSummaryProgress, computeTotalSpent, daysUntilNextCutoff } from '../../domain/budget/summaryProgress';
 
 const WARN_COLOR = '#E3B341';
+
+const HINT_KEYS: Record<EnvelopeType, TranslationKey> = {
+  gasto: 'main.hintExpenses',
+  ahorro: 'main.hintSavings',
+  deuda: 'main.hintDebts',
+};
 
 const SUB_KEYS: Record<EnvelopeType, TranslationKey> = {
   gasto: 'main.progressSpentSub',
@@ -35,6 +41,7 @@ export const SummaryCard: React.FC<Props> = ({ type, label, totals, envelopes, g
   const entry = totals.find(x => x.currency === picked[type]) ?? totals[0];
   const progress = computeSummaryProgress(type, entry.currency, envelopes, getEnvelopeBalance);
 
+  const hasEnvelopes = envelopes.some(e => e.type === type);
   const pct = progress ? Math.round(progress.percent) : 0;
   const barColor = type === 'gasto' && progress
     ? (progress.percent > 90 ? colors.red : progress.percent > 75 ? WARN_COLOR : colors.green)
@@ -60,6 +67,15 @@ export const SummaryCard: React.FC<Props> = ({ type, label, totals, envelopes, g
               {money(progress.done)} <Text style={styles.bigSmall}>{t('main.progressOf', { total: money(progress.total) })}</Text>
             </Text>
             <Text style={styles.sub}>{t(SUB_KEYS[type])}</Text>
+          </View>
+        ) : hasEnvelopes ? (
+          <View style={styles.left}>
+            {type === 'gasto' && (
+              <Text style={styles.big} numberOfLines={1} adjustsFontSizeToFit>
+                {money(computeTotalSpent(entry.currency, envelopes, getEnvelopeBalance))} <Text style={styles.bigSmall}>{t('main.progressSpentSub')}</Text>
+              </Text>
+            )}
+            <Text style={styles.sub}>{t(HINT_KEYS[type])}</Text>
           </View>
         ) : <View style={styles.left} />}
         <View style={styles.right}>

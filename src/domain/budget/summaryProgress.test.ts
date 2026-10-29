@@ -1,5 +1,5 @@
 import { Envelope } from '../../types';
-import { computeSummaryProgress, daysUntilNextCutoff } from './summaryProgress';
+import { computeSummaryProgress, computeTotalSpent, daysUntilNextCutoff } from './summaryProgress';
 
 const env = (over: Partial<Envelope>): Envelope => ({
   id: 'e', name: 'E', type: 'gasto', currency: 'CRC', limit: 1000, isUnlimited: false, icon: 'box', color: '#fff', ...over,
@@ -68,5 +68,18 @@ describe('daysUntilNextCutoff', () => {
 
   it('rolls over the year', () => {
     expect(daysUntilNextCutoff(new Date(2026, 11, 30))).toBe(2);
+  });
+});
+
+describe('computeTotalSpent', () => {
+  it('sums spending of every gasto envelope in the currency, limit or not', () => {
+    Object.assign(balances, { a: -100, u: -50, o: -999 });
+    const envs = [env({ id: 'a', limit: 0 }), env({ id: 'u', isUnlimited: true, limit: 0 }), env({ id: 'o', currency: 'USD' })];
+    expect(computeTotalSpent('CRC', envs, bal)).toBe(150);
+  });
+
+  it('never goes below zero', () => {
+    Object.assign(balances, { a: 300 });
+    expect(computeTotalSpent('CRC', [env({ id: 'a' })], bal)).toBe(0);
   });
 });

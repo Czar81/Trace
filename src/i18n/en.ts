@@ -141,6 +141,9 @@ export const en: Record<TranslationKey, string> = {
   'main.progressMissing': '{amount} to go',
   'main.progressDaysLeft': '{n} days left',
   'main.progressDayLeft': '1 day left',
+  'main.hintExpenses': 'Set a limit on your envelopes to see your budget',
+  'main.hintSavings': 'Set a goal on your savings envelopes to see progress',
+  'main.hintDebts': 'Set the amount of your debts to see how much you have paid',
   // components
   'common.confirm': 'Confirm',
   'common.select': 'Select...',
