@@ -50,6 +50,8 @@ interface AppContextType {
   addEnvelope: (envelope: Omit<Envelope, 'id'>) => Promise<void>;
   updateEnvelope: (id: string, updates: Partial<Omit<Envelope, 'id'>>) => Promise<void>;
   deleteEnvelope: (id: string) => Promise<void>;
+  /** Saves a new display order for the envelopes of one type (the stored array order is the display order). */
+  reorderEnvelopes: (type: EnvelopeType, orderedIds: string[]) => Promise<void>;
   resetEnvelope: (envelopeId: string) => Promise<void>;
   resetAllEnvelopes: () => Promise<void>;
 

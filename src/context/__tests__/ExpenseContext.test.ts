@@ -5,6 +5,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppProvider, useAppData, getCutoffPeriodStart, accrueDebtInterest } from '../ExpenseContext';
 import { Envelope, Transaction } from '../../types';
 import { DEFAULT_INCOME_CATEGORIES } from '../../services/storage/storage';
@@ -110,6 +111,23 @@ describe('getEnvelopeBalance (via useAppData)', () => {
     if (!found) throw new Error(`Envelope with name "${name}" not found`);
     return found.id;
   };
+
+  it('appends new envelopes at the end and persists a reordered list', async () => {
+    const { result } = await renderHook(() => useAppData(), { wrapper });
+
+    for (const name of ['Orden A', 'Orden B', 'Orden C']) {
+      await act(async () => { await result.current.addEnvelope(baseEnvelope({ name, type: 'gasto' })); });
+    }
+    const names = () => result.current.envelopes.filter(e => e.type === 'gasto').map(e => e.name);
+    expect(names()).toEqual(['Orden A', 'Orden B', 'Orden C']);
+
+    const ids = result.current.envelopes.map(e => e.id);
+    await act(async () => { await result.current.reorderEnvelopes('gasto', [ids[2], ids[0], ids[1]]); });
+    expect(names()).toEqual(['Orden C', 'Orden A', 'Orden B']);
+
+    const stored = JSON.parse((await AsyncStorage.getItem('@trace_envelopes')) as string);
+    expect(stored.map((e: Envelope) => e.name)).toEqual(['Orden C', 'Orden A', 'Orden B']);
+  });
 
   it('addTransactions saves every transaction with unique ids in one batch', async () => {
     const { result } = await renderHook(() => useAppData(), { wrapper });

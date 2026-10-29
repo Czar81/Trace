@@ -501,7 +501,7 @@ export const es = {
   'help.open': 'Ayuda',
   'help.close': 'Entendido',
   'help.main.title': 'Tus sobres',
-  'help.main.body': 'Un sobre agrupa el dinero de un propósito. En Gastos fijas un presupuesto, en Ahorros acumulas hacia una meta y en Deudas llevas lo que debes. Toca un sobre para ver y registrar movimientos, y usa el icono de monedas de arriba (Asignar ingreso) para repartir tus ingresos.',
+  'help.main.body': 'Un sobre agrupa el dinero de un propósito. En Gastos fijas un presupuesto, en Ahorros acumulas hacia una meta y en Deudas llevas lo que debes. Toca un sobre para ver y registrar movimientos, mantenlo presionado para arrastrarlo y cambiar el orden, y usa el icono de monedas de arriba (Asignar ingreso) para repartir tus ingresos.',
   'help.reports.title': 'Reportes',
   'help.reports.body': 'Aquí ves en qué gastas por categoría y por mes. Cambia el período arriba, y mantén presionada el asa de una sección para reordenarla.',
   'help.recurring.title': 'Recurrentes',

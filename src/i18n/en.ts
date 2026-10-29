@@ -500,7 +500,7 @@ export const en: Record<TranslationKey, string> = {
   'help.open': 'Help',
   'help.close': 'Got it',
   'help.main.title': 'Your envelopes',
-  'help.main.body': 'An envelope groups the money for one purpose. In Expenses you set a budget, in Savings you build up to a goal and in Debts you track what you owe. Tap an envelope to see and record activity, and use the coins icon at the top (Assign income) to split your income.',
+  'help.main.body': 'An envelope groups the money for one purpose. In Expenses you set a budget, in Savings you build up to a goal and in Debts you track what you owe. Tap an envelope to see and record activity, press and hold it to drag it into a new order, and use the coins icon at the top (Assign income) to split your income.',
   'help.reports.title': 'Reports',
   'help.reports.body': 'See where your money goes by category and month. Change the period at the top, and press and hold a section\'s handle to reorder it.',
   'help.recurring.title': 'Recurring',

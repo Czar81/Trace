@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Pressable, FlatList, Dimensions, Modal } from 'react-native';
 import Animated, {
-  FadeInDown, FadeOut, LinearTransition, interpolate, interpolateColor, Extrapolation,
+  FadeInDown, FadeOut, interpolate, interpolateColor, Extrapolation,
   useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withSpring, SharedValue,
 } from 'react-native-reanimated';
+import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
@@ -30,7 +31,7 @@ import { TranslationKey } from '../../i18n';
 import { SummaryCard } from '../../components/envelope/SummaryCard';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 import { MENU_ENTERING } from '../../components/feedback/menuMotion';
-import { hapticSelection } from '../../services/device/haptics';
+import { hapticLight, hapticSelection } from '../../services/device/haptics';
 
 const { width } = Dimensions.get('window');
 
@@ -60,12 +61,13 @@ interface EnvelopeCardProps {
   subtext: string;
   index: number;
   onPress: () => void;
+  onLongPress: () => void;
   formatAmount: (amount: number, currency: Currency) => string;
 }
 
-/** Fades/slides in on mount (staggered by list position), fades out on removal and squishes slightly on press. */
+/** Fades/slides in on mount (staggered by list position), fades out on removal and squishes slightly on press; long press lifts it to reorder. */
 const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
-  envelope, remaining, textColor, progress, progressColor, subtext, index, onPress, formatAmount,
+  envelope, remaining, textColor, progress, progressColor, subtext, index, onPress, onLongPress, formatAmount,
 }) => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -84,6 +86,8 @@ const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
       <Pressable
         style={styles.envelopeCard}
         onPress={onPress}
+        onLongPress={onLongPress}
+        delayLongPress={250}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
       >
@@ -123,10 +127,12 @@ export const MainScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { envelopes, getTotalsByType, getEnvelopeBalance, formatAmount, settings, resetAllEnvelopes, paymentMethods, categories, transactions } = useAppData();
+  const { envelopes, getTotalsByType, getEnvelopeBalance, formatAmount, settings, resetAllEnvelopes, reorderEnvelopes, paymentMethods, categories, transactions } = useAppData();
   const [activeTab, setActiveTab] = useState<EnvelopeType>('gasto');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
+  // The pager must not scroll sideways while an envelope is being dragged.
+  const [dragging, setDragging] = useState(false);
   const firstSteps = useFirstSteps();
   const { refresh: refreshFirstSteps } = firstSteps;
 
@@ -181,7 +187,7 @@ export const MainScreen = ({ navigation }: Props) => {
   const shownTotals = totals.length > 0 ? totals : [{ currency: settings.defaultCurrency, total: 0 }];
   const anyExceeded = shownTotals.some(entry => entry.total < 0);
 
-  const renderEnvelope = ({ item, index }: { item: Envelope; index: number }) => {
+  const renderEnvelope = ({ item, getIndex, drag }: RenderItemParams<Envelope>) => {
     const balance = getEnvelopeBalance(item.id);
     const type = item.type;
 
@@ -238,6 +244,7 @@ export const MainScreen = ({ navigation }: Props) => {
         : t('main.saved');
 
     return (
+      <ScaleDecorator activeScale={1.04}>
       <EnvelopeCard
         envelope={item}
         remaining={remaining}
@@ -245,10 +252,12 @@ export const MainScreen = ({ navigation }: Props) => {
         progress={progress}
         progressColor={progressColor}
         subtext={subtext}
-        index={index}
+        index={getIndex() ?? 0}
         onPress={() => navigation.navigate('EnvelopeDetail', { envelopeId: item.id })}
+        onLongPress={() => { hapticLight(); setDragging(true); drag(); }}
         formatAmount={formatAmount}
       />
+      </ScaleDecorator>
     );
   };
 
@@ -256,9 +265,13 @@ export const MainScreen = ({ navigation }: Props) => {
     const data = envelopes.filter(e => e.type === type);
     return (
       <View style={{ width, flex: 1 }}>
-        <Animated.FlatList
+        <DraggableFlatList
           data={data}
-          itemLayoutAnimation={LinearTransition.duration(220)}
+          onDragEnd={({ data: reordered }) => {
+            setDragging(false);
+            reorderEnvelopes(type, reordered.map(e => e.id));
+          }}
+          onRelease={() => setDragging(false)}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.list}
           ListHeaderComponent={firstSteps.state ? (
@@ -371,6 +384,7 @@ export const MainScreen = ({ navigation }: Props) => {
         data={TAB_TYPES}
         horizontal
         pagingEnabled
+        scrollEnabled={!dragging}
         showsHorizontalScrollIndicator={false}
         scrollEventThrottle={16}
         onScroll={handleScroll}
