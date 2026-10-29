@@ -3,5 +3,6 @@
   "compilerOptions": {
     "jsx": "react-native",
     "types": ["jest"]
-  }
+  },
+  "exclude": ["scripts", "node_modules"]
 }

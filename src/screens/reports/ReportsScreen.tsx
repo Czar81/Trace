@@ -4,7 +4,12 @@ import { NestableScrollContainer, NestableDraggableFlatList, ScaleDecorator, Ren
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
-import { ArrowLeft, Calendar, ChevronDown, ChevronUp, GripVertical, SlidersHorizontal } from 'lucide-react-native';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import Calendar from 'lucide-react-native/icons/calendar';
+import ChevronDown from 'lucide-react-native/icons/chevron-down';
+import ChevronUp from 'lucide-react-native/icons/chevron-up';
+import GripVertical from 'lucide-react-native/icons/grip-vertical';
+import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { RootStackParamList } from '../../navigation/types';
 import { EmptyState as SharedEmptyState } from '../../components/feedback/EmptyState';

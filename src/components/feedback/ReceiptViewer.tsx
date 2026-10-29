@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Modal, View, Image, Text, ScrollView, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X } from 'lucide-react-native';
+import X from 'lucide-react-native/icons/x';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { FONT_SIZE, SPACING } from '../../theme/tokens';

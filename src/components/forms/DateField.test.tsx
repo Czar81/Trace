@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { DateField } from './DateField';
 
-jest.mock('lucide-react-native', () => ({ Calendar: () => null }));
+jest.mock('lucide-react-native/icons/calendar', () => ({ __esModule: true, default: () => null }));
 jest.mock('../../context/LanguageContext', () => ({
   useTranslation: () => ({ locale: 'es-ES' }),
 }));

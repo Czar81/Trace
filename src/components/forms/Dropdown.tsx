@@ -3,7 +3,8 @@ import {
   View, Text, TouchableOpacity, Modal, SectionList,
   StyleSheet, SafeAreaView, TextInput,
 } from 'react-native';
-import { ChevronDown, Check } from 'lucide-react-native';
+import ChevronDown from 'lucide-react-native/icons/chevron-down';
+import Check from 'lucide-react-native/icons/check';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';

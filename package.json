@@ -7,7 +7,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test": "jest"
+    "test": "jest",
+    "bench": "node scripts/generate-test-backups.js benchmarks && jest --rootDir . --testMatch '**/scripts/*.bench.ts'",
+    "backups:test": "node scripts/generate-test-backups.js benchmarks"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

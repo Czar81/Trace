@@ -3,7 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, SectionList, Platf
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
-import { ArrowLeft, Search, SlidersHorizontal, X } from 'lucide-react-native';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import Search from 'lucide-react-native/icons/search';
+import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
+import X from 'lucide-react-native/icons/x';
 import { Dropdown } from '../../components/forms/Dropdown';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { DateField } from '../../components/forms/DateField';

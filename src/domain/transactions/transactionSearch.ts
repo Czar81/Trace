@@ -31,16 +31,26 @@ export const filterTransactions = (
     ? new Date(filters.dateTo.getFullYear(), filters.dateTo.getMonth(), filters.dateTo.getDate(), 23, 59, 59, 999)
     : undefined;
 
-  return transactions
-    .filter(t => !t.isArchived)
-    .filter(t => text === '' || t.description.toLowerCase().includes(text))
-    .filter(t => !filters.categoryId || t.categoryId === filters.categoryId)
-    .filter(t => !filters.paymentMethodId || t.paymentMethodId === filters.paymentMethodId)
-    .filter(t => !startOfDay || new Date(t.date) >= startOfDay)
-    .filter(t => !endOfDay || new Date(t.date) <= endOfDay)
-    .filter(t => filters.minAmount === undefined || t.amount >= filters.minAmount)
-    .filter(t => filters.maxAmount === undefined || t.amount <= filters.maxAmount)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const fromMs = startOfDay?.getTime();
+  const toMs = endOfDay?.getTime();
+
+  // Parse each date once; the sort below compares plain numbers instead of
+  // building Date objects on every comparison.
+  const matches: { t: Transaction; ms: number }[] = [];
+  for (const t of transactions) {
+    if (t.isArchived) continue;
+    if (text !== '' && !t.description.toLowerCase().includes(text)) continue;
+    if (filters.categoryId && t.categoryId !== filters.categoryId) continue;
+    if (filters.paymentMethodId && t.paymentMethodId !== filters.paymentMethodId) continue;
+    if (filters.minAmount !== undefined && t.amount < filters.minAmount) continue;
+    if (filters.maxAmount !== undefined && t.amount > filters.maxAmount) continue;
+    const ms = new Date(t.date).getTime();
+    if (fromMs !== undefined && !(ms >= fromMs)) continue;
+    if (toMs !== undefined && !(ms <= toMs)) continue;
+    matches.push({ t, ms });
+  }
+
+  return matches.sort((a, b) => b.ms - a.ms).map(m => m.t);
 };
 
 /** Whether any search text or filter is active (vs. the screen's initial empty state). */
