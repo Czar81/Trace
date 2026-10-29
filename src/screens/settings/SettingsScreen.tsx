@@ -18,7 +18,7 @@ import Bell from 'lucide-react-native/icons/bell';
 import Shield from 'lucide-react-native/icons/shield';
 import Database from 'lucide-react-native/icons/database';
 import DatabaseBackup from 'lucide-react-native/icons/database-backup';
-import HelpCircle from 'lucide-react-native/icons/circle-help';
+import HelpCircle from 'lucide-react-native/icons/circle-question-mark';
 import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
 import { CurrencySelector } from '../../components/forms/CurrencySelector';
 import { DayGridSheet } from '../../components/forms/DayGridSheet';

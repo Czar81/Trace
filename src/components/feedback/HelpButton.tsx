@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import HelpCircle from 'lucide-react-native/icons/circle-help';
+import HelpCircle from 'lucide-react-native/icons/circle-question-mark';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from '../../context/LanguageContext';
 import { ThemeColors } from '../../theme/colors';
