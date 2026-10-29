@@ -531,7 +531,6 @@ export const es = {
   'main.emptyExpenses': 'Aún no tienes sobres de gasto. Crea uno para ponerle un presupuesto, por ejemplo «Comida».',
   'main.emptySavings': 'Aún no tienes sobres de ahorro. Crea uno para juntar dinero hacia una meta.',
   'main.emptyDebts': 'Aún no tienes deudas registradas. Crea una para llevar el saldo.',
-  'recurring.emptyCta': 'Crear recurrente',
 } as const;
 
 export type TranslationKey = keyof typeof es;

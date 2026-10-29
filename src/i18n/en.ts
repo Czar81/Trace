@@ -530,5 +530,4 @@ export const en: Record<TranslationKey, string> = {
   'main.emptyExpenses': 'You have no expense envelopes yet. Create one to set a budget, for example "Food".',
   'main.emptySavings': 'You have no savings envelopes yet. Create one to save up toward a goal.',
   'main.emptyDebts': 'You have no debts yet. Create one to track the balance.',
-  'recurring.emptyCta': 'Create recurring',
 };

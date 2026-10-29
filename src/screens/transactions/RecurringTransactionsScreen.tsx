@@ -101,11 +101,7 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
         contentContainerStyle={styles.list}
         ListHeaderComponent={reminderCard}
         ListEmptyComponent={
-          <EmptyState
-            message={t('recurring.empty')}
-            ctaLabel={t('recurring.emptyCta')}
-            onPress={() => navigation.navigate('CreateRecurringTransaction', {})}
-          />
+          <EmptyState message={t('recurring.empty')} />
         }
         renderItem={({ item }) => {
           const envelope = envelopes.find(e => e.id === item.envelopeId);
