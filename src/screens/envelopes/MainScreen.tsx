@@ -4,7 +4,7 @@ import Animated, {
   FadeInDown, FadeOut, interpolate, interpolateColor, Extrapolation,
   useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withSpring, SharedValue,
 } from 'react-native-reanimated';
-import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
+import { NestableScrollContainer, NestableDraggableFlatList, ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
@@ -265,16 +265,9 @@ export const MainScreen = ({ navigation }: Props) => {
     const data = envelopes.filter(e => e.type === type);
     return (
       <View style={{ width, flex: 1 }}>
-        <DraggableFlatList
-          data={data}
-          onDragEnd={({ data: reordered }) => {
-            setDragging(false);
-            reorderEnvelopes(type, reordered.map(e => e.id));
-          }}
-          onRelease={() => setDragging(false)}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.list}
-          ListHeaderComponent={firstSteps.state ? (
+        {/* The header lives outside the draggable list: inside it, the list mis-measures item offsets and rows jump while dragging. */}
+        <NestableScrollContainer contentContainerStyle={styles.list}>
+          {firstSteps.state ? (
             <FirstStepsCard
               progress={firstSteps.progress}
               state={firstSteps.state}
@@ -282,13 +275,18 @@ export const MainScreen = ({ navigation }: Props) => {
               onStateChange={firstSteps.changeState}
             />
           ) : null}
-          ListEmptyComponent={
-            <EmptyState
-              message={t(EMPTY_MESSAGES[type])}
-            />
-          }
-          renderItem={renderEnvelope}
-        />
+          {data.length === 0 ? <EmptyState message={t(EMPTY_MESSAGES[type])} /> : null}
+          <NestableDraggableFlatList
+            data={data}
+            onDragEnd={({ data: reordered }) => {
+              setDragging(false);
+              reorderEnvelopes(type, reordered.map(e => e.id));
+            }}
+            onRelease={() => setDragging(false)}
+            keyExtractor={item => item.id}
+            renderItem={renderEnvelope}
+          />
+        </NestableScrollContainer>
       </View>
     );
   };
