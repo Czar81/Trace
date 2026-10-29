@@ -24,7 +24,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { TranslationKey } from '../../i18n';
-import { formatCurrency } from '../../domain/shared/formatCurrency';
+import { SummaryCard } from '../../components/envelope/SummaryCard';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 import { MENU_ENTERING } from '../../components/feedback/menuMotion';
 import { hapticSelection } from '../../services/device/haptics';
@@ -323,23 +323,20 @@ export const MainScreen = ({ navigation }: Props) => {
         ))}
       </View>
 
-      <View style={styles.summaryCard}>
-        <View style={styles.cardFlap} pointerEvents="none" />
-        <View style={styles.summaryValues}>
-          <Text style={styles.summaryLabel}>
-            {activeTab === 'gasto'
-              ? t(anyExceeded ? 'main.totalExceeded' : 'main.totalAvailable')
-              : activeTab === 'deuda'
-              ? t('main.totalToPay')
-              : t('main.totalSaved')}
-          </Text>
-          {shownTotals.map(entry => (
-            <Text key={entry.currency} style={[styles.summaryTotal, entry.total < 0 && { color: colors.red }]}>
-              {formatCurrency(Math.abs(entry.total), entry.currency)}
-            </Text>
-          ))}
-        </View>
-      </View>
+      <SummaryCard
+        type={activeTab}
+        label={
+          activeTab === 'gasto'
+            ? t(anyExceeded ? 'main.totalExceeded' : 'main.totalAvailable')
+            : activeTab === 'deuda'
+            ? t('main.totalToPay')
+            : t('main.totalSaved')
+        }
+        totals={shownTotals}
+        envelopes={envelopes}
+        getEnvelopeBalance={getEnvelopeBalance}
+        cutoffDay={settings.expenseCutoffDay}
+      />
 
       <Animated.FlatList
         ref={listRef}
@@ -378,11 +375,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   tab: { flex: 1, justifyContent: 'center', alignItems: 'center', zIndex: 1 },
   tabIndicator: { position: 'absolute', top: 4, bottom: 4, left: 4, backgroundColor: colors.green, borderRadius: RADIUS.pill },
   tabText: { color: colors.secondaryText, fontSize: FONT_SIZE.lg, fontWeight: '600' },
-  summaryCard: { backgroundColor: colors.cardBg, marginHorizontal: SPACING.xl, borderRadius: RADIUS.xl, padding: SPACING.xl, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: SPACING.lg, overflow: 'hidden' },
-  cardFlap: { position: 'absolute', top: -20, left: '50%', width: 40, height: 40, marginLeft: -20, backgroundColor: colors.cardHighlight, transform: [{ rotate: '45deg' }] },
-  summaryValues: { alignItems: 'flex-end' },
-  summaryLabel: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, marginBottom: SPACING.xs },
-  summaryTotal: { color: colors.white, fontSize: 22, fontWeight: 'bold' },
   list: { paddingHorizontal: SPACING.xl, paddingBottom: 120 },
   emptyText: { color: colors.secondaryText, fontSize: FONT_SIZE.base, textAlign: 'center', marginTop: 40, fontStyle: 'italic' },
   envelopeCard: { backgroundColor: colors.cardBg, borderRadius: RADIUS.pill, padding: SPACING.lg, flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md },
