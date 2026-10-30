@@ -375,6 +375,10 @@ export const en: Record<TranslationKey, string> = {
   'search.showFilters': 'Show filters',
   'search.hideFilters': 'Hide filters',
   'search.clearFilters': 'Clear filters',
+  'search.exportCsv': 'Export CSV',
+  'search.exportCsvLabel': 'Export {count} results to CSV',
+  'search.exportTitle': 'Export transactions',
+  'search.exportFailed': "Couldn't export the CSV. Please try again.",
   'search.noResults': 'No transactions found.',
   'search.hint': 'Search by description or use the filters to find a transaction.',
   // reports

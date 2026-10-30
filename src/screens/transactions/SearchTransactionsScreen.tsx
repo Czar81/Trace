@@ -8,6 +8,10 @@ import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import Search from 'lucide-react-native/icons/search';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import X from 'lucide-react-native/icons/x';
+import Download from 'lucide-react-native/icons/download';
+import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
+import { buildTransactionsCsv } from '../../domain/transactions/transactionsCsv';
+import { exportTransactionsCsv } from '../../services/backup/exportData';
 import { Dropdown } from '../../components/forms/Dropdown';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { DateField } from '../../components/forms/DateField';
@@ -36,6 +40,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
   const [minAmountStr, setMinAmountStr] = useState('');
   const [maxAmountStr, setMaxAmountStr] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [exportFailed, setExportFailed] = useState(false);
 
   const categoryOptions = [
     { label: t('search.allCategories'), value: '' },
@@ -72,6 +77,17 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
   ].filter(v => v !== undefined).length;
   const results = useMemo(() => (active ? filterTransactions(transactions, filters) : []), [active, transactions, filters]);
   const sections = useMemo(() => groupTransactionsByDay(results, locale), [results, locale]);
+
+  const handleExport = async () => {
+    try {
+      await exportTransactionsCsv(
+        buildTransactionsCsv(results, { envelopes, categories, incomeCategories, paymentMethods, t })
+      );
+    } catch (e) {
+      console.error('Error exporting transactions:', e);
+      setExportFailed(true);
+    }
+  };
 
   const clearFilters = () => {
     setText('');
@@ -185,9 +201,22 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
       )}
 
       {active && (
-        <TouchableOpacity onPress={clearFilters} style={styles.clearBtn}>
-          <Text style={styles.clearBtnText}>{t('search.clearFilters')}</Text>
-        </TouchableOpacity>
+        <View style={styles.actionsRow}>
+          <TouchableOpacity onPress={clearFilters} style={styles.clearBtn} accessibilityRole="button">
+            <Text style={styles.clearBtnText}>{t('search.clearFilters')}</Text>
+          </TouchableOpacity>
+          {results.length > 0 && (
+            <TouchableOpacity
+              onPress={handleExport}
+              style={styles.exportBtn}
+              accessibilityRole="button"
+              accessibilityLabel={t('search.exportCsvLabel', { count: results.length })}
+            >
+              <Download color={colors.green} size={14} />
+              <Text style={styles.exportBtnText}>{t('search.exportCsv')}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       )}
 
       <SectionList
@@ -220,6 +249,15 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
           />
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
+      />
+      <ConfirmDialog
+        visible={exportFailed}
+        title={t('search.exportTitle')}
+        message={t('search.exportFailed')}
+        confirmLabel={t('common.accept')}
+        cancelLabel=""
+        onConfirm={() => setExportFailed(false)}
+        onCancel={() => setExportFailed(false)}
       />
     </SafeAreaView>
   );
@@ -280,7 +318,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.cardBg, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 14,
     color: colors.white, fontSize: FONT_SIZE.md,
   },
-  clearBtn: { alignSelf: 'flex-start', marginHorizontal: SPACING.xl, marginBottom: SPACING.md },
+  actionsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: SPACING.xl, marginBottom: SPACING.xs },
+  clearBtn: { minHeight: 44, justifyContent: 'center' },
+  exportBtn: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
+  exportBtnText: { color: colors.green, fontSize: FONT_SIZE.md, fontWeight: '600' },
   clearBtnText: { color: colors.green, fontSize: FONT_SIZE.md, fontWeight: '600' },
   resultsList: { paddingHorizontal: SPACING.xl, paddingBottom: 60 },
   sectionHeader: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, fontWeight: '700', marginTop: SPACING.lg, marginBottom: 6 },

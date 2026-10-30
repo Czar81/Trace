@@ -376,6 +376,10 @@ export const es = {
   'search.showFilters': 'Mostrar filtros',
   'search.hideFilters': 'Ocultar filtros',
   'search.clearFilters': 'Limpiar filtros',
+  'search.exportCsv': 'Exportar CSV',
+  'search.exportCsvLabel': 'Exportar {count} resultados a CSV',
+  'search.exportTitle': 'Exportar transacciones',
+  'search.exportFailed': "No se pudo exportar el CSV. Inténtalo de nuevo.",
   'search.noResults': 'No se encontraron transacciones.',
   'search.hint': 'Busca por descripción o usa los filtros para encontrar una transacción.',
   // reports
