@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Pressable, FlatList, Dimensions, Modal } from 'react-native';
 import Animated, {
-  FadeInDown, FadeOut, interpolate, interpolateColor, Extrapolation,
-  useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withSpring, SharedValue,
+  interpolate, interpolateColor, Extrapolation,
+  useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, SharedValue,
 } from 'react-native-reanimated';
 import { NestableScrollContainer, NestableDraggableFlatList, ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -59,59 +59,48 @@ interface EnvelopeCardProps {
   progress: number;
   progressColor: string;
   subtext: string;
-  index: number;
   onPress: () => void;
   onLongPress: () => void;
   formatAmount: (amount: number, currency: Currency) => string;
 }
 
-/** Fades/slides in on mount (staggered by list position), fades out on removal and squishes slightly on press; long press lifts it to reorder. */
+/**
+ * Envelope row. It must stay a plain, static view: Reanimated entering/exiting/transform animations on a
+ * row of the draggable list fight the library's own cell transforms and make rows jump while dragging.
+ * Long press lifts it (the list's ScaleDecorator does the zoom) and starts the drag.
+ */
 const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
-  envelope, remaining, textColor, progress, progressColor, subtext, index, onPress, onLongPress, formatAmount,
+  envelope, remaining, textColor, progress, progressColor, subtext, onPress, onLongPress, formatAmount,
 }) => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const scale = useSharedValue(1);
-  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-
-  const handlePressIn = () => { scale.value = withSpring(0.97, { damping: 15, stiffness: 400 }); };
-  const handlePressOut = () => { scale.value = withSpring(1, { damping: 12, stiffness: 300 }); };
 
   return (
-    <Animated.View
-      entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 45)}
-      exiting={FadeOut.duration(180)}
+    <Pressable
+      style={({ pressed }) => [styles.envelopeCard, pressed && styles.envelopeCardPressed]}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={250}
     >
-      <Animated.View style={pressStyle}>
-      <Pressable
-        style={styles.envelopeCard}
-        onPress={onPress}
-        onLongPress={onLongPress}
-        delayLongPress={250}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-      >
-        <View style={{ marginRight: SPACING.lg }}>
-          <EnvelopeAvatar
-            icon={envelope.icon ?? 'box'}
-            imageUri={envelope.imageUri}
-            color={envelope.color}
-            size={52}
-            progress={progress}
-            progressColor={progressColor}
-            iconColor={envelope.color}
-          />
-        </View>
-        <Text style={styles.envelopeName} numberOfLines={1}>{envelope.name}</Text>
-        <View style={styles.envelopeValues}>
-          <Text style={[styles.envelopeAmount, { color: textColor }]}>
-            {formatAmount(Math.abs(remaining), envelope.currency)}
-          </Text>
-          <Text style={styles.envelopeSubtext}>{subtext}</Text>
-        </View>
-      </Pressable>
-      </Animated.View>
-    </Animated.View>
+      <View style={{ marginRight: SPACING.lg }}>
+        <EnvelopeAvatar
+          icon={envelope.icon ?? 'box'}
+          imageUri={envelope.imageUri}
+          color={envelope.color}
+          size={52}
+          progress={progress}
+          progressColor={progressColor}
+          iconColor={envelope.color}
+        />
+      </View>
+      <Text style={styles.envelopeName} numberOfLines={1}>{envelope.name}</Text>
+      <View style={styles.envelopeValues}>
+        <Text style={[styles.envelopeAmount, { color: textColor }]}>
+          {formatAmount(Math.abs(remaining), envelope.currency)}
+        </Text>
+        <Text style={styles.envelopeSubtext}>{subtext}</Text>
+      </View>
+    </Pressable>
   );
 };
 
@@ -131,8 +120,6 @@ export const MainScreen = ({ navigation }: Props) => {
   const [activeTab, setActiveTab] = useState<EnvelopeType>('gasto');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
-  // The pager must not scroll sideways while an envelope is being dragged.
-  const [dragging, setDragging] = useState(false);
   const firstSteps = useFirstSteps();
   const { refresh: refreshFirstSteps } = firstSteps;
 
@@ -187,7 +174,7 @@ export const MainScreen = ({ navigation }: Props) => {
   const shownTotals = totals.length > 0 ? totals : [{ currency: settings.defaultCurrency, total: 0 }];
   const anyExceeded = shownTotals.some(entry => entry.total < 0);
 
-  const renderEnvelope = ({ item, getIndex, drag }: RenderItemParams<Envelope>) => {
+  const renderEnvelope = ({ item, drag }: RenderItemParams<Envelope>) => {
     const balance = getEnvelopeBalance(item.id);
     const type = item.type;
 
@@ -244,7 +231,7 @@ export const MainScreen = ({ navigation }: Props) => {
         : t('main.saved');
 
     return (
-      <ScaleDecorator activeScale={1.04}>
+      <ScaleDecorator activeScale={1.03}>
       <EnvelopeCard
         envelope={item}
         remaining={remaining}
@@ -252,9 +239,8 @@ export const MainScreen = ({ navigation }: Props) => {
         progress={progress}
         progressColor={progressColor}
         subtext={subtext}
-        index={getIndex() ?? 0}
         onPress={() => navigation.navigate('EnvelopeDetail', { envelopeId: item.id })}
-        onLongPress={() => { hapticLight(); setDragging(true); drag(); }}
+        onLongPress={() => { hapticLight(); drag(); }}
         formatAmount={formatAmount}
       />
       </ScaleDecorator>
@@ -279,10 +265,8 @@ export const MainScreen = ({ navigation }: Props) => {
           <NestableDraggableFlatList
             data={data}
             onDragEnd={({ data: reordered }) => {
-              setDragging(false);
-              reorderEnvelopes(type, reordered.map(e => e.id));
+                reorderEnvelopes(type, reordered.map(e => e.id));
             }}
-            onRelease={() => setDragging(false)}
             keyExtractor={item => item.id}
             renderItem={renderEnvelope}
           />
@@ -382,7 +366,6 @@ export const MainScreen = ({ navigation }: Props) => {
         data={TAB_TYPES}
         horizontal
         pagingEnabled
-        scrollEnabled={!dragging}
         showsHorizontalScrollIndicator={false}
         scrollEventThrottle={16}
         onScroll={handleScroll}
@@ -417,6 +400,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   tabText: { color: colors.secondaryText, fontSize: FONT_SIZE.lg, fontWeight: '600' },
   list: { paddingHorizontal: SPACING.xl, paddingBottom: 120 },
   emptyText: { color: colors.secondaryText, fontSize: FONT_SIZE.base, textAlign: 'center', marginTop: 40, fontStyle: 'italic' },
+  envelopeCardPressed: { opacity: 0.85 },
   envelopeCard: { backgroundColor: colors.cardBg, borderRadius: RADIUS.pill, padding: SPACING.lg, flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md },
   envelopeName: { flex: 1, color: colors.white, fontSize: 17, fontWeight: '600' },
   envelopeValues: { alignItems: 'flex-end' },
