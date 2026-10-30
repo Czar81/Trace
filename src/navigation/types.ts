@@ -13,6 +13,7 @@ export type RootStackParamList = {
   PaymentMethodsSettings: undefined;
   CategoriesSettings: undefined;
   BackupSettings: undefined;
+  Feedback: undefined;
   Reports: undefined;
   Search: undefined;
   Recurring: undefined;

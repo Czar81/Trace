@@ -12,7 +12,9 @@ import Palette from 'lucide-react-native/icons/palette';
 import Settings2 from 'lucide-react-native/icons/settings-2';
 import Wallet from 'lucide-react-native/icons/wallet';
 import Shield from 'lucide-react-native/icons/shield';
+import MessageSquare from 'lucide-react-native/icons/message-square';
 import Database from 'lucide-react-native/icons/database';
+import LifeBuoy from 'lucide-react-native/icons/life-buoy';
 import DatabaseBackup from 'lucide-react-native/icons/database-backup';
 import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
 import { CurrencySelector } from '../../components/forms/CurrencySelector';
@@ -177,6 +179,23 @@ export const SettingsScreen = ({ navigation }: Props) => {
           <View style={styles.menuTextWrapper}>
             <Text style={styles.menuTitle}>{t('settings.dataBackups')}</Text>
             <Text style={styles.menuSubtitle}>{t('settings.dataBackupsSubtitle')}</Text>
+          </View>
+          <ChevronRight color={colors.secondaryText} size={20} />
+        </TouchableOpacity>
+
+        <SettingsSectionHeader icon={<LifeBuoy color={colors.secondaryText} size={14} />} title={t(sectionTitleKey('support'))} />
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('Feedback')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.menuIconWrapper}>
+            <MessageSquare color={colors.white} size={18} />
+          </View>
+          <View style={styles.menuTextWrapper}>
+            <Text style={styles.menuTitle}>{t('settings.feedback')}</Text>
+            <Text style={styles.menuSubtitle}>{t('settings.feedbackSubtitle')}</Text>
           </View>
           <ChevronRight color={colors.secondaryText} size={20} />
         </TouchableOpacity>

@@ -8,9 +8,10 @@ export type SettingsItemId =
   | 'appearance' | 'language' | 'currency'
   | 'categories' | 'paymentMethods'
   | 'appLock'
-  | 'dataBackups';
+  | 'dataBackups'
+  | 'feedback';
 
-export type SettingsSectionId = 'general' | 'finance' | 'security' | 'data';
+export type SettingsSectionId = 'general' | 'finance' | 'security' | 'data' | 'support';
 
 export interface SettingsSection {
   id: SettingsSectionId;
@@ -23,6 +24,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   { id: 'finance', titleKey: 'settings.sectionFinance', items: ['categories', 'paymentMethods'] },
   { id: 'security', titleKey: 'settings.sectionSecurity', items: ['appLock'] },
   { id: 'data', titleKey: 'settings.sectionData', items: ['dataBackups'] },
+  { id: 'support', titleKey: 'settings.sectionSupport', items: ['feedback'] },
 ];
 
 export const sectionTitleKey = (id: SettingsSectionId): TranslationKey =>
