@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { HelpButton } from '../../components/feedback/HelpButton';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -84,9 +85,12 @@ export const AssignIncomeScreen = ({ navigation }: Props) => {
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('assign.title')}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <HelpButton title="help.assign.title" body="help.assign.body" />
         <TouchableOpacity onPress={handleSave} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Check color={colors.green} size={24} />
-        </TouchableOpacity>
+            <Check color={colors.green} size={24} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <KeyboardAvoidingView style={styles.keyboardAvoiding} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={1}>

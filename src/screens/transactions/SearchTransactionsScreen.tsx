@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { HelpButton } from '../../components/feedback/HelpButton';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, SectionList, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -104,7 +105,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('search.title')}</Text>
-        <View style={{ width: 32 }} />
+        <HelpButton title="help.search.title" body="help.search.body" />
       </View>
 
       <View style={styles.searchRow}>

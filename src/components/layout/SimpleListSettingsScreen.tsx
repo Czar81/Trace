@@ -6,6 +6,8 @@ import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import Trash2 from 'lucide-react-native/icons/trash-2';
 import Plus from 'lucide-react-native/icons/plus';
 import { ConfirmDialog } from '../feedback/ConfirmDialog';
+import { HelpButton } from '../feedback/HelpButton';
+import { TranslationKey } from '../../i18n';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
@@ -29,6 +31,8 @@ export interface ListSectionConfig {
 interface SimpleListSettingsScreenProps {
   navigation: any;
   title: string;
+  /** Optional help dialog shown from a "?" icon in the header. */
+  help?: { title: TranslationKey; body: TranslationKey };
   deleteConfirmMessage?: string;
   /** Extra lists rendered after the main one, each under its own group title. */
   extraSections?: ListSectionConfig[];
@@ -101,6 +105,7 @@ const ListSection: React.FC<ListSectionConfig & { onRequestDelete: (p: PendingDe
 export const SimpleListSettingsScreen: React.FC<SimpleListSettingsScreenProps> = ({
   navigation,
   title,
+  help,
   deleteConfirmMessage,
   extraSections,
   groupTitle,
@@ -139,7 +144,7 @@ export const SimpleListSettingsScreen: React.FC<SimpleListSettingsScreenProps> =
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{title}</Text>
-        <View style={{ width: 32 }} />
+        {help ? <HelpButton title={help.title} body={help.body} /> : <View style={{ width: 32 }} />}
       </View>
 
       <KeyboardAvoidingView

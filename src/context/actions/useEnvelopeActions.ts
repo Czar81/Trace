@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { Envelope } from '../../types';
 import { Store } from '../useDataStore';
 import { listChanged, newId } from '../../domain/shared/helpers';
+import { reorderEnvelopesOfType } from '../../domain/budget/envelopeOrder';
 import { removeEnvelopeReferences } from '../../domain/budget/envelopeRemoval';
 import { deleteUnreferencedReceipts } from '../../services/files/receipts';
 import { cancelDebtReminder, cancelTemplateReminder, scheduleDebtReminders } from '../../services/notifications/notifications';
@@ -16,7 +17,7 @@ export function useEnvelopeActions({ data, runExclusive, commit }: Store) {
   const addEnvelope = useCallback((envelopeData: Omit<Envelope, 'id'>) => runExclusive(async () => {
     const d = data.current;
     const newEnvelope: Envelope = { ...envelopeData, id: newId() };
-    const updated = [newEnvelope, ...d.envelopes];
+    const updated = [...d.envelopes, newEnvelope];
     await commit({ envelopes: updated });
     const withReminders = await scheduleDebtReminders(updated, d.transactions, d.settings.billRemindersEnabled, d.settings.billReminderLeadDays);
     if (listChanged(withReminders, updated)) await commit({ envelopes: withReminders });
@@ -55,5 +56,14 @@ export function useEnvelopeActions({ data, runExclusive, commit }: Store) {
     );
   }), [data, runExclusive, commit]);
 
-  return useMemo(() => ({ addEnvelope, updateEnvelope, deleteEnvelope }), [addEnvelope, updateEnvelope, deleteEnvelope]);
+  const reorderEnvelopes = useCallback((type: Envelope['type'], orderedIds: string[]) => runExclusive(async () => {
+    const d = data.current;
+    const updated = reorderEnvelopesOfType(d.envelopes, type, orderedIds);
+    if (listChanged(updated, d.envelopes)) await commit({ envelopes: updated });
+  }), [data, runExclusive, commit]);
+
+  return useMemo(
+    () => ({ addEnvelope, updateEnvelope, deleteEnvelope, reorderEnvelopes }),
+    [addEnvelope, updateEnvelope, deleteEnvelope, reorderEnvelopes],
+  );
 }

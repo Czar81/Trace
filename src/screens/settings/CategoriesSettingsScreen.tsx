@@ -15,6 +15,7 @@ export const CategoriesSettingsScreen = ({ navigation }: Props) => {
     <SimpleListSettingsScreen
       navigation={navigation}
       title={t('categories.title')}
+      help={{ title: 'help.categories.title', body: 'help.categories.body' }}
       groupTitle={t('categories.expensesGroup')}
       existingSectionTitle={t('categories.existing')}
       addSectionTitle={t('categories.addSection')}

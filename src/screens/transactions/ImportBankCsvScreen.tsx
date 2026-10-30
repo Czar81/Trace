@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { HelpButton } from '../../components/feedback/HelpButton';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -106,7 +107,7 @@ export const ImportBankCsvScreen = ({ navigation }: Props) => {
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('bankCsv.title')}</Text>
-        <View style={styles.headerBtn}><View style={{ width: 24 }} /></View>
+        <HelpButton title="help.bankCsv.title" body="help.bankCsv.body" />
       </View>
 
       <ScrollView contentContainerStyle={styles.form}>

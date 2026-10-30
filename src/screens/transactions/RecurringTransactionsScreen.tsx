@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
@@ -19,13 +19,15 @@ import { useTranslation } from '../../context/LanguageContext';
 import { formatCadence } from '../../domain/recurring/recurrence';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
+const LEAD_DAYS_OPTIONS = [1, 2, 3, 5, 7];
+
 type Props = NativeStackScreenProps<RootStackParamList, 'Recurring'>;
 
 export const RecurringTransactionsScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { recurringTemplates, envelopes, updateRecurringTemplate, deleteRecurringTemplate, formatAmount } = useAppData();
+  const { recurringTemplates, envelopes, updateRecurringTemplate, deleteRecurringTemplate, formatAmount, settings, updateSettings } = useAppData();
   const [templateToDelete, setTemplateToDelete] = useState<RecurringTransactionTemplate | null>(null);
 
   const handleToggleActive = async (template: RecurringTransactionTemplate) => {
@@ -38,6 +40,51 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
     setTemplateToDelete(null);
   };
 
+  // Saved values from before the chips (e.g. 4 or 6 days) stay selectable.
+  const leadDaysOptions = LEAD_DAYS_OPTIONS.includes(settings.billReminderLeadDays)
+    ? LEAD_DAYS_OPTIONS
+    : [...LEAD_DAYS_OPTIONS, settings.billReminderLeadDays].sort((a, b) => a - b);
+
+  const reminderCard = recurringTemplates.length > 0 ? (
+    <View style={styles.reminderCard}>
+      <View style={styles.reminderRow}>
+        <View style={styles.toggleTextWrapper}>
+          <Text style={styles.reminderTitle}>{t('settings.billReminders')}</Text>
+          <Text style={styles.reminderSubtitle}>
+            {settings.billRemindersEnabled
+              ? t(settings.billReminderLeadDays > 1 ? 'settings.billRemindersOnOther' : 'settings.billRemindersOnOne', { days: settings.billReminderLeadDays })
+              : t('settings.billRemindersOff')}
+          </Text>
+        </View>
+        <Switch
+          value={settings.billRemindersEnabled}
+          onValueChange={() => updateSettings({ billRemindersEnabled: !settings.billRemindersEnabled })}
+          trackColor={{ false: colors.cardBg, true: colors.green }}
+          thumbColor={settings.billRemindersEnabled ? colors.green : colors.white}
+        />
+      </View>
+      {settings.billRemindersEnabled && (
+        <>
+          <View style={styles.reminderDivider} />
+          <View style={[styles.reminderRow, styles.reminderRowStacked]}>
+            <Text style={styles.leadDaysLabel}>{t('settings.leadDays')}</Text>
+            <View style={styles.chips}>
+              {leadDaysOptions.map(days => (
+                <TouchableOpacity
+                  key={days}
+                  style={[styles.chip, settings.billReminderLeadDays === days && styles.chipActive]}
+                  onPress={() => updateSettings({ billReminderLeadDays: days })}
+                >
+                  <Text style={styles.chipText}>{t('settings.autoBackupDaysShort', { days })}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </>
+      )}
+    </View>
+  ) : null;
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -45,19 +92,16 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('recurring.title')}</Text>
-        <HelpButton title="help.recurring.title" body="help.recurring.body" style={{ width: 32, alignItems: 'center' }} />
+        <HelpButton title="help.recurring.title" body="help.recurring.body" />
       </View>
 
       <FlatList
         data={recurringTemplates}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.list}
+        ListHeaderComponent={reminderCard}
         ListEmptyComponent={
-          <EmptyState
-            message={t('recurring.empty')}
-            ctaLabel={t('recurring.emptyCta')}
-            onPress={() => navigation.navigate('CreateRecurringTransaction', {})}
-          />
+          <EmptyState message={t('recurring.empty')} />
         }
         renderItem={({ item }) => {
           const envelope = envelopes.find(e => e.id === item.envelopeId);
@@ -140,6 +184,18 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   statusText: { fontSize: FONT_SIZE.xs, fontWeight: '700' },
   statusActive: { color: colors.green },
   statusPaused: { color: colors.secondaryText },
+  reminderCard: { backgroundColor: colors.cardBg, borderRadius: RADIUS.xl, marginBottom: 14, borderWidth: 1, borderColor: colors.divider, overflow: 'hidden' },
+  reminderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: SPACING.lg },
+  reminderRowStacked: { flexDirection: 'column', alignItems: 'flex-start', gap: SPACING.md },
+  reminderDivider: { height: 1, backgroundColor: colors.divider },
+  toggleTextWrapper: { flex: 1, paddingRight: SPACING.md },
+  reminderTitle: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '700', marginBottom: SPACING.xs },
+  reminderSubtitle: { color: colors.secondaryText, fontSize: FONT_SIZE.md },
+  leadDaysLabel: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '600' },
+  chips: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', alignSelf: 'stretch', backgroundColor: colors.bg, borderRadius: RADIUS.pill, padding: SPACING.xs },
+  chip: { minWidth: 38, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 6 },
+  chipActive: { backgroundColor: colors.cardHighlight },
+  chipText: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '700', minWidth: 26, textAlign: 'center' },
   iconBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center', marginLeft: SPACING.xs },
   fab: {
     position: 'absolute', bottom: 24, alignSelf: 'center',
