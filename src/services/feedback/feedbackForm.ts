@@ -10,15 +10,16 @@ export type FeedbackField = 'kind' | 'screen' | 'message' | 'steps' | 'version' 
 
 /**
  * The form's question ids ("entry.123456"), from Form > ⋮ > Get pre-filled link.
- * Until they're filled in the screen falls back to opening the form in the browser.
+ * The form has no email question yet; set `email` to its id to show the email field in the app.
+ * If an id is missing the screen falls back to opening the form in the browser.
  */
 export const FEEDBACK_ENTRY_IDS: Record<FeedbackField, string | null> = {
-  kind: null,
-  screen: null,
-  message: null,
-  steps: null,
-  version: null,
-  device: null,
+  kind: 'entry.1968508513',
+  screen: 'entry.312628860',
+  message: 'entry.1752424255',
+  steps: 'entry.873668835',
+  version: 'entry.2031637266',
+  device: 'entry.2056316520',
   email: null,
 };
 
@@ -35,25 +36,25 @@ export const FEEDBACK_SCREENS: FeedbackTarget[] = [
 
 /**
  * Multiple-choice answers must match the form's option text exactly, and the form's
- * options are in Spanish, so the app sends these labels whatever language it shows.
+ * options are in English, so the app sends these labels whatever language it shows.
  */
 export const FORM_KIND_LABELS: Record<FeedbackKind, string> = {
-  bug: 'Error',
-  idea: 'Idea o mejora',
-  other: 'Otro',
+  bug: 'Bug',
+  idea: 'Idea or improvement',
+  other: 'Other',
 };
 export const FORM_SCREEN_LABELS: Record<FeedbackTarget, string> = {
-  home: 'Inicio',
-  budgets: 'Presupuestos',
-  payments: 'Pagos',
-  debts: 'Deudas',
-  transfers: 'Transferencias',
-  import: 'Importar',
-  reports: 'Reportes',
-  recurring: 'Recurrentes',
-  settings: 'Ajustes',
-  other: 'Otra',
-  na: 'No aplica',
+  home: 'Home',
+  budgets: 'Budgets',
+  payments: 'Payments',
+  debts: 'Debts',
+  transfers: 'Transfers',
+  import: 'Import',
+  reports: 'Reports',
+  recurring: 'Recurring',
+  settings: 'Settings',
+  other: 'Other',
+  na: 'Not applicable',
 };
 
 export interface FeedbackInput {
@@ -66,8 +67,10 @@ export interface FeedbackInput {
   device: string;
 }
 
+export const hasEmailField = (): boolean => !!FEEDBACK_ENTRY_IDS.email;
+
 export const isFeedbackConfigured = (): boolean =>
-  Object.values(FEEDBACK_ENTRY_IDS).every(id => !!id);
+  (Object.keys(FEEDBACK_ENTRY_IDS) as FeedbackField[]).every(field => field === 'email' || !!FEEDBACK_ENTRY_IDS[field]);
 
 export const isValidFeedbackEmail = (email: string): boolean =>
   email.trim() === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());

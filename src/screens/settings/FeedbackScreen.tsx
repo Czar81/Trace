@@ -13,7 +13,7 @@ import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
 import { HelpButton } from '../../components/feedback/HelpButton';
 import {
   FEEDBACK_FORM_VIEW_URL, FEEDBACK_KINDS, FEEDBACK_SCREENS, FeedbackKind, FeedbackTarget,
-  getAppVersion, getDeviceDescription, isFeedbackConfigured, isValidFeedbackEmail, submitFeedback,
+  getAppVersion, getDeviceDescription, hasEmailField, isFeedbackConfigured, isValidFeedbackEmail, submitFeedback,
 } from '../../services/feedback/feedbackForm';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Feedback'>;
@@ -112,17 +112,21 @@ export const FeedbackScreen = ({ navigation }: Props) => {
             </>
           )}
 
-          <Text style={styles.label}>{t('feedback.email')}</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder={t('feedback.emailPlaceholder')}
-            placeholderTextColor={colors.secondaryText}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+          {hasEmailField() && (
+            <>
+              <Text style={styles.label}>{t('feedback.email')}</Text>
+              <TextInput
+                style={styles.input}
+                value={email}
+                onChangeText={setEmail}
+                placeholder={t('feedback.emailPlaceholder')}
+                placeholderTextColor={colors.secondaryText}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </>
+          )}
 
           <Text style={styles.autoInfo}>{t('feedback.autoInfo')}</Text>
 

@@ -16,8 +16,8 @@ const input: FeedbackInput = {
 describe('buildFeedbackBody', () => {
   it('maps neutral codes to the form option text and url-encodes values', () => {
     const body = new URLSearchParams(buildFeedbackBody(input, IDS));
-    expect(body.get('entry.1')).toBe('Error');
-    expect(body.get('entry.2')).toBe('Presupuestos');
+    expect(body.get('entry.1')).toBe('Bug');
+    expect(body.get('entry.2')).toBe('Budgets');
     expect(body.get('entry.3')).toBe('No guarda & falla');
     expect(body.get('entry.4')).toBe('1. Abrir\n2. Guardar');
     expect(body.get('entry.7')).toBe('a@b.co');
@@ -41,8 +41,8 @@ describe('feedback options', () => {
     for (const screen of FEEDBACK_SCREENS) expect(FORM_SCREEN_LABELS[screen]).toBeTruthy();
   });
 
-  it('knows the form is not configured until every entry id is set', () => {
-    expect(isFeedbackConfigured()).toBe(false);
+  it('is configured once every question id is set (email is optional)', () => {
+    expect(isFeedbackConfigured()).toBe(true);
   });
 });
 
