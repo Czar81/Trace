@@ -18,8 +18,8 @@ describe('screen help', () => {
   const usages = keysUsedBy(['screens', 'components/layout']);
 
   it('covers every screen that shows a help icon', () => {
-    // 10 screens, a title and a body each
-    expect(usages).toHaveLength(20);
+    // 13 screens, a title and a body each
+    expect(usages).toHaveLength(26);
   });
 
   it('has es and en text for every help title and body', () => {
