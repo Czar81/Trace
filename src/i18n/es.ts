@@ -592,6 +592,7 @@ export const es = {
   'a11y.assignIncome': 'Asignar ingreso',
   'main.emptyExpenses': 'Aún no tienes sobres de gasto. Crea uno para ponerle un presupuesto, por ejemplo «Comida».',
   'main.emptySavings': 'Aún no tienes sobres de ahorro. Crea uno para juntar dinero hacia una meta.',
+  'main.emptyHint': 'Toca «Crear sobre» para empezar.',
   'main.emptyDebts': 'Aún no tienes deudas registradas. Crea una para llevar el saldo.',
 } as const;
 

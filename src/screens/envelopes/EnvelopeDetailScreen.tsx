@@ -315,8 +315,8 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
         </TouchableOpacity>
         <View style={styles.headerActions}>
           <TouchableOpacity
-            style={styles.iconBtn}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={styles.iconBtn}
             onPress={() => navigation.navigate('CreateTransfer', { envelopeId })}
             accessibilityRole="button"
             accessibilityLabel={t('a11y.transfer')}
@@ -324,8 +324,8 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
             <ArrowLeftRight color={colors.secondaryText} size={20} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.iconBtn}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={styles.iconBtn}
             onPress={() => navigation.navigate('CreateEnvelope', { envelopeType: envelope.type, envelope })}
             accessibilityRole="button"
             accessibilityLabel={t('a11y.editEnvelope')}
@@ -460,7 +460,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
             style={[styles.filterPill, styles.filterPillActive]}
             onPress={() => setMonthPickerOpen(true)}
           >
-            <Calendar color={colors.bg} size={16} />
+            <Calendar color={colors.onAccent} size={16} />
             <Text style={[styles.filterPillText, styles.filterPillTextActive]}>
               {periodLabel(selectedPeriod)}
             </Text>
@@ -522,7 +522,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
                   <TouchableOpacity
                     key={n}
-                    style={[styles.pageBtn, n === page && styles.pageBtnActive]}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={[styles.pageBtn, n === page && styles.pageBtnActive]}
                     onPress={() => setPage(n)}
                   >
                     <Text style={[styles.pageBtnText, n === page && styles.pageBtnTextActive]}>{n}</Text>

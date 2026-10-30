@@ -67,7 +67,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('settings.title')}</Text>
@@ -111,6 +111,8 @@ export const SettingsScreen = ({ navigation }: Props) => {
                   key={option.value}
                   style={[styles.intervalChip, preference === option.value && styles.intervalChipActive]}
                   onPress={() => setPreference(option.value)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: preference === option.value }}
                 >
                   <Text style={styles.stepperValue}>{t(option.labelKey)}</Text>
                 </TouchableOpacity>

@@ -339,7 +339,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('reports.title')}</Text>
@@ -476,7 +476,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
                       <TouchableOpacity
                         onPress={() => moveSection(index, -1)}
                         disabled={index === 0}
-                        style={[styles.moveBtn, index === 0 && styles.moveBtnDisabled]}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={[styles.moveBtn, index === 0 && styles.moveBtnDisabled]}
                         accessibilityLabel={t('reports.moveUp', { section: t(SECTION_LABELS[item.id]) })}
                       >
                         <ChevronUp color={colors.white} size={20} />
@@ -484,7 +484,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
                       <TouchableOpacity
                         onPress={() => moveSection(index, 1)}
                         disabled={index === layout.length - 1}
-                        style={[styles.moveBtn, index === layout.length - 1 && styles.moveBtnDisabled]}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={[styles.moveBtn, index === layout.length - 1 && styles.moveBtnDisabled]}
                         accessibilityLabel={t('reports.moveDown', { section: t(SECTION_LABELS[item.id]) })}
                       >
                         <ChevronDown color={colors.white} size={20} />

@@ -9,7 +9,6 @@ import { TranslationKey } from '../../i18n';
 import { formatCurrency } from '../../domain/shared/formatCurrency';
 import { computeSummaryProgress, computeTotalSpent, daysUntilNextCutoff } from '../../domain/budget/summaryProgress';
 
-const WARN_COLOR = '#E3B341';
 
 const SUB_KEYS: Record<EnvelopeType, TranslationKey> = {
   gasto: 'main.progressSpentSub',
@@ -38,7 +37,7 @@ export const SummaryCard: React.FC<Props> = ({ type, label, totals, envelopes, g
   const hasEnvelopes = envelopes.some(e => e.type === type);
   const pct = progress ? Math.round(progress.percent) : 0;
   const barColor = type === 'gasto' && progress
-    ? (progress.percent > 90 ? colors.red : progress.percent > 75 ? WARN_COLOR : colors.green)
+    ? (progress.percent > 90 ? colors.red : progress.percent > 75 ? colors.warn : colors.green)
     : colors.green;
   const days = daysUntilNextCutoff(new Date());
   const money = (n: number) => formatCurrency(n, entry.currency);
@@ -115,7 +114,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   right: { alignItems: 'flex-end', flexShrink: 0 },
   label: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, marginBottom: SPACING.xs },
   total: { color: colors.white, fontSize: 22, fontWeight: 'bold' },
-  big: { color: colors.white, fontSize: 17, fontWeight: 'bold' },
+  big: { color: colors.white, fontSize: FONT_SIZE.title, fontWeight: 'bold' },
   bigSmall: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, fontWeight: 'normal' },
   sub: { color: colors.secondaryText, fontSize: FONT_SIZE.xs, marginTop: 3 },
   track: { height: 8, borderRadius: 4, backgroundColor: colors.progressTrack, overflow: 'hidden', marginTop: SPACING.md },
@@ -126,5 +125,5 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   chip: { borderWidth: 1, borderColor: colors.progressTrack, borderRadius: RADIUS.md, paddingVertical: 1, paddingHorizontal: 10 },
   chipActive: { backgroundColor: colors.green, borderColor: colors.green },
   chipText: { color: colors.secondaryText, fontSize: FONT_SIZE.xs },
-  chipTextActive: { color: colors.bg, fontWeight: '600' },
+  chipTextActive: { color: colors.onAccent, fontWeight: '600' },
 });

@@ -289,7 +289,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   keyboardAvoiding: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingTop: SPACING.xl, paddingBottom: SPACING.xl },
   headerBtn: { padding: SPACING.xs },
-  headerTitle: { color: colors.white, fontSize: 17, fontWeight: 'bold', flex: 1, textAlign: 'center' },
+  headerTitle: { color: colors.white, fontSize: FONT_SIZE.title, fontWeight: 'bold', flex: 1, textAlign: 'center' },
   form: { paddingHorizontal: SPACING.xl, paddingBottom: 60 },
   iconSection: { alignItems: 'center', marginBottom: 28, marginTop: SPACING.sm },
   iconPreviewWrap: { marginBottom: 10 },

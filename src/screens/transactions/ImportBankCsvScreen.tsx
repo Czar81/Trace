@@ -189,5 +189,5 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   summaryTitle: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '700', marginBottom: SPACING.xs },
   summaryLine: { color: colors.secondaryText, fontSize: FONT_SIZE.md },
   importBtn: { backgroundColor: colors.green, borderRadius: RADIUS.lg, padding: SPACING.lg, alignItems: 'center' },
-  importText: { color: colors.bg, fontSize: FONT_SIZE.lg, fontWeight: '700' },
+  importText: { color: colors.onAccent, fontSize: FONT_SIZE.lg, fontWeight: '700' },
 });

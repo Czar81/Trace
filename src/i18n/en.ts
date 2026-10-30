@@ -591,5 +591,6 @@ export const en: Record<TranslationKey, string> = {
   'a11y.assignIncome': 'Assign income',
   'main.emptyExpenses': 'You have no expense envelopes yet. Create one to set a budget, for example "Food".',
   'main.emptySavings': 'You have no savings envelopes yet. Create one to save up toward a goal.',
+  'main.emptyHint': 'Tap "Create Envelope" to get started.',
   'main.emptyDebts': 'You have no debts yet. Create one to track the balance.',
 };

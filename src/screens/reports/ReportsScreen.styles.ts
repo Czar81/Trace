@@ -19,7 +19,7 @@ export const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   periodPill: { flex: 1, paddingVertical: 10, paddingHorizontal: SPACING.sm, borderRadius: RADIUS.md, backgroundColor: colors.cardBg, alignItems: 'center', borderWidth: 1, borderColor: colors.divider },
   periodPillActive: { backgroundColor: colors.green, borderColor: colors.green },
   periodPillText: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, fontWeight: '600' },
-  periodPillTextActive: { color: colors.bg },
+  periodPillTextActive: { color: colors.onAccent },
   sectionTitle: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '700', marginTop: SPACING.xxl, marginBottom: SPACING.md },
   card: { backgroundColor: colors.cardBg, borderRadius: RADIUS.xl, padding: SPACING.lg, borderWidth: 1, borderColor: colors.divider },
   emptyText: { color: colors.secondaryText, fontSize: FONT_SIZE.md, textAlign: 'center', paddingVertical: SPACING.sm },

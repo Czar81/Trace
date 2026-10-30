@@ -106,5 +106,5 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.divider, marginHorizontal: 4 },
   dotActive: { backgroundColor: colors.green, width: 22 },
   nextBtn: { backgroundColor: colors.green, borderRadius: RADIUS.sheet, paddingVertical: SPACING.lg, alignItems: 'center' },
-  nextText: { color: colors.bg, fontSize: FONT_SIZE.lg, fontWeight: '700' },
+  nextText: { color: colors.onAccent, fontSize: FONT_SIZE.lg, fontWeight: '700' },
 });
