@@ -1,5 +1,5 @@
 import { Envelope, Transaction, TransactionCategory } from '../../types';
-import { filterByCurrency, getSpendingByCategory, getTopTransactions, resolvePeriodRange, getSummary, parseReportLayout, REPORT_SECTIONS } from './reports';
+import { getSavingsRate, getMonthlyTrend, filterByCurrency, getSpendingByCategory, getTopTransactions, resolvePeriodRange, getSummary, parseReportLayout, REPORT_SECTIONS } from './reports';
 
 const envelope: Envelope = {
   id: 'e1',
@@ -85,7 +85,7 @@ describe('getSummary', () => {
       'all-time'
     );
 
-    expect(result).toEqual({ income: 4000, expenses: 1500, net: 2500, averageExpense: 750, expenseCount: 2 });
+    expect(result).toEqual({ income: 4000, expenses: 1500, net: 2500, savingsRate: 63, averageExpense: 750, expenseCount: 2 });
   });
 
   it('filterByCurrency keeps only transactions of envelopes in that currency', () => {
@@ -112,6 +112,7 @@ describe('getSummary', () => {
       income: 0,
       expenses: 0,
       net: 0,
+      savingsRate: null,
       averageExpense: null,
       expenseCount: 0,
     });
@@ -147,5 +148,29 @@ describe('parseReportLayout', () => {
   it('does not share references with the default list', () => {
     parseReportLayout(null)[0].visible = false;
     expect(REPORT_SECTIONS[0].visible).toBe(true);
+  });
+});
+
+describe('getSavingsRate', () => {
+  it('returns the percentage of income left after expenses', () => {
+    expect(getSavingsRate(1000, 750)).toBe(25);
+  });
+
+  it('is negative when spending exceeds income', () => {
+    expect(getSavingsRate(1000, 1500)).toBe(-50);
+  });
+
+  it('is null when there is no income', () => {
+    expect(getSavingsRate(0, 300)).toBeNull();
+  });
+
+  it('is computed per month in the monthly trend', () => {
+    const now = new Date();
+    const trend = getMonthlyTrend(
+      [tx({ type: 'income', amount: 1000, date: now.toISOString() }), tx({ type: 'expense', amount: 400, date: now.toISOString() })],
+      2
+    );
+    expect(trend[1].savingsRate).toBe(60);
+    expect(trend[0].savingsRate).toBeNull();
   });
 });

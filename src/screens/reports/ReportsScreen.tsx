@@ -293,7 +293,10 @@ export const ReportsScreen = ({ navigation }: Props) => {
             ) : (
               trend.map(entry => (
                 <View key={entry.monthKey} style={styles.row}>
-                  <Text style={styles.rowLabel}>{entry.label}</Text>
+                  <Text style={styles.rowLabel}>
+                    {entry.label}
+                    {entry.savingsRate != null ? ` · ${t('reports.savingsRateShort', { rate: entry.savingsRate })}` : ''}
+                  </Text>
                   <View style={styles.trendLine}>
                     <Text style={styles.trendIncomeLabel}>{t('reports.incomeAmount', { amount: money(entry.income) })}</Text>
                     <View style={styles.barTrack}>
@@ -427,6 +430,12 @@ export const ReportsScreen = ({ navigation }: Props) => {
             <Text style={styles.summaryLabel}>{t('reports.summaryNet')}</Text>
             <Text style={[styles.summaryValue, { color: summary.net >= 0 ? colors.green : colors.red }]}>
               {money(summary.net)}
+            </Text>
+          </View>
+          <View style={styles.summaryTile} accessible accessibilityLabel={`${t('reports.summarySavingsRate')}: ${summary.savingsRate == null ? t('reports.savingsRateNone') : `${summary.savingsRate}%`}`}>
+            <Text style={styles.summaryLabel}>{t('reports.summarySavingsRate')}</Text>
+            <Text style={[styles.summaryValue, { color: summary.savingsRate == null ? colors.white : summary.savingsRate >= 0 ? colors.green : colors.red }]}>
+              {summary.savingsRate == null ? '—' : `${summary.savingsRate}%`}
             </Text>
           </View>
           <View style={styles.summaryTile}>
