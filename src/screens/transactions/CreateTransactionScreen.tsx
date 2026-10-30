@@ -241,6 +241,8 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
               <TouchableOpacity
                 style={[styles.typeBtn, type === 'expense' && styles.typeBtnExpense]}
                 onPress={() => setType('expense')}
+                accessibilityRole="button"
+                accessibilityState={{ selected: type === 'expense' }}
               >
                 <MinusCircle color={type === 'expense' ? colors.white : colors.secondaryText} size={18} />
                 <Text style={[styles.typeText, type === 'expense' && { color: colors.white }]}>{t('tx.expense')}</Text>
@@ -248,6 +250,8 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
               <TouchableOpacity
                 style={[styles.typeBtn, type === 'income' && styles.typeBtnIncome]}
                 onPress={() => setType('income')}
+                accessibilityRole="button"
+                accessibilityState={{ selected: type === 'income' }}
               >
                 <PlusCircle color={type === 'income' ? colors.white : colors.secondaryText} size={18} />
                 <Text style={[styles.typeText, type === 'income' && { color: colors.white }]}>{t('tx.income')}</Text>
@@ -297,6 +301,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
           style={styles.input}
           value={description}
           onChangeText={setDescription}
+          accessibilityLabel={t('common.description')}
           placeholder={isDebtEnvelope ? t('tx.descriptionPlaceholderDebt') : type === 'expense' ? t('tx.descriptionPlaceholderExpense') : t('tx.descriptionPlaceholderIncome')}
           placeholderTextColor={colors.secondaryText}
         />

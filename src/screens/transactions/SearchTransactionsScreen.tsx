@@ -130,6 +130,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
           style={styles.searchInput}
           value={text}
           onChangeText={setText}
+          accessibilityLabel={t('search.title')}
           placeholder={t('search.placeholder')}
           placeholderTextColor={colors.secondaryText}
         />
@@ -184,6 +185,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
               style={[styles.amountInput, styles.filterHalf]}
               value={minAmountStr}
               onChangeText={setMinAmountStr}
+              accessibilityLabel={t('search.minAmount')}
               placeholder={t('search.minAmount')}
               placeholderTextColor={colors.secondaryText}
               keyboardType="numeric"
@@ -192,6 +194,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
               style={[styles.amountInput, styles.filterHalf]}
               value={maxAmountStr}
               onChangeText={setMaxAmountStr}
+              accessibilityLabel={t('search.maxAmount')}
               placeholder={t('search.maxAmount')}
               placeholderTextColor={colors.secondaryText}
               keyboardType="numeric"
@@ -224,7 +227,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
         contentContainerStyle={styles.resultsList}
         sections={sections}
         keyExtractor={item => item.id}
-        renderSectionHeader={({ section }) => <Text style={styles.sectionHeader}>{section.title}</Text>}
+        renderSectionHeader={({ section }) => <Text style={styles.sectionHeader} accessibilityRole="header">{section.title}</Text>}
         ListEmptyComponent={
           active ? (
             <EmptyState message={t('search.noResults')} />
@@ -274,12 +277,19 @@ const TransactionResultRow: React.FC<{
   onPress: () => void;
 }> = ({ item, envelopeName, categoryName, paymentMethodName, currency, formatAmount, locale, onPress }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const isTransfer = item.type === 'transfer';
   const color = isTransfer ? colors.blue : item.type === 'expense' ? colors.red : colors.green;
 
   return (
-    <TouchableOpacity style={styles.resultItem} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={styles.resultItem}
+      onPress={onPress}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`${item.description}, ${t(isTransfer ? 'a11y.transfer' : item.type === 'expense' ? 'tx.expense' : 'tx.income')}, ${formatAmount(item.amount, currency)}, ${envelopeName}${!isTransfer ? `, ${categoryName}, ${paymentMethodName}` : ''}`}
+    >
       <View style={styles.resultLeft}>
         <Text style={styles.resultDesc}>{item.description}</Text>
         <Text style={styles.resultMeta}>
