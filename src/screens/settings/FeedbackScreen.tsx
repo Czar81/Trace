@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Switch, Linking, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Linking, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
@@ -35,7 +35,6 @@ export const FeedbackScreen = ({ navigation }: Props) => {
   const [message, setMessage] = useState('');
   const [steps, setSteps] = useState('');
   const [email, setEmail] = useState('');
-  const [includeTech, setIncludeTech] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
   const [firstOpenAt, setFirstOpenAt] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -86,8 +85,8 @@ export const FeedbackScreen = ({ navigation }: Props) => {
     const ok = await submitFeedback({
       kind, screen, message, steps, email,
       version: getAppVersion(),
-      device: includeTech ? getDeviceDescription() : '',
-      tech: includeTech ? techInfo : '',
+      device: getDeviceDescription(),
+      tech: techInfo,
     });
     if (ok) await saveFeedbackSentAt(recordSend(sentAt, Date.now()));
     setSending(false);
@@ -170,26 +169,12 @@ export const FeedbackScreen = ({ navigation }: Props) => {
           />
 
           <View style={styles.techCard}>
-            <View style={styles.techRow}>
-              <View style={styles.techText}>
-                <Text style={styles.techTitle}>{t('feedback.techToggle')}</Text>
-                <Text style={styles.techHint}>{t('feedback.techHint')}</Text>
-              </View>
-              <Switch
-                value={includeTech}
-                onValueChange={setIncludeTech}
-                trackColor={{ false: colors.cardBg, true: colors.green }}
-                thumbColor={includeTech ? colors.green : colors.white}
-              />
-            </View>
-            {includeTech && (
-              <>
-                <TouchableOpacity onPress={() => setShowPreview(v => !v)} accessibilityRole="button">
-                  <Text style={styles.techLink}>{t(showPreview ? 'feedback.techPreviewHide' : 'feedback.techPreview')}</Text>
-                </TouchableOpacity>
-                {showPreview && <Text style={styles.techPreview} selectable>{`${getAppVersion()}\n${getDeviceDescription()}\n${techInfo}`}</Text>}
-              </>
-            )}
+            <Text style={styles.techTitle}>{t('feedback.techTitle')}</Text>
+            <Text style={styles.techHint}>{t('feedback.techHint')}</Text>
+            <TouchableOpacity onPress={() => setShowPreview(v => !v)} accessibilityRole="button">
+              <Text style={styles.techLink}>{t(showPreview ? 'feedback.techPreviewHide' : 'feedback.techPreview')}</Text>
+            </TouchableOpacity>
+            {showPreview && <Text style={styles.techPreview} selectable>{`${getAppVersion()}\n${getDeviceDescription()}\n${techInfo}`}</Text>}
           </View>
 
           <TouchableOpacity
@@ -231,8 +216,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   input: { backgroundColor: colors.cardBg, borderRadius: RADIUS.md, padding: SPACING.lg, color: colors.white, fontSize: FONT_SIZE.lg, marginBottom: SPACING.xl },
   multiline: { minHeight: 110, textAlignVertical: 'top' },
   techCard: { backgroundColor: colors.cardBg, borderRadius: RADIUS.xl, padding: SPACING.lg, marginBottom: SPACING.xl, borderWidth: 1, borderColor: colors.divider },
-  techRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  techText: { flex: 1, paddingRight: SPACING.md },
   techTitle: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '700', marginBottom: SPACING.xs },
   techHint: { color: colors.secondaryText, fontSize: FONT_SIZE.sm },
   techLink: { color: colors.blue, fontSize: FONT_SIZE.md, fontWeight: '600', marginTop: SPACING.md },
