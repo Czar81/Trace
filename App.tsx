@@ -27,7 +27,8 @@ import { BackupSettingsScreen } from './src/screens/settings/BackupSettingsScree
 import { AppearanceSettingsScreen } from './src/screens/settings/AppearanceSettingsScreen';
 import { FeedbackScreen } from './src/screens/settings/FeedbackScreen';
 import { OnboardingScreen } from './src/screens/onboarding/OnboardingScreen';
-import { loadOnboardingSeen, saveOnboardingSeen } from './src/services/storage/storage';
+import { installErrorCapture } from './src/services/feedback/errorCapture';
+import { ensureFirstOpenAt, loadOnboardingSeen, saveOnboardingSeen } from './src/services/storage/storage';
 import { AppLockGate } from './src/components/layout/AppLockGate';
 import { RootStackParamList } from './src/navigation/types';
 
@@ -100,6 +101,11 @@ function ThemedNavigator() {
 }
 
 export default function App() {
+  useEffect(() => {
+    installErrorCapture();
+    ensureFirstOpenAt();
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>

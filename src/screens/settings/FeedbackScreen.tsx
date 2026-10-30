@@ -1,11 +1,13 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Linking, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Switch, Linking, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from '../../context/LanguageContext';
+import { useAppData } from '../../context/ExpenseContext';
+import { getDeviceLocale } from '../../i18n';
 import { ThemeColors } from '../../theme/colors';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 import { Dropdown } from '../../components/forms/Dropdown';
@@ -13,14 +15,19 @@ import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
 import { HelpButton } from '../../components/feedback/HelpButton';
 import {
   FEEDBACK_FORM_VIEW_URL, FEEDBACK_KINDS, FEEDBACK_SCREENS, FeedbackKind, FeedbackTarget,
-  getAppVersion, getDeviceDescription, hasEmailField, isFeedbackConfigured, isValidFeedbackEmail, submitFeedback,
+  getAppVersion, getDeviceDescription, isFeedbackConfigured, isValidFeedbackEmail, submitFeedback,
 } from '../../services/feedback/feedbackForm';
+import { buildTechnicalInfo, daysBetween, getTimezone } from '../../services/feedback/technicalInfo';
+import { getLastError } from '../../services/feedback/errorCapture';
+import { checkSendLimit, recordSend } from '../../services/feedback/sendLimit';
+import { ensureFirstOpenAt, loadFeedbackSentAt, saveFeedbackSentAt } from '../../services/storage/storage';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Feedback'>;
 
 export const FeedbackScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const { settings, autoBackup, envelopes, transactions, recurringTemplates } = useAppData();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [kind, setKind] = useState<FeedbackKind>('bug');
@@ -28,7 +35,33 @@ export const FeedbackScreen = ({ navigation }: Props) => {
   const [message, setMessage] = useState('');
   const [steps, setSteps] = useState('');
   const [email, setEmail] = useState('');
+  const [includeTech, setIncludeTech] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
+  const [firstOpenAt, setFirstOpenAt] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+
+  useEffect(() => { ensureFirstOpenAt().then(setFirstOpenAt); }, []);
+
+  // The screen we came from, e.g. "Settings".
+  const originScreen = (() => {
+    const state = navigation.getState();
+    return state.routes[state.index - 1]?.name ?? '';
+  })();
+  const techInfo = buildTechnicalInfo({
+    language,
+    locale: getDeviceLocale(),
+    timezone: getTimezone(),
+    theme: settings.themeId,
+    defaultCurrency: settings.defaultCurrency,
+    appLock: !!settings.appLockEnabled,
+    autoBackup: autoBackup.enabled,
+    envelopes: envelopes.length,
+    transactions: transactions.length,
+    recurring: recurringTemplates.length,
+    daysSinceFirstOpen: firstOpenAt ? daysBetween(firstOpenAt, new Date()) : null,
+    originScreen,
+    lastError: getLastError(),
+  });
   const [dialog, setDialog] = useState<{ title: string; message: string; done: boolean } | null>(null);
 
   const screenOptions = FEEDBACK_SCREENS.map(value => ({ value, label: t(`feedback.screen.${value}`) }));
@@ -44,7 +77,19 @@ export const FeedbackScreen = ({ navigation }: Props) => {
       return;
     }
     setSending(true);
-    const ok = await submitFeedback({ kind, screen, message, steps, email, version: getAppVersion(), device: getDeviceDescription() });
+    const sentAt = await loadFeedbackSentAt();
+    const limit = checkSendLimit(sentAt, Date.now());
+    if (limit !== 'ok') {
+      setSending(false);
+      return setDialog({ title: t('feedback.title'), message: t(limit === 'minute' ? 'feedback.limitMinute' : 'feedback.limitDay'), done: false });
+    }
+    const ok = await submitFeedback({
+      kind, screen, message, steps, email,
+      version: getAppVersion(),
+      device: includeTech ? getDeviceDescription() : '',
+      tech: includeTech ? techInfo : '',
+    });
+    if (ok) await saveFeedbackSentAt(recordSend(sentAt, Date.now()));
     setSending(false);
     setDialog(ok
       ? { title: t('feedback.sentTitle'), message: t('feedback.sent'), done: true }
@@ -112,23 +157,40 @@ export const FeedbackScreen = ({ navigation }: Props) => {
             </>
           )}
 
-          {hasEmailField() && (
-            <>
-              <Text style={styles.label}>{t('feedback.email')}</Text>
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder={t('feedback.emailPlaceholder')}
-                placeholderTextColor={colors.secondaryText}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </>
-          )}
+          <Text style={styles.label}>{t('feedback.email')}</Text>
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            placeholder={t('feedback.emailPlaceholder')}
+            placeholderTextColor={colors.secondaryText}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
 
-          <Text style={styles.autoInfo}>{t('feedback.autoInfo')}</Text>
+          <View style={styles.techCard}>
+            <View style={styles.techRow}>
+              <View style={styles.techText}>
+                <Text style={styles.techTitle}>{t('feedback.techToggle')}</Text>
+                <Text style={styles.techHint}>{t('feedback.techHint')}</Text>
+              </View>
+              <Switch
+                value={includeTech}
+                onValueChange={setIncludeTech}
+                trackColor={{ false: colors.cardBg, true: colors.green }}
+                thumbColor={includeTech ? colors.green : colors.white}
+              />
+            </View>
+            {includeTech && (
+              <>
+                <TouchableOpacity onPress={() => setShowPreview(v => !v)} accessibilityRole="button">
+                  <Text style={styles.techLink}>{t(showPreview ? 'feedback.techPreviewHide' : 'feedback.techPreview')}</Text>
+                </TouchableOpacity>
+                {showPreview && <Text style={styles.techPreview} selectable>{`${getAppVersion()}\n${getDeviceDescription()}\n${techInfo}`}</Text>}
+              </>
+            )}
+          </View>
 
           <TouchableOpacity
             style={[styles.sendBtn, sending && styles.sendBtnDisabled]}
@@ -168,7 +230,13 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   chipText: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '600' },
   input: { backgroundColor: colors.cardBg, borderRadius: RADIUS.md, padding: SPACING.lg, color: colors.white, fontSize: FONT_SIZE.lg, marginBottom: SPACING.xl },
   multiline: { minHeight: 110, textAlignVertical: 'top' },
-  autoInfo: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, marginBottom: SPACING.xl },
+  techCard: { backgroundColor: colors.cardBg, borderRadius: RADIUS.xl, padding: SPACING.lg, marginBottom: SPACING.xl, borderWidth: 1, borderColor: colors.divider },
+  techRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  techText: { flex: 1, paddingRight: SPACING.md },
+  techTitle: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '700', marginBottom: SPACING.xs },
+  techHint: { color: colors.secondaryText, fontSize: FONT_SIZE.sm },
+  techLink: { color: colors.blue, fontSize: FONT_SIZE.md, fontWeight: '600', marginTop: SPACING.md },
+  techPreview: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, marginTop: SPACING.md },
   sendBtn: { backgroundColor: colors.green, borderRadius: RADIUS.lg, paddingVertical: 14, alignItems: 'center' },
   sendBtnDisabled: { opacity: 0.5 },
   sendText: { color: colors.bg, fontSize: FONT_SIZE.lg, fontWeight: '700' },

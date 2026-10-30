@@ -6,11 +6,10 @@ const FORM_ID = '1FAIpQLSdB3eWVtvJCPO9jrHoTOyWTvR6FF-0xcACBO0MD4XcMYISrqA';
 export const FEEDBACK_FORM_VIEW_URL = `https://docs.google.com/forms/d/e/${FORM_ID}/viewform`;
 export const FEEDBACK_FORM_POST_URL = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse`;
 
-export type FeedbackField = 'kind' | 'screen' | 'message' | 'steps' | 'version' | 'device' | 'email';
+export type FeedbackField = 'kind' | 'screen' | 'message' | 'steps' | 'email' | 'version' | 'device' | 'tech';
 
 /**
  * The form's question ids ("entry.123456"), from Form > ⋮ > Get pre-filled link.
- * The form has no email question yet; set `email` to its id to show the email field in the app.
  * If an id is missing the screen falls back to opening the form in the browser.
  */
 export const FEEDBACK_ENTRY_IDS: Record<FeedbackField, string | null> = {
@@ -18,9 +17,10 @@ export const FEEDBACK_ENTRY_IDS: Record<FeedbackField, string | null> = {
   screen: 'entry.312628860',
   message: 'entry.1752424255',
   steps: 'entry.873668835',
+  email: 'entry.1992490133',
   version: 'entry.2031637266',
   device: 'entry.2056316520',
-  email: null,
+  tech: 'entry.1391609820',
 };
 
 export type FeedbackKind = 'bug' | 'idea' | 'other';
@@ -65,12 +65,12 @@ export interface FeedbackInput {
   email: string;
   version: string;
   device: string;
+  /** Pre-built `key: value` lines, empty when the user turned technical info off. */
+  tech: string;
 }
 
-export const hasEmailField = (): boolean => !!FEEDBACK_ENTRY_IDS.email;
-
 export const isFeedbackConfigured = (): boolean =>
-  (Object.keys(FEEDBACK_ENTRY_IDS) as FeedbackField[]).every(field => field === 'email' || !!FEEDBACK_ENTRY_IDS[field]);
+  Object.values(FEEDBACK_ENTRY_IDS).every(id => !!id);
 
 export const isValidFeedbackEmail = (email: string): boolean =>
   email.trim() === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -84,6 +84,7 @@ export const buildFeedbackBody = (input: FeedbackInput, ids = FEEDBACK_ENTRY_IDS
     steps: input.kind === 'bug' ? input.steps.trim() : '',
     version: input.version,
     device: input.device,
+    tech: input.tech,
     email: input.email.trim(),
   };
   return (Object.keys(values) as FeedbackField[])

@@ -21,6 +21,8 @@ const KEYS = {
   LANGUAGE: '@trace_language',
   ONBOARDING_SEEN: '@trace_onboarding_seen',
   FIRST_STEPS_STATE: '@trace_first_steps_state',
+  FIRST_OPEN_AT: '@trace_first_open_at',
+  FEEDBACK_SENT_AT: '@trace_feedback_sent_at',
 };
 
 export const DEFAULT_AUTO_BACKUP_INTERVAL_DAYS = 7;
@@ -160,6 +162,30 @@ export const loadOnboardingSeen = async (): Promise<boolean | null> => {
   }
 };
 
+
+/** ISO date the app was first opened on this device; written once, by the first call. */
+export const ensureFirstOpenAt = async (): Promise<string | null> => {
+  try {
+    const stored = await AsyncStorage.getItem(KEYS.FIRST_OPEN_AT);
+    if (stored) return stored;
+    const now = new Date().toISOString();
+    await AsyncStorage.setItem(KEYS.FIRST_OPEN_AT, now);
+    return now;
+  } catch (e) {
+    console.error(`Error loading ${KEYS.FIRST_OPEN_AT}`, e);
+    return null;
+  }
+};
+
+export const loadFeedbackSentAt = async (): Promise<number[]> => {
+  try {
+    const parsed = JSON.parse((await AsyncStorage.getItem(KEYS.FEEDBACK_SENT_AT)) ?? '[]');
+    return Array.isArray(parsed) ? parsed.filter((t): t is number => typeof t === 'number') : [];
+  } catch {
+    return [];
+  }
+};
+export const saveFeedbackSentAt = (sentAt: number[]) => saveDataQuietly(KEYS.FEEDBACK_SENT_AT, sentAt);
 
 export const saveReportLayout = (data: ReportLayoutItem[]) => saveDataQuietly(KEYS.REPORT_LAYOUT, data);
 export const loadReportLayout = async (): Promise<ReportLayoutItem[]> => {
