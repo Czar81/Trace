@@ -15,6 +15,7 @@ export const PaymentMethodsSettingsScreen = ({ navigation }: Props) => {
     <SimpleListSettingsScreen
       navigation={navigation}
       title={t('paymentMethods.title')}
+      help={{ title: 'help.paymentMethods.title', body: 'help.paymentMethods.body' }}
       existingSectionTitle={t('paymentMethods.existing')}
       addSectionTitle={t('paymentMethods.addSection')}
       addPlaceholder={t('paymentMethods.addPlaceholder')}

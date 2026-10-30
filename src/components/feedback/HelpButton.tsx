@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import HelpCircle from 'lucide-react-native/icons/circle-question-mark';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from '../../context/LanguageContext';
@@ -10,7 +10,7 @@ import { TranslationKey } from '../../i18n';
 interface HelpButtonProps {
   title: TranslationKey;
   body: TranslationKey;
-  style?: object;
+  style?: StyleProp<ViewStyle>;
 }
 
 /** A "?" icon that opens a short help dialog for the current screen. */
@@ -23,8 +23,7 @@ export const HelpButton: React.FC<HelpButtonProps> = ({ title, body, style }) =>
   return (
     <>
       <TouchableOpacity
-        style={style}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        style={[styles.trigger, style]}
         onPress={() => setVisible(true)}
         accessibilityRole="button"
         accessibilityLabel={t('help.open')}
@@ -48,6 +47,7 @@ export const HelpButton: React.FC<HelpButtonProps> = ({ title, body, style }) =>
 };
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  trigger: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.65)' },
   center: { flex: 1, justifyContent: 'center', paddingHorizontal: 32 },
   card: { backgroundColor: colors.cardBg, borderRadius: RADIUS.pill, padding: SPACING.xxl },

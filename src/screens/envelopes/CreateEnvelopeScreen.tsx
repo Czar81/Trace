@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { HelpButton } from '../../components/feedback/HelpButton';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Switch, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -138,9 +139,12 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
             ? t('envelope.edit')
             : t(envelopeType === 'gasto' ? 'envelope.newExpense' : envelopeType === 'deuda' ? 'envelope.newDebt' : 'envelope.newSaving')}
         </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <HelpButton title="help.createEnvelope.title" body="help.createEnvelope.body" />
         <TouchableOpacity onPress={handleSave} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={t('common.save')}>
-          <Check color={colors.green} size={24} />
-        </TouchableOpacity>
+            <Check color={colors.green} size={24} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <KeyboardAvoidingView

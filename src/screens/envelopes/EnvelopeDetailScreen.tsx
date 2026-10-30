@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { HelpButton } from '../../components/feedback/HelpButton';
 import { View, Text, TouchableOpacity, SectionList, Modal, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -450,7 +451,10 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
       </View>
 
       <View style={styles.transactionsSection}>
-        <Text style={styles.sectionTitle}>{t('detail.transactions')}</Text>
+        <View style={styles.sectionTitleRow}>
+          <Text style={styles.sectionTitle}>{t('detail.transactions')}</Text>
+          <HelpButton title="help.detail.title" body="help.detail.body" style={{ marginRight: -SPACING.sm }} />
+        </View>
         <View style={styles.filterRow}>
           <TouchableOpacity
             style={[styles.filterPill, styles.filterPillActive]}

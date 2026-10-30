@@ -92,7 +92,7 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('recurring.title')}</Text>
-        <HelpButton title="help.recurring.title" body="help.recurring.body" style={{ width: 32, alignItems: 'center' }} />
+        <HelpButton title="help.recurring.title" body="help.recurring.body" />
       </View>
 
       <FlatList

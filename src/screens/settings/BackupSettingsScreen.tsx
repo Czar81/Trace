@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { HelpButton } from '../../components/feedback/HelpButton';
 import { View, Text, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -92,7 +93,7 @@ export const BackupSettingsScreen = ({ navigation }: Props) => {
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('settings.dataBackups')}</Text>
-        <View style={{ width: 44 }} />
+        <HelpButton title="help.backup.title" body="help.backup.body" />
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">

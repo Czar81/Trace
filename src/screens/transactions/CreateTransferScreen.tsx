@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { HelpButton } from '../../components/feedback/HelpButton';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -103,9 +104,12 @@ export const CreateTransferScreen = ({ route, navigation }: Props) => {
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{isEditing ? t('transfer.edit') : t('transfer.new')}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <HelpButton title="help.createTransfer.title" body="help.createTransfer.body" />
         <TouchableOpacity onPress={handleSave} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('common.save')}>
-          <Check color={colors.green} size={24} />
-        </TouchableOpacity>
+            <Check color={colors.green} size={24} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <KeyboardAvoidingView
