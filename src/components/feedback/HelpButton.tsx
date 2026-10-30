@@ -54,5 +54,5 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   title: { color: colors.white, fontSize: FONT_SIZE.xl, fontWeight: '700', marginBottom: SPACING.sm },
   body: { color: colors.secondaryText, fontSize: FONT_SIZE.md, lineHeight: 21, marginBottom: SPACING.xl },
   btn: { backgroundColor: colors.green, borderRadius: RADIUS.sheet, paddingVertical: SPACING.md, alignItems: 'center' },
-  btnText: { color: colors.bg, fontSize: FONT_SIZE.base, fontWeight: '700' },
+  btnText: { color: colors.onAccent, fontSize: FONT_SIZE.base, fontWeight: '700' },
 });

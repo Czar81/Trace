@@ -95,7 +95,7 @@ const ListSection: React.FC<ListSectionConfig & { onRequestDelete: (p: PendingDe
           returnKeyType="done"
         />
         <TouchableOpacity style={styles.addBtn} onPress={handleAdd} accessibilityRole="button" accessibilityLabel={t('common.add')}>
-          <Plus color={colors.bg} size={22} />
+          <Plus color={colors.onAccent} size={22} />
         </TouchableOpacity>
       </View>
     </>
@@ -140,7 +140,7 @@ export const SimpleListSettingsScreen: React.FC<SimpleListSettingsScreenProps> =
       />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{title}</Text>

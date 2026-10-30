@@ -81,7 +81,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({ visible, selectedIcon, s
                 return (
                   <TouchableOpacity
                     key={item}
-                    style={[styles.iconBtn, isSelected && { backgroundColor: color + '30', borderColor: color }]}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={[styles.iconBtn, isSelected && { backgroundColor: color + '30', borderColor: color }]}
                     onPress={() => { onSelectIcon(item as IconName); onClose(); }}
                   >
                     <View style={styles.iconCircle}>
@@ -123,7 +123,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     maxHeight: '85%',
   },
   handle: { width: 36, height: 4, backgroundColor: colors.divider, borderRadius: 2, alignSelf: 'center', marginTop: SPACING.md, marginBottom: SPACING.xs },
-  title: { color: colors.white, fontSize: 17, fontWeight: '700', textAlign: 'center', paddingVertical: 14 },
+  title: { color: colors.white, fontSize: FONT_SIZE.title, fontWeight: '700', textAlign: 'center', paddingVertical: 14 },
   listContent: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xl },
   sectionHeader: { color: colors.white, fontSize: FONT_SIZE.lg, fontWeight: '600', marginTop: SPACING.xxl, marginBottom: SPACING.lg },
   iconRow: { flexDirection: 'row', marginBottom: SPACING.sm },

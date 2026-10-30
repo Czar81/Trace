@@ -31,4 +31,16 @@ describe('themes', () => {
       }
     }
   );
+
+  it.each(THEME_LIST.map((t) => [t.id, t] as const))(
+    '%s: text on the accent and accent/blue/red/warn as text meet 4.5:1',
+    (_id, t) => {
+      expect(ratio(t.colors.onAccent, t.colors.green)).toBeGreaterThanOrEqual(4.5);
+      for (const fg of ['green', 'blue', 'red', 'warn'] as const) {
+        for (const bg of ['bg', 'cardBg'] as const) {
+          expect(ratio(t.colors[fg], t.colors[bg])).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    }
+  );
 });

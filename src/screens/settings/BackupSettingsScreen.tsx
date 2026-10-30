@@ -89,7 +89,7 @@ export const BackupSettingsScreen = ({ navigation }: Props) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('settings.dataBackups')}</Text>
@@ -168,6 +168,8 @@ export const BackupSettingsScreen = ({ navigation }: Props) => {
                       key={days}
                       style={[styles.intervalChip, autoBackup.intervalDays === days && styles.intervalChipActive]}
                       onPress={() => updateAutoBackup({ intervalDays: days })}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: autoBackup.intervalDays === days }}
                     >
                       <Text style={styles.stepperValue}>{t('settings.autoBackupDaysShort', { days })}</Text>
                     </TouchableOpacity>

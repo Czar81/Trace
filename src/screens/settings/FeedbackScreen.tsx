@@ -104,7 +104,7 @@ export const FeedbackScreen = ({ navigation }: Props) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('feedback.title')}</Text>
@@ -222,5 +222,5 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   techPreview: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, marginTop: SPACING.md },
   sendBtn: { backgroundColor: colors.green, borderRadius: RADIUS.lg, paddingVertical: 14, alignItems: 'center' },
   sendBtnDisabled: { opacity: 0.5 },
-  sendText: { color: colors.bg, fontSize: FONT_SIZE.lg, fontWeight: '700' },
+  sendText: { color: colors.onAccent, fontSize: FONT_SIZE.lg, fontWeight: '700' },
 });

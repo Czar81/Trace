@@ -104,7 +104,7 @@ export const AssignIncomeScreen = ({ navigation }: Props) => {
             currency={currency}
             value={totalStr}
             onChangeText={(v) => { setTotalStr(v); setError(''); }}
-            style={{ fontSize: 30, color: colors.white }}
+            style={{ fontSize: FONT_SIZE.amount, color: colors.white }}
           />
 
           <Text style={styles.label}>{t('common.description')}</Text>
