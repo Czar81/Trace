@@ -211,6 +211,7 @@ export const en: Record<TranslationKey, string> = {
   'tx.new': 'New Transaction',
   'tx.envelopeContext': 'Envelope: {name} · {currency}',
   'tx.payDebt': 'Pay',
+  'tx.suggestionLabel': 'Use {description}, {amount}',
   'tx.expense': 'Expense',
   'tx.income': 'Income',
   'tx.defaultDebtPayment': 'Debt payment',

@@ -19,6 +19,8 @@ import { useTranslation } from '../../context/LanguageContext';
 import { sortEnvelopesByTypeAndName } from '../../domain/budget/envelopeSorting';
 import { SplitEditor, SplitPart, newSplitPart } from '../../components/forms/SplitEditor';
 import { getUnallocated, parseAmount } from '../../domain/budget/allocation';
+import { ConceptSuggestions } from '../../components/forms/ConceptSuggestions';
+import { ConceptSuggestion, suggestConcepts } from '../../domain/transactions/conceptSuggestions';
 import { ReceiptField } from '../../components/forms/ReceiptField';
 import { deleteReceiptImage } from '../../services/files/receipts';
 import { hapticSave } from '../../services/device/haptics';
@@ -32,7 +34,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
   const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { envelopeId, transaction } = route.params;
-  const { envelopes, addTransaction, addTransactions, updateTransaction, paymentMethods, categories, incomeCategories, getEnvelopeBalance, formatAmount } = useAppData();
+  const { envelopes, transactions, addTransaction, addTransactions, updateTransaction, paymentMethods, categories, incomeCategories, getEnvelopeBalance, formatAmount } = useAppData();
 
   const envelope = envelopes.find(e => e.id === envelopeId);
   const isDebtEnvelope = envelope?.type === 'deuda';
@@ -128,6 +130,21 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
     }
     hapticSave();
     navigation.goBack();
+  };
+
+  const suggestions = useMemo(
+    () => (isEditing || !envelope ? [] : suggestConcepts(transactions, { envelopeId, type, query: description })),
+    [isEditing, envelope, transactions, envelopeId, type, description]
+  );
+
+  const applySuggestion = ({ description: picked, latest }: ConceptSuggestion) => {
+    setDescription(picked);
+    if (amountStr === '') setAmountStr(String(latest.amount));
+    if (latest.paymentMethodId && paymentMethods.some(pm => pm.id === latest.paymentMethodId)) {
+      setPaymentMethodId(latest.paymentMethodId);
+    }
+    const catalog = latest.type === 'income' ? incomeCategories : categories;
+    if (latest.categoryId && catalog.some(c => c.id === latest.categoryId)) setCategoryId(latest.categoryId);
   };
 
   // Explicit 'ahorro' check — already excludes 'deuda' envelopes as a funding source.
@@ -283,6 +300,7 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
           placeholder={isDebtEnvelope ? t('tx.descriptionPlaceholderDebt') : type === 'expense' ? t('tx.descriptionPlaceholderExpense') : t('tx.descriptionPlaceholderIncome')}
           placeholderTextColor={colors.secondaryText}
         />
+        {envelope && <ConceptSuggestions suggestions={suggestions} currency={envelope.currency} onPick={applySuggestion} />}
 
         <Text style={styles.label}>{t('common.notes')}</Text>
         <TextInput

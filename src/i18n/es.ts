@@ -212,6 +212,7 @@ export const es = {
   'tx.new': 'Nueva Transacción',
   'tx.envelopeContext': 'Sobre: {name} · {currency}',
   'tx.payDebt': 'Abonar',
+  'tx.suggestionLabel': 'Usar {description}, {amount}',
   'tx.expense': 'Gasto',
   'tx.income': 'Ingreso',
   'tx.defaultDebtPayment': 'Abono a deuda',
