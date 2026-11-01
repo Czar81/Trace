@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { NestableScrollContainer, NestableDraggableFlatList, ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -38,6 +38,7 @@ import { loadReportLayout, saveReportLayout } from '../../services/storage/stora
 import { formatCurrency } from '../../domain/shared/formatCurrency';
 import { SPACING } from '../../theme/tokens';
 import { makeStyles } from './ReportsScreen.styles';
+import { ThemedSwitch } from '../../components/forms/ThemedSwitch';
 
 const TREND_MONTHS = 6;
 
@@ -467,10 +468,9 @@ export const ReportsScreen = ({ navigation }: Props) => {
                       >
                         <GripVertical color={colors.secondaryText} size={20} />
                       </TouchableOpacity>
-                      <Switch
+                      <ThemedSwitch
                         value={item.visible}
                         onValueChange={() => toggleSection(item.id)}
-                        trackColor={{ false: colors.divider, true: colors.green }}
                       />
                       <Text style={[styles.rowLabel, styles.layoutLabel]}>{t(SECTION_LABELS[item.id])}</Text>
                       <TouchableOpacity

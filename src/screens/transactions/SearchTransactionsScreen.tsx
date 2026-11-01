@@ -289,6 +289,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   resultDesc: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '600', marginBottom: SPACING.xxs },
   resultMeta: { color: colors.secondaryText, fontSize: FONT_SIZE.xs, marginBottom: SPACING.xxs },
   resultDate: { color: colors.secondaryText, fontSize: FONT_SIZE.xs },
-  resultAmount: { fontSize: FONT_SIZE.base, fontWeight: '700' },
+  resultAmount: { fontSize: FONT_SIZE.base, fontWeight: '700', fontVariant: ['tabular-nums'] },
   separator: { height: 1, backgroundColor: colors.divider },
 });

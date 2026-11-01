@@ -2,6 +2,9 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { DayGridSheet } from './DayGridSheet';
 
+// Reanimated's native worklets runtime is not available under Jest; the sheet's entrance is irrelevant here.
+jest.mock('react-native-reanimated', () => ({ __esModule: true, default: { View: require('react-native').View } }));
+jest.mock('../feedback/menuMotion', () => ({ SHEET_ENTERING: undefined }));
 jest.mock('../../context/ThemeContext', () => ({
   useTheme: () => {
     const { THEMES, DEFAULT_THEME_ID } = require('../../theme/colors');

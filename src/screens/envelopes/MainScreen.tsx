@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Pressable, FlatList, Dimensions, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, FlatList, Modal, useWindowDimensions } from 'react-native';
 import Animated, {
   interpolate, interpolateColor, Extrapolation,
   useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, SharedValue,
@@ -33,13 +33,11 @@ import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 import { MENU_ENTERING } from '../../components/feedback/menuMotion';
 import { hapticLight, hapticSelection } from '../../services/device/haptics';
 
-const { width } = Dimensions.get('window');
-
 const TAB_TYPES: EnvelopeType[] = ['gasto', 'ahorro', 'deuda'];
 const TAB_LABELS: Record<EnvelopeType, TranslationKey> = { gasto: 'main.tabExpenses', ahorro: 'main.tabSavings', deuda: 'main.tabDebts' };
 
 /** Tab text that cross-fades between the inactive and active color as the pager scrolls (UI thread). */
-const TabLabel: React.FC<{ label: string; index: number; scrollX: SharedValue<number> }> = ({ label, index, scrollX }) => {
+const TabLabel: React.FC<{ label: string; index: number; scrollX: SharedValue<number>; width: number }> = ({ label, index, scrollX, width }) => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const animatedStyle = useAnimatedStyle(() => ({
@@ -116,6 +114,8 @@ export const MainScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  // Read on every render (not once at import) so the pager stays aligned after rotation, split view or folding.
+  const { width } = useWindowDimensions();
   const { envelopes, getTotalsByType, getEnvelopeBalance, formatAmount, settings, resetAllEnvelopes, reorderEnvelopes, paymentMethods, categories, transactions } = useAppData();
   const [activeTab, setActiveTab] = useState<EnvelopeType>('gasto');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -184,9 +184,11 @@ export const MainScreen = ({ navigation }: Props) => {
     else if (type === 'deuda') remaining = item.limit - balance;
     const isOver = (type === 'gasto' || type === 'deuda') && !item.isUnlimited && remaining < 0;
 
-    // 1. Balance Text Color
+    // 1. Balance Text Color (an unlimited envelope only tracks money, so it is never "over")
     let textColor = colors.white;
-    if (remaining < 0) {
+    if (item.isUnlimited) {
+      textColor = colors.white;
+    } else if (remaining < 0) {
       textColor = colors.red;
     } else if (type === 'gasto' && remaining > 0) {
       textColor = colors.green;
@@ -338,11 +340,17 @@ export const MainScreen = ({ navigation }: Props) => {
         </Pressable>
       </Modal>
 
-      <View style={styles.tabContainer}>
+      <View style={styles.tabContainer} accessibilityRole="tablist">
         <Animated.View style={[styles.tabIndicator, { width: indicatorWidth }, indicatorStyle]} />
         {TAB_TYPES.map((tab, index) => (
-          <TouchableOpacity key={tab} style={styles.tab} onPress={() => handleTabPress(tab)}>
-            <TabLabel label={t(TAB_LABELS[tab])} index={index} scrollX={scrollX} />
+          <TouchableOpacity
+            key={tab}
+            style={styles.tab}
+            onPress={() => handleTabPress(tab)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: tab === activeTab }}
+          >
+            <TabLabel label={t(TAB_LABELS[tab])} index={index} scrollX={scrollX} width={width} />
           </TouchableOpacity>
         ))}
       </View>
@@ -378,6 +386,7 @@ export const MainScreen = ({ navigation }: Props) => {
       <TouchableOpacity
         style={styles.fab}
         onPress={() => navigation.navigate('CreateEnvelope', { envelopeType: activeTab })}
+        accessibilityRole="button"
       >
         <Text style={styles.fabText}>{t('main.createEnvelope')}</Text>
       </TouchableOpacity>
@@ -391,7 +400,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   title: { color: colors.white, fontSize: FONT_SIZE.xl, fontWeight: 'bold', letterSpacing: 1 },
   iconBtn: { padding: SPACING.sm },
   menuBackdrop: { flex: 1 },
-  menu: { position: 'absolute', top: 56, right: SPACING.xl, minWidth: 190, backgroundColor: colors.cardBg, borderRadius: RADIUS.lg, paddingVertical: SPACING.xs, elevation: 8, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
+  menu: { position: 'absolute', top: 56, right: SPACING.xl, minWidth: 190, transformOrigin: 'top right', backgroundColor: colors.cardBg, borderRadius: RADIUS.lg, paddingVertical: SPACING.xs, elevation: 8, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
   menuItem: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg },
   menuText: { color: colors.white, fontSize: FONT_SIZE.lg },
   tabContainer: { flexDirection: 'row', marginHorizontal: SPACING.xl, height: 48, position: 'relative', marginBottom: SPACING.lg, backgroundColor: colors.cardBg, borderRadius: RADIUS.sheet, padding: SPACING.xs },
@@ -404,7 +413,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   envelopeCard: { backgroundColor: colors.cardBg, borderRadius: RADIUS.pill, padding: SPACING.lg, flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md },
   envelopeName: { flex: 1, color: colors.white, fontSize: 17, fontWeight: '600' },
   envelopeValues: { alignItems: 'flex-end' },
-  envelopeAmount: { fontSize: FONT_SIZE.xl, fontWeight: 'bold', marginBottom: SPACING.xxs },
+  envelopeAmount: { fontSize: FONT_SIZE.xl, fontWeight: 'bold', marginBottom: SPACING.xxs, fontVariant: ['tabular-nums'] },
   envelopeSubtext: { color: colors.secondaryText, fontSize: FONT_SIZE.sm },
   fab: { position: 'absolute', bottom: 30, right: 20, backgroundColor: colors.green, paddingVertical: SPACING.lg, paddingHorizontal: SPACING.xxl, borderRadius: 30 },
   fabText: { color: colors.bg, fontSize: FONT_SIZE.lg, fontWeight: 'bold' },

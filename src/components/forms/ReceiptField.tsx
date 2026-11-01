@@ -21,7 +21,8 @@ export const ReceiptField: React.FC<ReceiptFieldProps> = ({ value, onChange }) =
   const { colors } = useTheme();
   const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const [viewing, setViewing] = useState(false);
+  // Index of the photo open in the viewer, or null when it is closed.
+  const [viewingIndex, setViewingIndex] = useState<number | null>(null);
 
   const addFrom = async (result: ImagePicker.ImagePickerResult) => {
     if (result.canceled || result.assets.length === 0) return;
@@ -53,15 +54,21 @@ export const ReceiptField: React.FC<ReceiptFieldProps> = ({ value, onChange }) =
       <Text style={styles.label}>{t('receipt.label')}</Text>
       {value.length > 0 ? (
         <View style={styles.thumbs}>
-          {value.map(uri => (
+          {value.map((uri, index) => (
             <View key={uri}>
-              <TouchableOpacity onPress={() => setViewing(true)} activeOpacity={0.8}>
+              <TouchableOpacity
+                onPress={() => setViewingIndex(index)}
+                activeOpacity={0.8}
+                accessibilityRole="imagebutton"
+                accessibilityLabel={t('receipt.viewNumbered', { n: index + 1 })}
+              >
                 <Image source={{ uri }} style={styles.thumb} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.removeBadge}
                 onPress={() => onChange(value.filter(u => u !== uri))}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
                 accessibilityLabel={t('receipt.remove')}
               >
                 <X color={colors.white} size={12} />
@@ -80,7 +87,12 @@ export const ReceiptField: React.FC<ReceiptFieldProps> = ({ value, onChange }) =
           <Text style={styles.btnText}>{t('receipt.gallery')}</Text>
         </TouchableOpacity>
       </View>
-      <ReceiptViewer uris={viewing ? value : []} onClose={() => setViewing(false)} />
+      <ReceiptViewer
+        key={viewingIndex ?? -1}
+        uris={viewingIndex !== null ? value : []}
+        initialIndex={viewingIndex ?? 0}
+        onClose={() => setViewingIndex(null)}
+      />
     </View>
   );
 };

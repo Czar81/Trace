@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
@@ -18,6 +18,7 @@ import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { formatCadence } from '../../domain/recurring/recurrence';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
+import { ThemedSwitch } from '../../components/forms/ThemedSwitch';
 
 const LEAD_DAYS_OPTIONS = [1, 2, 3, 5, 7];
 
@@ -56,11 +57,9 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
               : t('settings.billRemindersOff')}
           </Text>
         </View>
-        <Switch
+        <ThemedSwitch
           value={settings.billRemindersEnabled}
           onValueChange={() => updateSettings({ billRemindersEnabled: !settings.billRemindersEnabled })}
-          trackColor={{ false: colors.cardBg, true: colors.green }}
-          thumbColor={settings.billRemindersEnabled ? colors.green : colors.white}
         />
       </View>
       {settings.billRemindersEnabled && (
@@ -74,8 +73,10 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
                   key={days}
                   style={[styles.chip, settings.billReminderLeadDays === days && styles.chipActive]}
                   onPress={() => updateSettings({ billReminderLeadDays: days })}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: settings.billReminderLeadDays === days }}
                 >
-                  <Text style={styles.chipText}>{t('settings.autoBackupDaysShort', { days })}</Text>
+                  <Text style={[styles.chipText, settings.billReminderLeadDays === days && styles.chipTextActive]}>{t('settings.autoBackupDaysShort', { days })}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -194,7 +195,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   leadDaysLabel: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '600' },
   chips: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', alignSelf: 'stretch', backgroundColor: colors.bg, borderRadius: RADIUS.pill, padding: SPACING.xs },
   chip: { minWidth: 38, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 6 },
-  chipActive: { backgroundColor: colors.cardHighlight },
+  chipActive: { backgroundColor: colors.green },
+  chipTextActive: { color: colors.bg },
   chipText: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '700', minWidth: 26, textAlign: 'center' },
   iconBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center', marginLeft: SPACING.xs },
   fab: {

@@ -1,4 +1,4 @@
-import { THEME_LIST, THEMES, DEFAULT_THEME_ID } from './colors';
+import { THEME_LIST, THEMES, DEFAULT_THEME_ID, contrastRatio, readableOn } from './colors';
 
 const lum = (hex: string) => {
   const [r, g, b] = [1, 3, 5]
@@ -28,6 +28,26 @@ describe('themes', () => {
         for (const bg of ['bg', 'cardBg'] as const) {
           expect(ratio(t.colors[fg], t.colors[bg])).toBeGreaterThanOrEqual(4.5);
         }
+      }
+    }
+  );
+
+  it.each(THEME_LIST.map((t) => [t.id, t] as const))(
+    '%s: accent text reads on cards and button text reads on the accent',
+    (_id, t) => {
+      // Links, amounts and transfer arrows sit on cards; primary buttons put bg-colored text on green.
+      for (const fg of ['green', 'blue'] as const) {
+        expect(ratio(t.colors[fg], t.colors.cardBg)).toBeGreaterThanOrEqual(4.5);
+      }
+      expect(ratio(t.colors.bg, t.colors.green)).toBeGreaterThanOrEqual(4.5);
+    }
+  );
+
+  it.each(THEME_LIST.map((t) => [t.id, t] as const))(
+    '%s: readableOn picks a legible text color for the expense/income fills',
+    (_id, t) => {
+      for (const fill of [t.colors.red, t.colors.blue]) {
+        expect(contrastRatio(readableOn(fill, t.colors), fill)).toBeGreaterThanOrEqual(3);
       }
     }
   );

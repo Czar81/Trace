@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { HelpButton } from '../../components/feedback/HelpButton';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Switch, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
@@ -22,6 +22,7 @@ import { useTranslation } from '../../context/LanguageContext';
 import { TranslationKey } from '../../i18n';
 import { hapticSave } from '../../services/device/haptics';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
+import { ThemedSwitch } from '../../components/forms/ThemedSwitch';
 
 const INTEREST_FREQUENCY_OPTIONS: { labelKey: TranslationKey; value: string }[] = [
   { labelKey: 'envelope.freqMonthly', value: 'mensual' },
@@ -159,10 +160,12 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
           <TouchableOpacity
             style={styles.iconPreviewWrap}
             onPress={() => setShowIconPicker(true)}
+            accessibilityRole="button"
+            accessibilityLabel={t('envelope.changeIcon')}
           >
             <EnvelopeAvatar icon={icon} imageUri={imageUri} color={color} size={80} borderRadius={24} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowIconPicker(true)}>
+          <TouchableOpacity onPress={() => setShowIconPicker(true)} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Text style={styles.changeIconText}>{t('envelope.changeIcon')}</Text>
           </TouchableOpacity>
         </View>
@@ -214,11 +217,9 @@ export const CreateEnvelopeScreen = ({ route, navigation }: Props) => {
                 : t('envelope.unlimitedSavingsHint')}
             </Text>
           </View>
-          <Switch
+          <ThemedSwitch
             value={isUnlimited}
             onValueChange={(value) => { setIsUnlimited(value); if (value) setLimitError(''); }}
-            trackColor={{ false: colors.cardBg, true: colors.green }}
-            thumbColor={colors.white}
           />
         </View>
 

@@ -106,5 +106,5 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: 14,
   },
   symbol: { color: colors.secondaryText, fontSize: FONT_SIZE.xxl, fontWeight: '700', marginRight: SPACING.sm },
-  input: { flex: 1, color: colors.white, fontSize: 22, fontWeight: '700', padding: 0 },
+  input: { flex: 1, color: colors.white, fontSize: 22, fontWeight: '700', padding: 0, fontVariant: ['tabular-nums'] },
 });

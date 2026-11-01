@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
@@ -25,6 +25,7 @@ import { LanguagePreference } from '../../i18n';
 import { SettingsSectionHeader } from './SettingsSectionHeader';
 import { sectionTitleKey } from './settingsSections';
 import { makeStyles } from './SettingsScreen.styles';
+import { ThemedSwitch } from '../../components/forms/ThemedSwitch';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
@@ -111,8 +112,10 @@ export const SettingsScreen = ({ navigation }: Props) => {
                   key={option.value}
                   style={[styles.intervalChip, preference === option.value && styles.intervalChipActive]}
                   onPress={() => setPreference(option.value)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: preference === option.value }}
                 >
-                  <Text style={styles.stepperValue}>{t(option.labelKey)}</Text>
+                  <Text style={[styles.stepperValue, preference === option.value && styles.intervalChipTextActive]}>{t(option.labelKey)}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -158,11 +161,9 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <Text style={styles.menuTitle}>{t('lock.title')}</Text>
             <Text style={styles.menuSubtitle}>{t('lock.subtitle')}</Text>
           </View>
-          <Switch
+          <ThemedSwitch
             value={!!settings.appLockEnabled}
             onValueChange={handleToggleAppLock}
-            trackColor={{ false: colors.cardBg, true: colors.green }}
-            thumbColor={settings.appLockEnabled ? colors.green : colors.white}
           />
         </View>
 

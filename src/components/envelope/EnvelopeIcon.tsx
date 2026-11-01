@@ -73,7 +73,7 @@ import Cake from 'lucide-react-native/icons/cake';
 import CakeSlice from 'lucide-react-native/icons/cake-slice';
 import PartyPopper from 'lucide-react-native/icons/party-popper';
 import Balloon from 'lucide-react-native/icons/balloon';
-import Drill from 'lucide-react-native/icons/drill';
+import Sparkles from 'lucide-react-native/icons/sparkles';
 import Soup from 'lucide-react-native/icons/soup';
 import Cookie from 'lucide-react-native/icons/cookie';
 import Sandwich from 'lucide-react-native/icons/sandwich';
@@ -204,7 +204,7 @@ const iconComponents: Record<IconName, React.FC<IconProps>> = {
   'cake-slice': ({ size, color }) => <CakeSlice size={size} color={color} />,
   'party': ({ size, color }) => <PartyPopper size={size} color={color} />,
   'balloon': ({ size, color }) => <Balloon size={size} color={color} />,
-  'firework': ({ size, color }) => <Drill size={size} color={color} />, // Drill looks like firework? No, maybe I missed it.
+  'firework': ({ size, color }) => <Sparkles size={size} color={color} />,
   'utensils-crossed': ({ size, color }) => <UtensilsCrossed size={size} color={color} />,
   'wine': ({ size, color }) => <Wine size={size} color={color} />,
   'soup': ({ size, color }) => <Soup size={size} color={color} />,

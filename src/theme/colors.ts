@@ -63,9 +63,9 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       secondaryText: '#7F5F64',
       divider: '#F0DCE0',
       red: '#B93C30',
-      green: '#D9738A',
+      green: '#A55769',
       greenDeep: '#B85C71',
-      blue: '#D22D69',
+      blue: '#D02D68',
       modalSheet: '#FFFFFF',
       progressTrack: '#F0DCE0',
       cardHighlight: 'rgba(217, 115, 138, 0.08)',
@@ -83,9 +83,9 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       secondaryText: '#5E7568',
       divider: '#E1E7E0',
       red: '#B93C30',
-      green: '#3E8F6C',
+      green: '#367C5E',
       greenDeep: '#2F7256',
-      blue: '#4C8FE0',
+      blue: '#3C71B1',
       modalSheet: '#FFFFFF',
       progressTrack: '#E1E7E0',
       cardHighlight: 'rgba(62, 143, 108, 0.08)',
@@ -143,9 +143,9 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       secondaryText: '#5F6A74',
       divider: '#E3E7EA',
       red: '#B93C30',
-      green: '#3E9B8F',
+      green: '#327C72',
       greenDeep: '#2F7C72',
-      blue: '#5A8FC2',
+      blue: '#49749D',
       modalSheet: '#FFFFFF',
       progressTrack: '#E3E7EA',
       cardHighlight: 'rgba(62, 155, 143, 0.08)',
@@ -163,9 +163,9 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       secondaryText: '#6F6289',
       divider: '#E7E1F5',
       red: '#B93C30',
-      green: '#8465D9',
+      green: '#795DC8',
       greenDeep: '#6B4FC0',
-      blue: '#4FB0A5',
+      blue: '#377B73',
       modalSheet: '#FFFFFF',
       progressTrack: '#E7E1F5',
       cardHighlight: 'rgba(132, 101, 217, 0.08)',
@@ -183,9 +183,9 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       secondaryText: '#6E6454',
       divider: '#E2DCCE',
       red: '#B93C30',
-      green: '#6B8F71',
+      green: '#56725A',
       greenDeep: '#557459',
-      blue: '#B16137',
+      blue: '#A15832',
       modalSheet: '#FFFFFF',
       progressTrack: '#E2DCCE',
       cardHighlight: 'rgba(107, 143, 113, 0.08)',
@@ -206,3 +206,19 @@ export const THEME_LIST: ThemeDefinition[] = [
 ];
 
 export const DEFAULT_THEME_ID: ThemeId = 'midnight';
+
+const luminance = (hex: string) => {
+  const [r, g, b] = [1, 3, 5]
+    .map(i => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+
+export const contrastRatio = (a: string, b: string) => {
+  const [x, y] = [luminance(a), luminance(b)];
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+};
+
+/** Text color for a solid `fill` (e.g. red or blue): whichever of the theme's background or text color reads better on it. */
+export const readableOn = (fill: string, colors: ThemeColors) =>
+  contrastRatio(colors.bg, fill) >= contrastRatio(colors.white, fill) ? colors.bg : colors.white;

@@ -42,7 +42,7 @@ export const DateField: React.FC<DateFieldProps> = ({ value, placeholder, onChan
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.button} onPress={() => setShowPicker(true)}>
+      <TouchableOpacity style={styles.button} onPress={() => setShowPicker(true)} accessibilityRole="button">
         <Calendar color={colors.secondaryText} size={20} />
         <Text style={styles.text} numberOfLines={compact ? 1 : undefined}>{label}</Text>
       </TouchableOpacity>
@@ -50,7 +50,7 @@ export const DateField: React.FC<DateFieldProps> = ({ value, placeholder, onChan
       {quickOptions && quickOptions.length > 0 && (
         <View style={styles.quickRow}>
           {quickOptions.map(option => (
-            <TouchableOpacity key={option.label} style={styles.chip} onPress={() => {
+            <TouchableOpacity key={option.label} style={styles.chip} accessibilityRole="button" onPress={() => {
               const date = option.getDate();
               if (option.onSelect) option.onSelect(date);
               else onChange(date);

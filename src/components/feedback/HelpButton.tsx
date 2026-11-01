@@ -31,7 +31,7 @@ export const HelpButton: React.FC<HelpButtonProps> = ({ title, body, style }) =>
         <HelpCircle color={colors.secondaryText} size={22} />
       </TouchableOpacity>
       <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setVisible(false)} />
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setVisible(false)} accessibilityRole="button" accessibilityLabel={t('a11y.close')} />
         <View style={styles.center} pointerEvents="box-none">
           <View style={styles.card}>
             <Text style={styles.title}>{t(title)}</Text>

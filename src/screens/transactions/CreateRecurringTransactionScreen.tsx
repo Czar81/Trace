@@ -15,7 +15,7 @@ import { Dropdown } from '../../components/forms/Dropdown';
 import { DayGridSheet } from '../../components/forms/DayGridSheet';
 import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../context/ThemeContext';
-import { ThemeColors } from '../../theme/colors';
+import { ThemeColors, readableOn } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { TranslationKey } from '../../i18n';
 import { Envelope, RecurrenceFrequency } from '../../types';
@@ -207,16 +207,20 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
             <TouchableOpacity
               style={[styles.typeBtn, type === 'expense' && styles.typeBtnExpense]}
               onPress={() => setType('expense')}
+              accessibilityRole="button"
+              accessibilityState={{ selected: type === 'expense' }}
             >
-              <MinusCircle color={type === 'expense' ? colors.white : colors.secondaryText} size={18} />
-              <Text style={[styles.typeText, type === 'expense' && { color: colors.white }]}>{t('tx.expense')}</Text>
+              <MinusCircle color={type === 'expense' ? readableOn(colors.red, colors) : colors.secondaryText} size={18} />
+              <Text style={[styles.typeText, type === 'expense' && { color: readableOn(colors.red, colors) }]}>{t('tx.expense')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.typeBtn, type === 'income' && styles.typeBtnIncome]}
               onPress={() => setType('income')}
+              accessibilityRole="button"
+              accessibilityState={{ selected: type === 'income' }}
             >
-              <PlusCircle color={type === 'income' ? colors.white : colors.secondaryText} size={18} />
-              <Text style={[styles.typeText, type === 'income' && { color: colors.white }]}>{t('tx.income')}</Text>
+              <PlusCircle color={type === 'income' ? readableOn(colors.blue, colors) : colors.secondaryText} size={18} />
+              <Text style={[styles.typeText, type === 'income' && { color: readableOn(colors.blue, colors) }]}>{t('tx.income')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -335,6 +339,10 @@ export const CreateRecurringTransactionScreen = ({ route, navigation }: Props) =
                       style={styles.checkbox}
                       onPress={() => setUseSavingsEnvelope(prev => !prev)}
                       activeOpacity={0.8}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: useSavingsEnvelope }}
+                      accessibilityLabel={t('tx.fromSavings')}
                     >
                       {useSavingsEnvelope && <Check color={colors.green} size={16} />}
                     </TouchableOpacity>

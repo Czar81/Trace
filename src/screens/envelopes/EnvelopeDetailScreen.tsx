@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { HelpButton } from '../../components/feedback/HelpButton';
-import { View, Text, TouchableOpacity, SectionList, Modal, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, SectionList, Modal, ScrollView, AccessibilityInfo } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, {
-  FadeIn, FadeOut, LinearTransition, interpolate, Extrapolation,
+  FadeIn, FadeInDown, FadeOut, LinearTransition, interpolate, Extrapolation,
   useAnimatedReaction, useAnimatedStyle, SharedValue,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -169,6 +169,7 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
       clearTimeout(deleteTimeoutRef.current);
     }
     hapticDelete();
+    AccessibilityInfo.announceForAccessibility(t('detail.transactionDeleted'));
     setPendingDelete(id);
     deleteTimeoutRef.current = setTimeout(commitPendingDelete, UNDO_WINDOW_MS);
   };
@@ -254,9 +255,11 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
     progressColor = colors.green;
   }
 
-  // Text Color
+  // Text Color (an unlimited envelope only tracks money, so it is never "over")
   let textColor = colors.white;
-  if (remaining < 0) {
+  if (envelope.isUnlimited) {
+    textColor = colors.white;
+  } else if (remaining < 0) {
     textColor = colors.red;
   } else if (type === 'gasto' && remaining > 0) {
     textColor = colors.green;
@@ -372,14 +375,15 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
                 </Text>
               </View>
               <View style={styles.budgetRow}>
+                {/* The complement of the big figure below: spent for budgets, paid for debts, missing for goals. */}
                 <Text style={styles.budgetAmount}>
                   {formatAmount(
-                    Math.abs(type === 'gasto' ? remaining : type === 'deuda' ? balance : (envelope.limit - balance)),
+                    type === 'gasto' ? Math.max(0, -balance) : Math.abs(type === 'deuda' ? balance : (envelope.limit - balance)),
                     envelope.currency
                   )}
                 </Text>
                 <Text style={styles.budgetLabel}>
-                  {t(type === 'gasto' ? 'detail.availableLabel' : type === 'deuda' ? 'detail.paidLabel' : 'detail.missingLabel')}
+                  {t(type === 'gasto' ? 'detail.spentLabel' : type === 'deuda' ? 'detail.paidLabel' : 'detail.missingLabel')}
                 </Text>
               </View>
             </View>
@@ -601,15 +605,15 @@ export const EnvelopeDetailScreen = ({ route, navigation }: Props) => {
       </View>
 
       {pendingDeleteId !== null && (
-        <View style={styles.undoBanner}>
+        <Animated.View entering={FadeInDown.duration(200)} exiting={FadeOut.duration(150)} style={styles.undoBanner}>
           <Text style={styles.undoText}>{t('detail.transactionDeleted')}</Text>
-          <TouchableOpacity onPress={handleUndoDelete}>
+          <TouchableOpacity onPress={handleUndoDelete} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityRole="button">
             <Text style={styles.undoBtnText}>{t('detail.undo')}</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       )}
 
-      <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('CreateTransaction', { envelopeId })}>
+      <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('CreateTransaction', { envelopeId })} accessibilityRole="button">
         <Text style={styles.fabText}>{t('detail.newTransaction')}</Text>
       </TouchableOpacity>
     </SafeAreaView>

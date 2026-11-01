@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { HelpButton } from '../../components/feedback/HelpButton';
-import { View, Text, TouchableOpacity, TextInput, Switch, ScrollView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
@@ -14,7 +14,7 @@ import { Dropdown } from '../../components/forms/Dropdown';
 import { DateField } from '../../components/forms/DateField';
 import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../context/ThemeContext';
-import { ThemeColors } from '../../theme/colors';
+import { ThemeColors, readableOn } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { sortEnvelopesByTypeAndName } from '../../domain/budget/envelopeSorting';
 import { SplitEditor, SplitPart, newSplitPart } from '../../components/forms/SplitEditor';
@@ -24,6 +24,7 @@ import { deleteReceiptImage } from '../../services/files/receipts';
 import { hapticSave } from '../../services/device/haptics';
 import { SPACING } from '../../theme/tokens';
 import { makeStyles } from './CreateTransactionScreen.styles';
+import { ThemedSwitch } from '../../components/forms/ThemedSwitch';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateTransaction'>;
 
@@ -216,24 +217,28 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
         <View style={styles.typeSelector}>
           {isDebtEnvelope ? (
             <View style={[styles.typeBtn, styles.typeBtnIncome]}>
-              <PlusCircle color={colors.white} size={18} />
-              <Text style={[styles.typeText, { color: colors.white }]}>{t('tx.payDebt')}</Text>
+              <PlusCircle color={readableOn(colors.blue, colors)} size={18} />
+              <Text style={[styles.typeText, { color: readableOn(colors.blue, colors) }]}>{t('tx.payDebt')}</Text>
             </View>
           ) : (
             <>
               <TouchableOpacity
                 style={[styles.typeBtn, type === 'expense' && styles.typeBtnExpense]}
                 onPress={() => setType('expense')}
+                accessibilityRole="button"
+                accessibilityState={{ selected: type === 'expense' }}
               >
-                <MinusCircle color={type === 'expense' ? colors.white : colors.secondaryText} size={18} />
-                <Text style={[styles.typeText, type === 'expense' && { color: colors.white }]}>{t('tx.expense')}</Text>
+                <MinusCircle color={type === 'expense' ? readableOn(colors.red, colors) : colors.secondaryText} size={18} />
+                <Text style={[styles.typeText, type === 'expense' && { color: readableOn(colors.red, colors) }]}>{t('tx.expense')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.typeBtn, type === 'income' && styles.typeBtnIncome]}
                 onPress={() => setType('income')}
+                accessibilityRole="button"
+                accessibilityState={{ selected: type === 'income' }}
               >
-                <PlusCircle color={type === 'income' ? colors.white : colors.secondaryText} size={18} />
-                <Text style={[styles.typeText, type === 'income' && { color: colors.white }]}>{t('tx.income')}</Text>
+                <PlusCircle color={type === 'income' ? readableOn(colors.blue, colors) : colors.secondaryText} size={18} />
+                <Text style={[styles.typeText, type === 'income' && { color: readableOn(colors.blue, colors) }]}>{t('tx.income')}</Text>
               </TouchableOpacity>
             </>
           )}
@@ -329,11 +334,9 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
               <>
                 <View style={styles.toggleRow}>
                   <Text style={styles.toggleLabel}>{t('split.toggle')}</Text>
-                  <Switch
+                  <ThemedSwitch
                     value={splitEnabled}
                     onValueChange={toggleSplit}
-                    trackColor={{ false: colors.cardBg, true: colors.green }}
-                    thumbColor={colors.white}
                   />
                 </View>
                 {splitEnabled && (
@@ -356,11 +359,9 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
               <>
                 <View style={styles.toggleRow}>
                   <Text style={styles.toggleLabel}>{t('tx.fromSavings')}</Text>
-                  <Switch
+                  <ThemedSwitch
                     value={useSavingsEnvelope}
                     onValueChange={setUseSavingsEnvelope}
-                    trackColor={{ false: colors.cardBg, true: colors.green }}
-                    thumbColor={colors.white}
                   />
                 </View>
                 {useSavingsEnvelope && (

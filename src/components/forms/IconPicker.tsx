@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Modal, View, SectionList, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { EnvelopeIcon, CATEGORIZED_ICONS, IconName } from '../envelope/EnvelopeIcon';
 import Check from 'lucide-react-native/icons/check';
 import ImageIcon from 'lucide-react-native/icons/image';
@@ -8,6 +9,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
+import { SHEET_ENTERING } from '../feedback/menuMotion';
 
 interface IconPickerProps {
   visible: boolean;
@@ -54,13 +56,13 @@ export const IconPicker: React.FC<IconPickerProps> = ({ visible, selectedIcon, s
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose} />
-      <View style={styles.sheet}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('a11y.close')} />
+      <Animated.View entering={SHEET_ENTERING} style={styles.sheet}>
         <View style={styles.handle} />
         <Text style={styles.title}>{t('icons.title')}</Text>
 
-        <TouchableOpacity style={styles.pickImageBtn} onPress={handlePickImage}>
+        <TouchableOpacity style={styles.pickImageBtn} onPress={handlePickImage} accessibilityRole="button">
           <ImageIcon color={colors.white} size={20} />
           <Text style={styles.pickImageText}>{t('icons.uploadOwn')}</Text>
         </TouchableOpacity>
@@ -106,7 +108,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({ visible, selectedIcon, s
             </View>
           )}
         />
-      </View>
+      </Animated.View>
     </Modal>
   );
 };

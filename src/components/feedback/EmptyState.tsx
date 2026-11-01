@@ -18,7 +18,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ message, ctaLabel, onPre
     <View style={styles.container}>
       <Text style={styles.message}>{message}</Text>
       {ctaLabel && onPress ? (
-        <TouchableOpacity style={styles.cta} onPress={onPress} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.cta} onPress={onPress} activeOpacity={0.85} accessibilityRole="button">
           <Text style={styles.ctaText}>{ctaLabel}</Text>
         </TouchableOpacity>
       ) : null}

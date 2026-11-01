@@ -56,7 +56,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       {/* Scrim */}
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onCancel} />
+      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onCancel} accessibilityRole="button" accessibilityLabel={t('a11y.close')} />
 
       {/* Dialog card */}
       <View style={styles.center}>
@@ -69,7 +69,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <View style={styles.actions}>
             {resolvedCancelLabel ? (
               <>
-                <TouchableOpacity style={styles.cancelBtn} onPress={onCancel} activeOpacity={0.7}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={onCancel} activeOpacity={0.7} accessibilityRole="button">
                   <Text style={styles.cancelText}>{resolvedCancelLabel}</Text>
                 </TouchableOpacity>
 
@@ -82,6 +82,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                 style={[styles.confirmBtnInner, destructive && styles.confirmBtnDestructive]}
                 onPress={handleConfirmPress}
                 activeOpacity={0.7}
+                accessibilityRole="button"
               >
                 <Text style={[styles.confirmText, destructive && styles.confirmTextDestructive]}>
                   {resolvedConfirmLabel}

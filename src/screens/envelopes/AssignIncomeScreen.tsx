@@ -81,13 +81,13 @@ export const AssignIncomeScreen = ({ navigation }: Props) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('assign.title')}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <HelpButton title="help.assign.title" body="help.assign.body" />
-        <TouchableOpacity onPress={handleSave} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity onPress={handleSave} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={t('common.save')}>
             <Check color={colors.green} size={24} />
           </TouchableOpacity>
         </View>
@@ -144,6 +144,7 @@ export const AssignIncomeScreen = ({ navigation }: Props) => {
                     if (fill > 0) setAmount(e.id, toInputString(fill));
                   }}
                   hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                  accessibilityRole="button"
                 >
                   <Text style={styles.restBtn}>{t('assign.fillRest')}</Text>
                 </TouchableOpacity>
@@ -180,10 +181,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   remainingCard: { backgroundColor: colors.cardBg, borderRadius: RADIUS.md, padding: SPACING.lg, marginBottom: SPACING.lg, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   remainingCardOver: { borderWidth: 1, borderColor: colors.red },
   remainingLabel: { color: colors.secondaryText, fontSize: FONT_SIZE.md },
-  remainingAmount: { color: colors.white, fontSize: FONT_SIZE.xxl, fontWeight: 'bold' },
+  remainingAmount: { color: colors.white, fontSize: FONT_SIZE.xxl, fontWeight: 'bold', fontVariant: ['tabular-nums'] },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: SPACING.md },
   rowName: { color: colors.white, fontSize: FONT_SIZE.base, flex: 1 },
   restBtn: { color: colors.secondaryText, fontSize: FONT_SIZE.xs, fontWeight: '600' },
-  rowInput: { backgroundColor: colors.cardBg, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.md, paddingVertical: 10, color: colors.white, fontSize: FONT_SIZE.lg, width: 110, textAlign: 'right' },
+  rowInput: { backgroundColor: colors.cardBg, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.md, paddingVertical: 10, color: colors.white, fontSize: FONT_SIZE.lg, width: 110, textAlign: 'right', fontVariant: ['tabular-nums'] },
   errorText: { color: colors.red, fontSize: FONT_SIZE.md, marginVertical: SPACING.md },
 });

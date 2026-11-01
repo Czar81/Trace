@@ -65,8 +65,10 @@ export const SplitEditor: React.FC<SplitEditorProps> = ({ parts, onChange, total
         style={[styles.equalBtn, equalDisabled && styles.equalBtnDisabled]}
         onPress={() => { setAutoEqual(true); onChange(applyEqual(parts)); }}
         disabled={equalDisabled}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: equalDisabled }}
       >
-        <Equal color={colors.white} size={18} />
+        <Equal color={colors.bg} size={18} />
         <Text style={styles.equalText}>{t('split.equal')}</Text>
       </TouchableOpacity>
       {equalDisabled && <Text style={styles.equalHint}>{t('split.equalHint')}</Text>}
@@ -76,7 +78,12 @@ export const SplitEditor: React.FC<SplitEditorProps> = ({ parts, onChange, total
           <View style={styles.partHeader}>
             <Text style={styles.partTitle}>{t('split.part', { n: i + 1 })}</Text>
             {parts.length > 2 && (
-              <TouchableOpacity onPress={() => onChange(parts.filter(p => p.key !== part.key))} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity
+                onPress={() => onChange(parts.filter(p => p.key !== part.key))}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel={t('split.removePart', { n: i + 1 })}
+              >
                 <X color={colors.secondaryText} size={18} />
               </TouchableOpacity>
             )}
@@ -123,13 +130,14 @@ export const SplitEditor: React.FC<SplitEditorProps> = ({ parts, onChange, total
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { marginBottom: SPACING.lg },
-  part: { backgroundColor: colors.cardBg, borderRadius: RADIUS.lg, padding: 14, marginBottom: SPACING.md },
+  // Outlined instead of filled: the dropdowns inside are cardBg fields and would vanish on a cardBg panel.
+  part: { borderWidth: 1, borderColor: colors.divider, borderRadius: RADIUS.lg, padding: 14, marginBottom: SPACING.md },
   partHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md },
   partTitle: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '700' },
-  input: { backgroundColor: colors.bg, borderRadius: RADIUS.sm, padding: SPACING.md, color: colors.white, fontSize: FONT_SIZE.lg },
+  input: { backgroundColor: colors.cardBg, borderRadius: RADIUS.md, padding: SPACING.lg, color: colors.white, fontSize: FONT_SIZE.lg },
   equalBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, backgroundColor: colors.green, borderRadius: RADIUS.md, paddingVertical: SPACING.md, marginBottom: SPACING.md },
   equalBtnDisabled: { opacity: 0.4 },
-  equalText: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '700' },
+  equalText: { color: colors.bg, fontSize: FONT_SIZE.base, fontWeight: '700' },
   equalHint: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, marginTop: -4, marginBottom: SPACING.md },
   addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: SPACING.sm },
   addText: { color: colors.secondaryText, fontSize: FONT_SIZE.md, fontWeight: '600' },

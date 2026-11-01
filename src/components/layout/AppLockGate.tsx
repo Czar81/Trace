@@ -53,7 +53,7 @@ export const AppLockGate: React.FC<{ children: React.ReactNode }> = ({ children 
     <View style={styles.cover}>
       <Lock color={colors.white} size={48} />
       <Text style={styles.title}>{t('lock.title')}</Text>
-      <TouchableOpacity style={styles.btn} onPress={unlock} activeOpacity={0.8}>
+      <TouchableOpacity style={styles.btn} onPress={unlock} activeOpacity={0.8} accessibilityRole="button">
         <Text style={styles.btnText}>{t('lock.unlock')}</Text>
       </TouchableOpacity>
     </View>

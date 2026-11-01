@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { FONT_SIZE, SPACING } from '../../theme/tokens';
+import { SHEET_ENTERING } from '../feedback/menuMotion';
 
 interface DayGridSheetProps {
   visible: boolean;
@@ -41,7 +43,7 @@ export const DayGridSheet: React.FC<DayGridSheetProps> = ({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose} />
-      <View style={styles.sheet}>
+      <Animated.View entering={SHEET_ENTERING} style={styles.sheet}>
         <View style={styles.grabber} />
         <View style={styles.header}>
           <Text style={styles.title}>{title}</Text>
@@ -69,7 +71,7 @@ export const DayGridSheet: React.FC<DayGridSheetProps> = ({
         </View>
 
         {hint ? <Text style={styles.hint}>{hint}</Text> : null}
-      </View>
+      </Animated.View>
     </Modal>
   );
 };

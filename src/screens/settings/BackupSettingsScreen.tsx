@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { HelpButton } from '../../components/feedback/HelpButton';
-import { View, Text, TouchableOpacity, ScrollView, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppData } from '../../context/ExpenseContext';
@@ -23,6 +23,7 @@ import { useTranslation } from '../../context/LanguageContext';
 import { SPACING } from '../../theme/tokens';
 import { SettingsSectionHeader } from './SettingsSectionHeader';
 import { makeStyles } from './SettingsScreen.styles';
+import { ThemedSwitch } from '../../components/forms/ThemedSwitch';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'BackupSettings'>;
 
@@ -149,11 +150,9 @@ export const BackupSettingsScreen = ({ navigation }: Props) => {
                   : t('settings.autoBackupsOff')}
               </Text>
             </View>
-            <Switch
+            <ThemedSwitch
               value={autoBackup.enabled}
               onValueChange={(value) => updateAutoBackup({ enabled: value })}
-              trackColor={{ false: colors.cardBg, true: colors.green }}
-              thumbColor={autoBackup.enabled ? colors.green : colors.white}
             />
           </View>
 
@@ -168,8 +167,10 @@ export const BackupSettingsScreen = ({ navigation }: Props) => {
                       key={days}
                       style={[styles.intervalChip, autoBackup.intervalDays === days && styles.intervalChipActive]}
                       onPress={() => updateAutoBackup({ intervalDays: days })}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: autoBackup.intervalDays === days }}
                     >
-                      <Text style={styles.stepperValue}>{t('settings.autoBackupDaysShort', { days })}</Text>
+                      <Text style={[styles.stepperValue, autoBackup.intervalDays === days && styles.intervalChipTextActive]}>{t('settings.autoBackupDaysShort', { days })}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>

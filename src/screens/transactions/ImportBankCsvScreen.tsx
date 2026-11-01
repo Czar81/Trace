@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { HelpButton } from '../../components/feedback/HelpButton';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as DocumentPicker from 'expo-document-picker';
@@ -16,6 +16,7 @@ import { useTranslation } from '../../context/LanguageContext';
 import { sortEnvelopesByTypeAndName } from '../../domain/budget/envelopeSorting';
 import { ColumnMapping, CsvTable, guessMapping, isDuplicate, mapRows, parseCsv } from '../../domain/transactions/bankCsv';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
+import { ThemedSwitch } from '../../components/forms/ThemedSwitch';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ImportBankCsv'>;
 
@@ -103,7 +104,7 @@ export const ImportBankCsvScreen = ({ navigation }: Props) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('bankCsv.title')}</Text>
@@ -132,7 +133,7 @@ export const ImportBankCsvScreen = ({ navigation }: Props) => {
                 <Text style={styles.toggleLabel}>{t('bankCsv.invert')}</Text>
                 <Text style={styles.toggleHint}>{t('bankCsv.invertHint')}</Text>
               </View>
-              <Switch value={invertSigns} onValueChange={setInvertSigns} trackColor={{ false: colors.cardBg, true: colors.green }} thumbColor={colors.white} />
+              <ThemedSwitch value={invertSigns} onValueChange={setInvertSigns} />
             </View>
 
             <Dropdown

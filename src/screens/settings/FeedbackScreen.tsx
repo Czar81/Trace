@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Switch, Linking, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Linking, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
@@ -21,6 +21,7 @@ import { buildTechnicalInfo, daysBetween, getTimezone } from '../../services/fee
 import { getLastError } from '../../services/feedback/errorCapture';
 import { checkSendLimit, recordSend } from '../../services/feedback/sendLimit';
 import { ensureFirstOpenAt, loadFeedbackSentAt, saveFeedbackSentAt } from '../../services/storage/storage';
+import { ThemedSwitch } from '../../components/forms/ThemedSwitch';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Feedback'>;
 
@@ -175,11 +176,9 @@ export const FeedbackScreen = ({ navigation }: Props) => {
                 <Text style={styles.techTitle}>{t('feedback.techToggle')}</Text>
                 <Text style={styles.techHint}>{t('feedback.techHint')}</Text>
               </View>
-              <Switch
+              <ThemedSwitch
                 value={includeTech}
                 onValueChange={setIncludeTech}
-                trackColor={{ false: colors.cardBg, true: colors.green }}
-                thumbColor={includeTech ? colors.green : colors.white}
               />
             </View>
             {includeTech && (

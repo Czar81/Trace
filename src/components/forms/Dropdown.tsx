@@ -3,12 +3,14 @@ import {
   View, Text, TouchableOpacity, Modal, SectionList,
   StyleSheet, SafeAreaView, TextInput,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import Check from 'lucide-react-native/icons/check';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 import { useTranslation } from '../../context/LanguageContext';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
+import { SHEET_ENTERING } from '../feedback/menuMotion';
 
 export interface DropdownOption {
   label: string;
@@ -80,7 +82,13 @@ export const Dropdown: React.FC<DropdownProps> = ({
     <View style={compact ? undefined : styles.wrapper}>
       {label && !compact ? <Text style={styles.label}>{label}</Text> : null}
 
-      <TouchableOpacity style={compact ? styles.triggerCompact : styles.trigger} onPress={() => setOpen(true)} activeOpacity={0.8}>
+      <TouchableOpacity
+        style={compact ? styles.triggerCompact : styles.trigger}
+        onPress={() => setOpen(true)}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel={label ? `${label}: ${selected?.label ?? placeholder ?? t('common.select')}` : undefined}
+      >
         <Text style={[compact ? styles.triggerTextCompact : styles.triggerText, !selected && { color: colors.secondaryText }]}>
           {selected ? (compact && compactLabel ? compactLabel : selected.label) : (placeholder ?? t('common.select'))}
         </Text>
@@ -88,8 +96,8 @@ export const Dropdown: React.FC<DropdownProps> = ({
       </TouchableOpacity>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setOpen(false)} />
-        <View style={styles.sheet}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setOpen(false)} accessibilityRole="button" accessibilityLabel={t('a11y.close')} />
+        <Animated.View entering={SHEET_ENTERING} style={styles.sheet}>
           {label ? <Text style={styles.sheetTitle}>{label}</Text> : null}
 
           {searchable && (
@@ -113,7 +121,12 @@ export const Dropdown: React.FC<DropdownProps> = ({
             renderItem={({ item }) => {
               const isSelected = item.value === value;
               return (
-                <TouchableOpacity style={styles.option} onPress={() => handleSelect(item.value)}>
+                <TouchableOpacity
+                  style={styles.option}
+                  onPress={() => handleSelect(item.value)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                >
                   <Text style={[styles.optionText, isSelected && { color: colors.green }]}>
                     {item.label}
                   </Text>
@@ -122,7 +135,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
               );
             }}
           />
-        </View>
+        </Animated.View>
       </Modal>
     </View>
   );

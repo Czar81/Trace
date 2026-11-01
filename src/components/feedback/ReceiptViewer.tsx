@@ -3,6 +3,7 @@ import { Modal, View, Image, Text, ScrollView, TouchableOpacity, StyleSheet, use
 import { SafeAreaView } from 'react-native-safe-area-context';
 import X from 'lucide-react-native/icons/x';
 import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from '../../context/LanguageContext';
 import { ThemeColors } from '../../theme/colors';
 import { FONT_SIZE, SPACING } from '../../theme/tokens';
 
@@ -15,6 +16,7 @@ interface ReceiptViewerProps {
 
 export const ReceiptViewer: React.FC<ReceiptViewerProps> = ({ uris, initialIndex = 0, onClose }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [index, setIndex] = useState(initialIndex);
@@ -24,7 +26,7 @@ export const ReceiptViewer: React.FC<ReceiptViewerProps> = ({ uris, initialIndex
       <SafeAreaView style={styles.container}>
         <View style={styles.top}>
           {uris.length > 1 ? <Text style={styles.counter}>{Math.min(index + 1, uris.length)} / {uris.length}</Text> : <View />}
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityRole="button" accessibilityLabel={t('a11y.close')}>
             <X color={colors.white} size={26} />
           </TouchableOpacity>
         </View>

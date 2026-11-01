@@ -26,7 +26,8 @@ export const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   stepper: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xxs, backgroundColor: colors.bg, borderRadius: RADIUS.pill, padding: SPACING.xs },
   stepperBtn: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.cardHighlight },
   intervalChip: { minWidth: 38, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 6 },
-  intervalChipActive: { backgroundColor: colors.cardHighlight },
+  intervalChipActive: { backgroundColor: colors.green },
+  intervalChipTextActive: { color: colors.bg },
   stepperBtnDisabled: { opacity: 0.35 },
   stepperValue: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '700', minWidth: 26, textAlign: 'center' },
 });
