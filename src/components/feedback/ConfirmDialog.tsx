@@ -115,7 +115,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   title: {
     color: colors.white,
-    fontSize: 17,
+    fontSize: FONT_SIZE.title,
     fontWeight: '700',
     textAlign: 'center',
     paddingTop: SPACING.xxl,

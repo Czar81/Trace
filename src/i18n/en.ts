@@ -531,8 +531,8 @@ export const en: Record<TranslationKey, string> = {
   'feedback.stepsPlaceholder': '1. I open… 2. I tap…',
   'feedback.email': 'Your email (optional)',
   'feedback.emailPlaceholder': 'In case we need to ask you something',
-  'feedback.techToggle': 'Include technical info',
-  'feedback.techHint': 'Helps reproduce bugs. Only counts and settings: never amounts, names or notes.',
+  'feedback.techTitle': 'Technical info',
+  'feedback.techHint': 'Sent with your feedback to help reproduce bugs. Only counts and settings: never amounts, names or notes.',
   'feedback.techPreview': 'See what will be sent',
   'feedback.techPreviewHide': 'Hide',
   'feedback.limitMinute': 'You just sent feedback. Wait a minute before sending another.',
@@ -593,5 +593,6 @@ export const en: Record<TranslationKey, string> = {
   'a11y.assignIncome': 'Assign income',
   'main.emptyExpenses': 'You have no expense envelopes yet. Create one to set a budget, for example "Food".',
   'main.emptySavings': 'You have no savings envelopes yet. Create one to save up toward a goal.',
+  'main.emptyHint': 'Tap "Create Envelope" to get started.',
   'main.emptyDebts': 'You have no debts yet. Create one to track the balance.',
 };

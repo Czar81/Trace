@@ -63,7 +63,7 @@ export const FirstStepsCard: React.FC<FirstStepsCardProps> = ({ progress, state,
             accessibilityState={{ checked: isDone }}
           >
             <View style={[styles.circle, isDone && styles.circleDone]}>
-              {isDone ? <Check color={colors.bg} size={14} /> : null}
+              {isDone ? <Check color={colors.onAccent} size={14} /> : null}
             </View>
             <View style={styles.stepText}>
               <Text style={[styles.stepTitle, isDone && styles.stepTitleDone]}>{t(`firstSteps.${id}.title` as TranslationKey)}</Text>

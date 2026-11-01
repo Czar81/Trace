@@ -225,8 +225,8 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
               <TouchableOpacity
                 style={[styles.typeBtn, type === 'expense' && styles.typeBtnExpense]}
                 onPress={() => setType('expense')}
-                accessibilityRole="button"
-                accessibilityState={{ selected: type === 'expense' }}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: type === 'expense' }}
               >
                 <MinusCircle color={type === 'expense' ? readableOn(colors.red, colors) : colors.secondaryText} size={18} />
                 <Text style={[styles.typeText, type === 'expense' && { color: readableOn(colors.red, colors) }]}>{t('tx.expense')}</Text>
@@ -234,8 +234,8 @@ export const CreateTransactionScreen = ({ route, navigation }: Props) => {
               <TouchableOpacity
                 style={[styles.typeBtn, type === 'income' && styles.typeBtnIncome]}
                 onPress={() => setType('income')}
-                accessibilityRole="button"
-                accessibilityState={{ selected: type === 'income' }}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: type === 'income' }}
               >
                 <PlusCircle color={type === 'income' ? readableOn(colors.blue, colors) : colors.secondaryText} size={18} />
                 <Text style={[styles.typeText, type === 'income' && { color: readableOn(colors.blue, colors) }]}>{t('tx.income')}</Text>

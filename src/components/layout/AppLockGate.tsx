@@ -64,5 +64,5 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   cover: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', gap: SPACING.lg },
   title: { color: colors.white, fontSize: FONT_SIZE.xxl, fontWeight: 'bold' },
   btn: { backgroundColor: colors.green, borderRadius: RADIUS.lg, paddingVertical: 14, paddingHorizontal: 28 },
-  btnText: { color: colors.bg, fontSize: FONT_SIZE.lg, fontWeight: '700' },
+  btnText: { color: colors.onAccent, fontSize: FONT_SIZE.lg, fontWeight: '700' },
 });

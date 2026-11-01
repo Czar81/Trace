@@ -532,8 +532,8 @@ export const es = {
   'feedback.stepsPlaceholder': '1. Abro… 2. Toco…',
   'feedback.email': 'Tu correo (opcional)',
   'feedback.emailPlaceholder': 'Por si necesitamos preguntarte algo',
-  'feedback.techToggle': 'Incluir información técnica',
-  'feedback.techHint': 'Ayuda a reproducir errores. Solo conteos y ajustes: nunca montos, nombres ni notas.',
+  'feedback.techTitle': 'Información técnica',
+  'feedback.techHint': 'Se envía con tu comentario para reproducir errores. Solo conteos y ajustes: nunca montos, nombres ni notas.',
   'feedback.techPreview': 'Ver lo que se enviará',
   'feedback.techPreviewHide': 'Ocultar',
   'feedback.limitMinute': 'Ya enviaste un comentario hace poco. Espera un minuto para enviar otro.',
@@ -594,6 +594,7 @@ export const es = {
   'a11y.assignIncome': 'Asignar ingreso',
   'main.emptyExpenses': 'Aún no tienes sobres de gasto. Crea uno para ponerle un presupuesto, por ejemplo «Comida».',
   'main.emptySavings': 'Aún no tienes sobres de ahorro. Crea uno para juntar dinero hacia una meta.',
+  'main.emptyHint': 'Toca «Crear sobre» para empezar.',
   'main.emptyDebts': 'Aún no tienes deudas registradas. Crea una para llevar el saldo.',
 } as const;
 

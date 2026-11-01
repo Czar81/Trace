@@ -101,7 +101,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('search.title')}</Text>
@@ -273,7 +273,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     minWidth: 16, height: 16, borderRadius: 8, backgroundColor: colors.green,
     alignItems: 'center', justifyContent: 'center', marginLeft: SPACING.xs, paddingHorizontal: SPACING.xs,
   },
-  filterBadgeText: { color: colors.bg, fontSize: 10, fontWeight: '700' },
+  filterBadgeText: { color: colors.onAccent, fontSize: FONT_SIZE.xs, fontWeight: '700' },
   filtersRow: { flexDirection: 'row', gap: 10, marginHorizontal: SPACING.xl, marginBottom: SPACING.md },
   filterHalf: { flex: 1 },
   amountInput: {

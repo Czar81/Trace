@@ -73,8 +73,8 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
                   key={days}
                   style={[styles.chip, settings.billReminderLeadDays === days && styles.chipActive]}
                   onPress={() => updateSettings({ billReminderLeadDays: days })}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: settings.billReminderLeadDays === days }}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: settings.billReminderLeadDays === days }}
                 >
                   <Text style={[styles.chipText, settings.billReminderLeadDays === days && styles.chipTextActive]}>{t('settings.autoBackupDaysShort', { days })}</Text>
                 </TouchableOpacity>
@@ -89,7 +89,7 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('recurring.title')}</Text>
@@ -122,7 +122,7 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
                 </Text>
               </View>
               <TouchableOpacity
-                style={styles.iconBtn}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.iconBtn}
                 onPress={() => handleToggleActive(item)}
                 accessibilityRole="button"
                 accessibilityLabel={item.isActive ? t('a11y.pause') : t('a11y.resume')}
@@ -134,7 +134,7 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
                 )}
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.iconBtn}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.iconBtn}
                 onPress={() => setTemplateToDelete(item)}
                 accessibilityRole="button"
                 accessibilityLabel={t('recurring.deleteTitle')}
@@ -151,7 +151,7 @@ export const RecurringTransactionsScreen = ({ navigation }: Props) => {
         activeOpacity={0.85}
         onPress={() => navigation.navigate('CreateRecurringTransaction', {})}
       >
-        <Plus color={colors.bg} size={20} />
+        <Plus color={colors.onAccent} size={20} />
         <Text style={styles.fabText}>{t('recurring.newTemplate')}</Text>
       </TouchableOpacity>
 
@@ -174,7 +174,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   headerBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
   headerTitle: { color: colors.white, fontSize: FONT_SIZE.xxl, fontWeight: 'bold' },
   list: { paddingHorizontal: SPACING.xl, paddingBottom: 100 },
-  emptyText: { color: colors.secondaryText, fontSize: FONT_SIZE.base, textAlign: 'center', marginTop: 40 },
   card: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.cardBg,
     borderRadius: RADIUS.xl, padding: SPACING.lg, marginBottom: 14, borderWidth: 1, borderColor: colors.divider,
@@ -194,9 +193,9 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   reminderSubtitle: { color: colors.secondaryText, fontSize: FONT_SIZE.md },
   leadDaysLabel: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '600' },
   chips: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', alignSelf: 'stretch', backgroundColor: colors.bg, borderRadius: RADIUS.pill, padding: SPACING.xs },
-  chip: { minWidth: 38, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 6 },
+  chip: { minWidth: 38, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 6 },
   chipActive: { backgroundColor: colors.green },
-  chipTextActive: { color: colors.bg },
+  chipTextActive: { color: colors.onAccent },
   chipText: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '700', minWidth: 26, textAlign: 'center' },
   iconBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center', marginLeft: SPACING.xs },
   fab: {
@@ -204,5 +203,5 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
     backgroundColor: colors.green, borderRadius: 28, paddingVertical: 14, paddingHorizontal: 22,
   },
-  fabText: { color: colors.bg, fontSize: FONT_SIZE.base, fontWeight: '700' },
+  fabText: { color: colors.onAccent, fontSize: FONT_SIZE.base, fontWeight: '700' },
 });

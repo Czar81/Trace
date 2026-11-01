@@ -21,7 +21,6 @@ import { buildTechnicalInfo, daysBetween, getTimezone } from '../../services/fee
 import { getLastError } from '../../services/feedback/errorCapture';
 import { checkSendLimit, recordSend } from '../../services/feedback/sendLimit';
 import { ensureFirstOpenAt, loadFeedbackSentAt, saveFeedbackSentAt } from '../../services/storage/storage';
-import { ThemedSwitch } from '../../components/forms/ThemedSwitch';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Feedback'>;
 
@@ -36,7 +35,6 @@ export const FeedbackScreen = ({ navigation }: Props) => {
   const [message, setMessage] = useState('');
   const [steps, setSteps] = useState('');
   const [email, setEmail] = useState('');
-  const [includeTech, setIncludeTech] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
   const [firstOpenAt, setFirstOpenAt] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -87,8 +85,8 @@ export const FeedbackScreen = ({ navigation }: Props) => {
     const ok = await submitFeedback({
       kind, screen, message, steps, email,
       version: getAppVersion(),
-      device: includeTech ? getDeviceDescription() : '',
-      tech: includeTech ? techInfo : '',
+      device: getDeviceDescription(),
+      tech: techInfo,
     });
     if (ok) await saveFeedbackSentAt(recordSend(sentAt, Date.now()));
     setSending(false);
@@ -106,7 +104,7 @@ export const FeedbackScreen = ({ navigation }: Props) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <ArrowLeft color={colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('feedback.title')}</Text>
@@ -171,24 +169,12 @@ export const FeedbackScreen = ({ navigation }: Props) => {
           />
 
           <View style={styles.techCard}>
-            <View style={styles.techRow}>
-              <View style={styles.techText}>
-                <Text style={styles.techTitle}>{t('feedback.techToggle')}</Text>
-                <Text style={styles.techHint}>{t('feedback.techHint')}</Text>
-              </View>
-              <ThemedSwitch
-                value={includeTech}
-                onValueChange={setIncludeTech}
-              />
-            </View>
-            {includeTech && (
-              <>
-                <TouchableOpacity onPress={() => setShowPreview(v => !v)} accessibilityRole="button">
-                  <Text style={styles.techLink}>{t(showPreview ? 'feedback.techPreviewHide' : 'feedback.techPreview')}</Text>
-                </TouchableOpacity>
-                {showPreview && <Text style={styles.techPreview} selectable>{`${getAppVersion()}\n${getDeviceDescription()}\n${techInfo}`}</Text>}
-              </>
-            )}
+            <Text style={styles.techTitle}>{t('feedback.techTitle')}</Text>
+            <Text style={styles.techHint}>{t('feedback.techHint')}</Text>
+            <TouchableOpacity onPress={() => setShowPreview(v => !v)} accessibilityRole="button">
+              <Text style={styles.techLink}>{t(showPreview ? 'feedback.techPreviewHide' : 'feedback.techPreview')}</Text>
+            </TouchableOpacity>
+            {showPreview && <Text style={styles.techPreview} selectable>{`${getAppVersion()}\n${getDeviceDescription()}\n${techInfo}`}</Text>}
           </View>
 
           <TouchableOpacity
@@ -230,13 +216,11 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   input: { backgroundColor: colors.cardBg, borderRadius: RADIUS.md, padding: SPACING.lg, color: colors.white, fontSize: FONT_SIZE.lg, marginBottom: SPACING.xl },
   multiline: { minHeight: 110, textAlignVertical: 'top' },
   techCard: { backgroundColor: colors.cardBg, borderRadius: RADIUS.xl, padding: SPACING.lg, marginBottom: SPACING.xl, borderWidth: 1, borderColor: colors.divider },
-  techRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  techText: { flex: 1, paddingRight: SPACING.md },
   techTitle: { color: colors.white, fontSize: FONT_SIZE.base, fontWeight: '700', marginBottom: SPACING.xs },
   techHint: { color: colors.secondaryText, fontSize: FONT_SIZE.sm },
   techLink: { color: colors.blue, fontSize: FONT_SIZE.md, fontWeight: '600', marginTop: SPACING.md },
   techPreview: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, marginTop: SPACING.md },
   sendBtn: { backgroundColor: colors.green, borderRadius: RADIUS.lg, paddingVertical: 14, alignItems: 'center' },
   sendBtnDisabled: { opacity: 0.5 },
-  sendText: { color: colors.bg, fontSize: FONT_SIZE.lg, fontWeight: '700' },
+  sendText: { color: colors.onAccent, fontSize: FONT_SIZE.lg, fontWeight: '700' },
 });

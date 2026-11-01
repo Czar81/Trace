@@ -68,7 +68,7 @@ export const SplitEditor: React.FC<SplitEditorProps> = ({ parts, onChange, total
         accessibilityRole="button"
         accessibilityState={{ disabled: equalDisabled }}
       >
-        <Equal color={colors.bg} size={18} />
+        <Equal color={colors.onAccent} size={18} />
         <Text style={styles.equalText}>{t('split.equal')}</Text>
       </TouchableOpacity>
       {equalDisabled && <Text style={styles.equalHint}>{t('split.equalHint')}</Text>}
@@ -137,7 +137,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   input: { backgroundColor: colors.cardBg, borderRadius: RADIUS.md, padding: SPACING.lg, color: colors.white, fontSize: FONT_SIZE.lg },
   equalBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, backgroundColor: colors.green, borderRadius: RADIUS.md, paddingVertical: SPACING.md, marginBottom: SPACING.md },
   equalBtnDisabled: { opacity: 0.4 },
-  equalText: { color: colors.bg, fontSize: FONT_SIZE.base, fontWeight: '700' },
+  equalText: { color: colors.onAccent, fontSize: FONT_SIZE.base, fontWeight: '700' },
   equalHint: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, marginTop: -4, marginBottom: SPACING.md },
   addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: SPACING.sm },
   addText: { color: colors.secondaryText, fontSize: FONT_SIZE.md, fontWeight: '600' },
