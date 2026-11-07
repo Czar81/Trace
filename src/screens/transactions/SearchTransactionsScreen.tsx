@@ -8,6 +8,10 @@ import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import Search from 'lucide-react-native/icons/search';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import X from 'lucide-react-native/icons/x';
+import Download from 'lucide-react-native/icons/download';
+import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
+import { buildTransactionsCsv } from '../../domain/transactions/transactionsCsv';
+import { exportTransactionsCsv } from '../../services/backup/exportData';
 import { Dropdown } from '../../components/forms/Dropdown';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { DateField } from '../../components/forms/DateField';
@@ -36,6 +40,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
   const [minAmountStr, setMinAmountStr] = useState('');
   const [maxAmountStr, setMaxAmountStr] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [exportFailed, setExportFailed] = useState(false);
 
   const categoryOptions = [
     { label: t('search.allCategories'), value: '' },
@@ -72,6 +77,17 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
   ].filter(v => v !== undefined).length;
   const results = useMemo(() => (active ? filterTransactions(transactions, filters) : []), [active, transactions, filters]);
   const sections = useMemo(() => groupTransactionsByDay(results, locale), [results, locale]);
+
+  const handleExport = async () => {
+    try {
+      await exportTransactionsCsv(
+        buildTransactionsCsv(results, { envelopes, categories, incomeCategories, paymentMethods, t })
+      );
+    } catch (e) {
+      console.error('Error exporting transactions:', e);
+      setExportFailed(true);
+    }
+  };
 
   const clearFilters = () => {
     setText('');
@@ -114,6 +130,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
           style={styles.searchInput}
           value={text}
           onChangeText={setText}
+          accessibilityLabel={t('search.title')}
           placeholder={t('search.placeholder')}
           placeholderTextColor={colors.secondaryText}
         />
@@ -168,6 +185,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
               style={[styles.amountInput, styles.filterHalf]}
               value={minAmountStr}
               onChangeText={setMinAmountStr}
+              accessibilityLabel={t('search.minAmount')}
               placeholder={t('search.minAmount')}
               placeholderTextColor={colors.secondaryText}
               keyboardType="numeric"
@@ -176,6 +194,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
               style={[styles.amountInput, styles.filterHalf]}
               value={maxAmountStr}
               onChangeText={setMaxAmountStr}
+              accessibilityLabel={t('search.maxAmount')}
               placeholder={t('search.maxAmount')}
               placeholderTextColor={colors.secondaryText}
               keyboardType="numeric"
@@ -185,9 +204,22 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
       )}
 
       {active && (
-        <TouchableOpacity onPress={clearFilters} style={styles.clearBtn}>
-          <Text style={styles.clearBtnText}>{t('search.clearFilters')}</Text>
-        </TouchableOpacity>
+        <View style={styles.actionsRow}>
+          <TouchableOpacity onPress={clearFilters} style={styles.clearBtn} accessibilityRole="button">
+            <Text style={styles.clearBtnText}>{t('search.clearFilters')}</Text>
+          </TouchableOpacity>
+          {results.length > 0 && (
+            <TouchableOpacity
+              onPress={handleExport}
+              style={styles.exportBtn}
+              accessibilityRole="button"
+              accessibilityLabel={t('search.exportCsvLabel', { count: results.length })}
+            >
+              <Download color={colors.green} size={14} />
+              <Text style={styles.exportBtnText}>{t('search.exportCsv')}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       )}
 
       <SectionList
@@ -195,7 +227,7 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
         contentContainerStyle={styles.resultsList}
         sections={sections}
         keyExtractor={item => item.id}
-        renderSectionHeader={({ section }) => <Text style={styles.sectionHeader}>{section.title}</Text>}
+        renderSectionHeader={({ section }) => <Text style={styles.sectionHeader} accessibilityRole="header">{section.title}</Text>}
         ListEmptyComponent={
           active ? (
             <EmptyState message={t('search.noResults')} />
@@ -221,6 +253,15 @@ export const SearchTransactionsScreen = ({ navigation }: Props) => {
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
+      <ConfirmDialog
+        visible={exportFailed}
+        title={t('search.exportTitle')}
+        message={t('search.exportFailed')}
+        confirmLabel={t('common.accept')}
+        cancelLabel=""
+        onConfirm={() => setExportFailed(false)}
+        onCancel={() => setExportFailed(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -236,12 +277,19 @@ const TransactionResultRow: React.FC<{
   onPress: () => void;
 }> = ({ item, envelopeName, categoryName, paymentMethodName, currency, formatAmount, locale, onPress }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const isTransfer = item.type === 'transfer';
   const color = isTransfer ? colors.blue : item.type === 'expense' ? colors.red : colors.green;
 
   return (
-    <TouchableOpacity style={styles.resultItem} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={styles.resultItem}
+      onPress={onPress}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`${item.description}, ${t(isTransfer ? 'a11y.transfer' : item.type === 'expense' ? 'tx.expense' : 'tx.income')}, ${formatAmount(item.amount, currency)}, ${envelopeName}${!isTransfer ? `, ${categoryName}, ${paymentMethodName}` : ''}`}
+    >
       <View style={styles.resultLeft}>
         <Text style={styles.resultDesc}>{item.description}</Text>
         <Text style={styles.resultMeta}>
@@ -280,7 +328,10 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.cardBg, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 14,
     color: colors.white, fontSize: FONT_SIZE.md,
   },
-  clearBtn: { alignSelf: 'flex-start', marginHorizontal: SPACING.xl, marginBottom: SPACING.md },
+  actionsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: SPACING.xl, marginBottom: SPACING.xs },
+  clearBtn: { minHeight: 44, justifyContent: 'center' },
+  exportBtn: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
+  exportBtnText: { color: colors.green, fontSize: FONT_SIZE.md, fontWeight: '600' },
   clearBtnText: { color: colors.green, fontSize: FONT_SIZE.md, fontWeight: '600' },
   resultsList: { paddingHorizontal: SPACING.xl, paddingBottom: 60 },
   sectionHeader: { color: colors.secondaryText, fontSize: FONT_SIZE.sm, fontWeight: '700', marginTop: SPACING.lg, marginBottom: 6 },

@@ -80,3 +80,28 @@ export const exportBackupJson = async (data: BackupData): Promise<void> => {
   }
   await shareAsync(uri, { UTI: 'public.json', mimeType: 'application/json' });
 };
+
+export const TRANSACTIONS_EXPORT_PREFIX = 'trace_transactions_';
+
+/** Writes a transactions CSV and opens the share sheet for it. Rejects if it can't be written or shared. */
+export const exportTransactionsCsv = async (csv: string): Promise<void> => {
+  const filename = `${TRANSACTIONS_EXPORT_PREFIX}${Date.now()}.csv`;
+  const uri = documentDirectory + filename;
+
+  await writeAsStringAsync(uri, csv, { encoding: EncodingType.UTF8 });
+  try {
+    const names = await readDirectoryAsync(documentDirectory as string);
+    for (const name of names) {
+      if (name.startsWith(TRANSACTIONS_EXPORT_PREFIX) && name !== filename) {
+        await deleteAsync((documentDirectory as string) + name, { idempotent: true });
+      }
+    }
+  } catch (e) {
+    console.error('Error pruning old CSV exports', e);
+  }
+
+  if (!(await isAvailableAsync())) {
+    throw new Error('Sharing is not available on this device');
+  }
+  await shareAsync(uri, { UTI: 'public.comma-separated-values-text', mimeType: 'text/csv' });
+};

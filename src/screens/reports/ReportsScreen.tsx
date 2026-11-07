@@ -196,7 +196,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
   const sectionNodes: Record<ReportSectionId, React.ReactNode> = {
     byCategory: (
       <>
-          <Text style={styles.sectionTitle}>{t('reports.byCategory')}</Text>
+          <Text style={styles.sectionTitle} accessibilityRole="header">{t('reports.byCategory')}</Text>
           <View style={styles.card}>
             {byCategory.length === 0 ? (
               <EmptyState />
@@ -207,7 +207,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
                     <Text style={styles.rowLabel}>{c.name}</Text>
                     <Text style={styles.rowValue}>{money(c.total)} · {c.percentage.toFixed(0)}%</Text>
                   </View>
-                  <View style={styles.barTrack}>
+                  <View style={styles.barTrack} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
                     <View style={[styles.barFill, { width: `${(c.total / maxCategoryTotal) * 100}%` }]} />
                   </View>
                 </View>
@@ -218,7 +218,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
     ),
     byMonth: (
       <>
-          <Text style={styles.sectionTitle}>{t('reports.byMonth')}</Text>
+          <Text style={styles.sectionTitle} accessibilityRole="header">{t('reports.byMonth')}</Text>
           <View style={styles.card}>
             {byMonth.length === 0 ? (
               <EmptyState />
@@ -229,7 +229,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
                     <Text style={styles.rowLabel}>{m.label}</Text>
                     <Text style={styles.rowValue}>{money(m.total)}</Text>
                   </View>
-                  <View style={styles.barTrack}>
+                  <View style={styles.barTrack} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
                     <View style={[styles.barFill, { width: `${(m.total / maxMonthTotal) * 100}%` }]} />
                   </View>
                 </View>
@@ -240,7 +240,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
     ),
     byEnvelope: (
       <>
-          <Text style={styles.sectionTitle}>{t('reports.byEnvelope')}</Text>
+          <Text style={styles.sectionTitle} accessibilityRole="header">{t('reports.byEnvelope')}</Text>
           <View style={styles.card}>
             {byEnvelope.length === 0 ? (
               <EmptyState />
@@ -254,7 +254,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
                       {e.percentOfLimit != null ? t('reports.percentOfLimit', { percent: e.percentOfLimit.toFixed(0) }) : ''}
                     </Text>
                   </View>
-                  <View style={styles.barTrack}>
+                  <View style={styles.barTrack} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
                     <View style={[styles.barFill, { width: `${(e.total / maxEnvelopeTotal) * 100}%` }]} />
                   </View>
                 </View>
@@ -265,7 +265,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
     ),
     byPaymentMethod: (
       <>
-          <Text style={styles.sectionTitle}>{t('reports.byPaymentMethod')}</Text>
+          <Text style={styles.sectionTitle} accessibilityRole="header">{t('reports.byPaymentMethod')}</Text>
           <View style={styles.card}>
             {byPaymentMethod.length === 0 ? (
               <EmptyState />
@@ -276,7 +276,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
                     <Text style={styles.rowLabel}>{p.name}</Text>
                     <Text style={styles.rowValue}>{money(p.total)}</Text>
                   </View>
-                  <View style={styles.barTrack}>
+                  <View style={styles.barTrack} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
                     <View style={[styles.barFill, { width: `${(p.total / maxPaymentMethodTotal) * 100}%` }]} />
                   </View>
                 </View>
@@ -287,23 +287,26 @@ export const ReportsScreen = ({ navigation }: Props) => {
     ),
     trend: (
       <>
-          <Text style={styles.sectionTitle}>{t('reports.trendTitle', { months: TREND_MONTHS })}</Text>
+          <Text style={styles.sectionTitle} accessibilityRole="header">{t('reports.trendTitle', { months: TREND_MONTHS })}</Text>
           <View style={styles.card}>
             {trend.every(entry => entry.income === 0 && entry.expense === 0) ? (
               <EmptyState />
             ) : (
               trend.map(entry => (
                 <View key={entry.monthKey} style={styles.row}>
-                  <Text style={styles.rowLabel}>{entry.label}</Text>
+                  <Text style={styles.rowLabel}>
+                    {entry.label}
+                    {entry.savingsRate != null ? ` · ${t('reports.savingsRateShort', { rate: entry.savingsRate })}` : ''}
+                  </Text>
                   <View style={styles.trendLine}>
                     <Text style={styles.trendIncomeLabel}>{t('reports.incomeAmount', { amount: money(entry.income) })}</Text>
-                    <View style={styles.barTrack}>
+                    <View style={styles.barTrack} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
                       <View style={[styles.barFill, { backgroundColor: colors.green, width: `${(entry.income / maxTrendValue) * 100}%` }]} />
                     </View>
                   </View>
                   <View style={styles.trendLine}>
                     <Text style={styles.trendExpenseLabel}>{t('reports.expenseAmount', { amount: money(entry.expense) })}</Text>
-                    <View style={styles.barTrack}>
+                    <View style={styles.barTrack} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
                       <View style={[styles.barFill, { backgroundColor: colors.red, width: `${(entry.expense / maxTrendValue) * 100}%` }]} />
                     </View>
                   </View>
@@ -315,7 +318,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
     ),
     topTransactions: (
       <>
-          <Text style={styles.sectionTitle}>{t('reports.topTransactions')}</Text>
+          <Text style={styles.sectionTitle} accessibilityRole="header">{t('reports.topTransactions')}</Text>
           <View style={styles.card}>
             {topTransactions.length === 0 ? (
               <EmptyState />
@@ -368,6 +371,8 @@ export const ReportsScreen = ({ navigation }: Props) => {
               style={[styles.periodPill, !customSelected && period === opt.value && styles.periodPillActive]}
               onPress={() => selectPreset(opt.value)}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityState={{ selected: !customSelected && period === opt.value }}
             >
               <Text style={[styles.periodPillText, !customSelected && period === opt.value && styles.periodPillTextActive]} numberOfLines={1}>
                 {t(opt.labelKey)}
@@ -378,6 +383,8 @@ export const ReportsScreen = ({ navigation }: Props) => {
             style={[styles.periodPill, customSelected && styles.periodPillActive]}
             onPress={selectCustom}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityState={{ selected: customSelected }}
           >
             <Text style={[styles.periodPillText, customSelected && styles.periodPillTextActive]} numberOfLines={1}>{t('reports.periodCustom')}</Text>
           </TouchableOpacity>
@@ -386,16 +393,16 @@ export const ReportsScreen = ({ navigation }: Props) => {
         {customSelected && (
           <View style={styles.customRange}>
             <View style={styles.customRangeRow}>
-              <TouchableOpacity style={styles.dateBtn} onPress={() => setPickerTarget('start')} activeOpacity={0.8}>
+              <TouchableOpacity style={styles.dateBtn} onPress={() => setPickerTarget('start')} activeOpacity={0.8} accessibilityRole="button">
                 <Calendar color={colors.secondaryText} size={16} />
                 <Text style={styles.dateBtnText}>{t('reports.fromDate', { date: formatDate(customStart) })}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.dateBtn} onPress={() => setPickerTarget('end')} activeOpacity={0.8}>
+              <TouchableOpacity style={styles.dateBtn} onPress={() => setPickerTarget('end')} activeOpacity={0.8} accessibilityRole="button">
                 <Calendar color={colors.secondaryText} size={16} />
                 <Text style={styles.dateBtnText}>{t('reports.toDate', { date: formatDate(customEnd) })}</Text>
               </TouchableOpacity>
             </View>
-            {rangeError && <Text style={styles.rangeError}>{rangeError}</Text>}
+            {rangeError && <Text style={styles.rangeError} accessibilityRole="alert">{rangeError}</Text>}
           </View>
         )}
 
@@ -430,6 +437,12 @@ export const ReportsScreen = ({ navigation }: Props) => {
               {money(summary.net)}
             </Text>
           </View>
+          <View style={styles.summaryTile} accessible accessibilityLabel={`${t('reports.summarySavingsRate')}: ${summary.savingsRate == null ? t('reports.savingsRateNone') : `${summary.savingsRate}%`}`}>
+            <Text style={styles.summaryLabel}>{t('reports.summarySavingsRate')}</Text>
+            <Text style={[styles.summaryValue, { color: summary.savingsRate == null ? colors.white : summary.savingsRate >= 0 ? colors.green : colors.red }]}>
+              {summary.savingsRate == null ? '—' : `${summary.savingsRate}%`}
+            </Text>
+          </View>
           <View style={styles.summaryTile}>
             <Text style={styles.summaryLabel}>{t('reports.summaryAverage')}</Text>
             <Text style={styles.summaryValue}>
@@ -442,7 +455,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.layoutToggle} onPress={() => setEditingLayout(v => !v)} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.layoutToggle} onPress={() => setEditingLayout(v => !v)} activeOpacity={0.8} accessibilityRole="button" accessibilityState={{ expanded: editingLayout }}>
           <SlidersHorizontal color={colors.secondaryText} size={16} />
           <Text style={styles.layoutToggleText}>{editingLayout ? t('reports.customizeClose') : t('reports.customizeOpen')}</Text>
         </TouchableOpacity>
@@ -464,6 +477,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
                         delayLongPress={150}
                         disabled={isActive}
                         style={styles.dragHandle}
+                        accessibilityRole="button"
                         accessibilityLabel={t('reports.dragHandle', { section: t(SECTION_LABELS[item.id]) })}
                       >
                         <GripVertical color={colors.secondaryText} size={20} />
@@ -471,12 +485,14 @@ export const ReportsScreen = ({ navigation }: Props) => {
                       <ThemedSwitch
                         value={item.visible}
                         onValueChange={() => toggleSection(item.id)}
+                        accessibilityLabel={t(SECTION_LABELS[item.id])}
                       />
                       <Text style={[styles.rowLabel, styles.layoutLabel]}>{t(SECTION_LABELS[item.id])}</Text>
                       <TouchableOpacity
                         onPress={() => moveSection(index, -1)}
                         disabled={index === 0}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={[styles.moveBtn, index === 0 && styles.moveBtnDisabled]}
+                        accessibilityRole="button"
                         accessibilityLabel={t('reports.moveUp', { section: t(SECTION_LABELS[item.id]) })}
                       >
                         <ChevronUp color={colors.white} size={20} />
@@ -485,6 +501,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
                         onPress={() => moveSection(index, 1)}
                         disabled={index === layout.length - 1}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={[styles.moveBtn, index === layout.length - 1 && styles.moveBtnDisabled]}
+                        accessibilityRole="button"
                         accessibilityLabel={t('reports.moveDown', { section: t(SECTION_LABELS[item.id]) })}
                       >
                         <ChevronDown color={colors.white} size={20} />
@@ -494,7 +511,7 @@ export const ReportsScreen = ({ navigation }: Props) => {
                 );
               }}
             />
-            <TouchableOpacity style={styles.resetBtn} onPress={resetLayout} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.resetBtn} onPress={resetLayout} activeOpacity={0.8} accessibilityRole="button">
               <Text style={styles.resetBtnText}>{t('reports.reset')}</Text>
             </TouchableOpacity>
           </View>

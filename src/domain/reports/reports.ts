@@ -203,7 +203,13 @@ export interface MonthlyTrendEntry {
   label: string;
   income: number;
   expense: number;
+  /** Share of income left after expenses, in percent. Null when there was no income. */
+  savingsRate: number | null;
 }
+
+/** Percentage of income that was saved (negative when spending exceeded income); null without income. */
+export const getSavingsRate = (income: number, expenses: number): number | null =>
+  income > 0 ? Math.round(((income - expenses) / income) * 100) : null;
 
 export const getMonthlyTrend = (
   transactions: Transaction[],
@@ -215,7 +221,7 @@ export const getMonthlyTrend = (
   const buckets: MonthlyTrendEntry[] = [];
   for (let i = months - 1; i >= 0; i--) {
     const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    buckets.push({ monthKey: monthKeyOf(date), label: monthLabelOf(date, locale), income: 0, expense: 0 });
+    buckets.push({ monthKey: monthKeyOf(date), label: monthLabelOf(date, locale), income: 0, expense: 0, savingsRate: null });
   }
   const bucketByKey = new Map(buckets.map(b => [b.monthKey, b]));
 
@@ -228,7 +234,12 @@ export const getMonthlyTrend = (
     else if (t.type === 'expense') bucket.expense += t.amount;
   }
 
-  return buckets.map(b => ({ ...b, income: roundMoney(b.income), expense: roundMoney(b.expense) }));
+  return buckets.map(b => ({
+    ...b,
+    income: roundMoney(b.income),
+    expense: roundMoney(b.expense),
+    savingsRate: getSavingsRate(b.income, b.expense),
+  }));
 };
 
 export const TOP_TRANSACTIONS_LIMIT = 10;
@@ -267,6 +278,7 @@ export interface ReportSummary {
   income: number;
   expenses: number;
   net: number;
+  savingsRate: number | null;
   averageExpense: number | null;
   expenseCount: number;
 }
@@ -295,6 +307,7 @@ export const getSummary = (
     income: roundMoney(income),
     expenses: roundMoney(expenses),
     net: roundMoney(income - expenses),
+    savingsRate: getSavingsRate(income, expenses),
     averageExpense: expenseCount > 0 ? roundMoney(expenses / expenseCount) : null,
     expenseCount,
   };
